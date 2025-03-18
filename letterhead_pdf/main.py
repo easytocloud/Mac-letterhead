@@ -7,9 +7,9 @@ import logging
 from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import NSURL, kCFAllocatorDefault
-from AppKit import NSSavePanel, NSApp
+from AppKit import NSSavePanel, NSApp, NSFloatingWindowLevel
 
-__version__ = "0.1.1"
+from letterhead_pdf import __version__
 
 # Set up logging
 LOG_DIR = os.path.expanduser("~/Library/Logs/Mac-letterhead")
@@ -41,14 +41,23 @@ class LetterheadPDF:
         logging.info(f"Opening save dialog with initial directory: {directory}")
         panel = NSSavePanel.savePanel()
         panel.setTitle_("Save PDF with Letterhead")
+        panel.setLevel_(NSFloatingWindowLevel)  # Make dialog float above other windows
         my_url = NSURL.fileURLWithPath_isDirectory_(directory, True)
         panel.setDirectoryURL_(my_url)
         panel.setNameFieldStringValue_(filename)
         NSApp.activateIgnoringOtherApps_(True)
         ret_value = panel.runModal()
-        selected_path = panel.filename() if ret_value else ''
-        logging.info(f"Save dialog result: {selected_path}")
-        return selected_path
+        
+        if ret_value:
+            selected_path = panel.filename()
+            if not selected_path:
+                # If no path but OK was clicked, use default location
+                selected_path = os.path.join(directory, filename)
+            logging.info(f"Save dialog result: {selected_path}")
+            return selected_path
+        else:
+            logging.info("Save dialog cancelled")
+            return ''
 
     def create_pdf_document(self, path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
         """Create PDF document from path"""
@@ -169,7 +178,7 @@ def create_service_script(letterhead_path: str) -> None:
     
     script_content = f'''#!/bin/bash
 # Letterhead PDF Service for {letterhead_name}
-uv run mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3"
+uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3"
 '''
     
     with open(script_path, 'w') as f:
@@ -188,8 +197,8 @@ def print_command(args: argparse.Namespace) -> int:
         output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
         
         if not output_path:
-            logging.warning("No output location selected")
-            print("No output location selected.")
+            logging.warning("Save dialog cancelled")
+            print("Save dialog cancelled.")
             return 1
             
         if not os.path.exists(args.input_path):
