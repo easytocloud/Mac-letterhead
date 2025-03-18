@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "Mac-letterhead"
+version = "0.1.0"
+description = "A macOS PDF Service to merge letterhead with printed documents"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+authors = [
+    { name = "Erik", email = "" }
+]
+dependencies = [
+    "pyobjc-framework-Quartz",
+    "pyobjc-framework-Cocoa",
+]
+
+[project.scripts]
+mac-letterhead = "letterhead_pdf.main:main"
+
+[tool.hatch.version]
+path = "letterhead_pdf/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["letterhead_pdf"]
