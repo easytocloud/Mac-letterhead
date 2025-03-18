@@ -331,7 +331,7 @@ on open these_items
                     
                     -- Execute the command with careful handling for immediate error feedback
                     try
-                        do shell script cmd with timeout 300
+                        do shell script cmd timeout 300
                         -- Log success but don't show a dialog
                         do shell script "echo 'Success: Letterhead applied to " & file_basename & ".pdf' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     on error execErr
