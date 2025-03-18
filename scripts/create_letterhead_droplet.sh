@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 # Default paths
 APP_NAME="Letterhead Applier.app"
 APP_DIR="$HOME/Desktop/$APP_NAME"
-APPLESCRIPT_SRC="letterhead_droplet.applescript"
+APPLESCRIPT_SRC="letterhead_fixed.applescript"
 # Use a built-in macOS icon
 ICON_PATH="/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns"
 
