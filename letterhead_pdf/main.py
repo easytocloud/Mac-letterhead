@@ -6,7 +6,7 @@ import argparse
 import logging
 from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
-from Foundation import NSURL, kCFAllocatorDefault
+from Foundation import NSURL, kCFAllocatorDefault, NSObject, NSApplication
 from AppKit import NSSavePanel, NSApp, NSFloatingWindowLevel
 
 from letterhead_pdf import __version__
@@ -29,6 +29,10 @@ class PDFMergeError(Exception):
     """Custom exception for PDF merge errors"""
     pass
 
+class AppDelegate(NSObject):
+    def applicationDidFinishLaunching_(self, notification):
+        pass
+
 class LetterheadPDF:
     def __init__(self, letterhead_path: str, destination: str = "~/Desktop", suffix: str = " wm.pdf"):
         self.letterhead_path = os.path.expanduser(letterhead_path)
@@ -39,6 +43,14 @@ class LetterheadPDF:
     def save_dialog(self, directory: str, filename: str) -> str:
         """Show save dialog and return selected path"""
         logging.info(f"Opening save dialog with initial directory: {directory}")
+        
+        # Initialize application if needed
+        if NSApp() is None:
+            app = NSApplication.sharedApplication()
+            delegate = AppDelegate.alloc().init()
+            app.setDelegate_(delegate)
+            app.finishLaunching()
+        
         panel = NSSavePanel.savePanel()
         panel.setTitle_("Save PDF with Letterhead")
         panel.setLevel_(NSFloatingWindowLevel)  # Make dialog float above other windows
@@ -46,7 +58,9 @@ class LetterheadPDF:
         panel.setDirectoryURL_(my_url)
         panel.setNameFieldStringValue_(filename)
         NSApp.activateIgnoringOtherApps_(True)
+        
         ret_value = panel.runModal()
+        logging.info(f"Save dialog return value: {ret_value}")
         
         if ret_value:
             selected_path = panel.filename()
