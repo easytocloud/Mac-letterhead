@@ -4,31 +4,29 @@ A macOS utility that automatically merges a letterhead template with PDF documen
 
 ## Installation
 
-Install the package:
+Install the package using uv:
 ```bash
 uv pip install -e .
 ```
 
 ## Usage
 
-Mac-letterhead provides a simple and reliable way to apply letterhead to PDF documents using an AppleScript droplet application.
+Mac-letterhead provides a simple and reliable way to apply letterhead to PDF documents using a drag-and-drop application.
 
 ### Creating the Letterhead Applier App
 
-1. First, install the package:
-   ```bash
-   uv pip install .
-   ```
+Simply install the letterhead PDF as a drag-and-drop application:
 
-2. Run the script to create your customized Letterhead App:
-   ```bash
-   ./scripts/create_letterhead_droplet.sh /path/to/your/letterhead.pdf
-   ```
-   
-3. The application will be created on your Desktop by default. You can customize the name with:
-   ```bash
-   ./scripts/create_letterhead_droplet.sh --name "Company Letterhead" /path/to/your/letterhead.pdf
-   ```
+```bash
+uvx mac-letterhead install /path/to/your/letterhead.pdf
+```
+
+This will create a droplet application on your Desktop. The application will be named based on your letterhead file (e.g., "Letterhead CompanyLogo").
+
+You can customize the name and location:
+```bash
+uvx mac-letterhead install /path/to/your/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
+```
 
 ### Using the Letterhead Applier App
 
@@ -44,7 +42,7 @@ The application combines your letterhead and document in a way that preserves bo
 If you already know which strategy works best for your letterhead, you can specify it directly:
 
 ```bash
-uv run mac-letterhead print /path/to/your/letterhead.pdf "Document Name" "" /path/to/document.pdf --strategy overlay
+uvx mac-letterhead print /path/to/your/letterhead.pdf "Document Name" "/path/to/save" /path/to/document.pdf --strategy overlay
 ```
 
 Available strategies:
@@ -60,7 +58,7 @@ Available strategies:
 
 To check the current version:
 ```bash
-uv run mac-letterhead --version
+uvx mac-letterhead --version
 ```
 
 ### Error Logging

@@ -199,90 +199,218 @@ class LetterheadPDF:
             logging.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg)
 
-def create_service_script(letterhead_path: str) -> None:
-    """Create a PDF Service script for the given letterhead"""
-    logging.info(f"Creating PDF Service script for: {letterhead_path}")
-    pdf_services_dir = os.path.expanduser("~/Library/PDF Services")
-    os.makedirs(pdf_services_dir, exist_ok=True)
-    
-    letterhead_name = os.path.splitext(os.path.basename(letterhead_path))[0]
-    script_name = f"Letterhead {letterhead_name}"
-    script_path = os.path.join(pdf_services_dir, script_name)
+def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead Applier", output_dir: str = None) -> str:
+    """Create an AppleScript droplet application for the given letterhead"""
+    logging.info(f"Creating AppleScript droplet for: {letterhead_path}")
     
     # Ensure absolute path for letterhead
     abs_letterhead_path = os.path.abspath(letterhead_path)
     
-    diag_log = os.path.join(LOG_DIR, "diagnostics.log")
+    # Determine output directory (Desktop by default)
+    if output_dir is None:
+        output_dir = os.path.expanduser("~/Desktop")
+    else:
+        output_dir = os.path.expanduser(output_dir)
     
-    # Create a robust script that will work in any environment
-    script_content = f'''#!/bin/bash
-# Letterhead PDF Service for {letterhead_name}
-
-# Load user profile to ensure all environment variables are available
-if [ -f "$HOME/.bash_profile" ]; then
-    source "$HOME/.bash_profile"
-elif [ -f "$HOME/.profile" ]; then
-    source "$HOME/.profile"
-fi
-
-if [ -f "$HOME/.zshrc" ]; then
-    source "$HOME/.zshrc"
-fi
-
-# Add common locations for uvx/pip installations
-export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.8/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-
-# Set working directory
-cd "$HOME"
-
-# Create diagnostic log directory
-LOGDIR="{LOG_DIR}"
-mkdir -p "$LOGDIR"
-LOGFILE="{LOG_FILE}"
-DIAGFILE="{diag_log}"
-
-# Log environment for diagnostics
-echo "===== PRINT SERVICE RUN $(date) =====" >> "$DIAGFILE"
-echo "PATH: $PATH" >> "$DIAGFILE"
-echo "Arguments: $@" >> "$DIAGFILE"
-echo "Working dir: $(pwd)" >> "$DIAGFILE"
-echo "Current user: $(whoami)" >> "$DIAGFILE"
-echo "Looking for uvx:" >> "$DIAGFILE"
-find "$HOME/.local/bin" "$HOME/Library/Python" /usr/local/bin /opt/homebrew/bin -name "uvx" 2>/dev/null | grep . >> "$DIAGFILE" 2>&1
-echo "" >> "$DIAGFILE"
-
-# Try to find uvx executable
-UVX_PATH=$(which uvx 2>/dev/null || find "$HOME/.local/bin" "$HOME/Library/Python" /usr/local/bin /opt/homebrew/bin -name "uvx" 2>/dev/null | head -1)
-
-if [ -z "$UVX_PATH" ]; then
-    echo "Error: uvx command not found in PATH or common directories" >> "$DIAGFILE"
+    os.makedirs(output_dir, exist_ok=True)
     
-    # Fallback - try to directly run the module with python if available
-    echo "Trying fallback with python directly..." >> "$DIAGFILE"
+    # App path with extension
+    app_path = os.path.join(output_dir, f"{app_name}.app")
     
-    for PY in python3 python python3.9 python3.10 python3.11; do
-        if command -v $PY >/dev/null 2>&1; then
-            echo "Found Python: $($PY --version)" >> "$DIAGFILE"
-            $PY -m letterhead_pdf.main print "{abs_letterhead_path}" "$1" "$2" "$3" --strategy darken 2>&1 | tee -a "$LOGFILE" "$DIAGFILE"
-            exit $?
-        fi
-    done
+    # Create temporary directory structure
+    import tempfile
+    import shutil
+    from subprocess import run, PIPE
     
-    echo "Error: No suitable Python installation found" >> "$DIAGFILE"
-    exit 1
-else
-    echo "Found uvx at: $UVX_PATH" >> "$DIAGFILE"
-    "$UVX_PATH" mac-letterhead print "{abs_letterhead_path}" "$1" "$2" "$3" --strategy darken 2>&1 | tee -a "$LOGFILE" "$DIAGFILE"
-    exit $?
-fi
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        # Create the AppleScript
+        applescript_content = '''-- Letterhead Applier AppleScript Droplet
+-- This script takes dropped PDF files and applies a letterhead template
+
+on open these_items
+    -- Process each dropped file
+    repeat with i from 1 to count of these_items
+        set this_item to item i of these_items
+        
+        try
+            -- Get the file path as string directly from the dropped item
+            set this_path to this_item as string
+            
+            -- Check if it's a PDF file by extension
+            if this_path ends with ".pdf" or this_path ends with ".PDF" then
+                -- Get the POSIX path directly
+                set input_pdf to POSIX path of this_item
+                
+                -- Get the full application path
+                set app_path to POSIX path of (path to me)
+                
+                -- Find the letterhead PDF by looking in several places
+                -- 1. Try to locate it in the app bundle (multiple possible locations)
+                -- 2. If not found, fall back to creating a temporary copy on the Desktop
+                set test_path_1 to do shell script "dirname \\"" & app_path & "\\" | sed 's|/Scripts$||'"
+                set test_path_1 to test_path_1 & "/letterhead.pdf"
+                
+                set test_path_2 to do shell script "dirname \\"" & app_path & "\\""
+                set test_path_2 to test_path_2 & "/letterhead.pdf"
+                
+                set test_path_3 to do shell script "dirname \\"" & app_path & "\\" | sed 's|/Contents/Resources/Scripts$|/Contents/Resources|'"
+                set test_path_3 to test_path_3 & "/letterhead.pdf"
+                
+                -- Create a temporary directory for storing diagnostic info
+                do shell script "mkdir -p \\"$HOME/Library/Logs/Mac-letterhead\\""
+                do shell script "echo 'Testing path 1: " & test_path_1 & "' > \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                do shell script "ls -la \\"" & test_path_1 & "\\" >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\" 2>&1 || echo 'Not found' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                
+                do shell script "echo 'Testing path 2: " & test_path_2 & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                do shell script "ls -la \\"" & test_path_2 & "\\" >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\" 2>&1 || echo 'Not found' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                
+                do shell script "echo 'Testing path 3: " & test_path_3 & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                do shell script "ls -la \\"" & test_path_3 & "\\" >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\" 2>&1 || echo 'Not found' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                
+                -- Check each path and use the first one that exists
+                set home_path to POSIX path of (path to home folder)
+                set letterhead_path to home_path & "/Desktop/letterhead.pdf"
+                
+                if (do shell script "[ -f \\"" & test_path_1 & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "yes" then
+                    set letterhead_path to test_path_1
+                else if (do shell script "[ -f \\"" & test_path_2 & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "yes" then
+                    set letterhead_path to test_path_2
+                else if (do shell script "[ -f \\"" & test_path_3 & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "yes" then
+                    set letterhead_path to test_path_3
+                else
+                    -- If we can't find the letterhead, extract it from the app
+                    set app_dir to do shell script "dirname " & quoted form of app_path
+                    do shell script "find " & quoted form of app_dir & " -name 'letterhead.pdf' > \\"$HOME/Library/Logs/Mac-letterhead/find_letterhead.log\\" 2>&1"
+                    
+                    -- As a last resort, make a copy in the Desktop folder
+                    display dialog "Extracting letterhead template to Desktop..." buttons {} giving up after 1
+                    do shell script "find " & quoted form of app_dir & " -name 'letterhead.pdf' -print | head -n 1 | xargs -I {} cp -f {} \\"" & home_path & "/Desktop/letterhead.pdf\\" || echo \\"Extraction failed\\" > \\"$HOME/Library/Logs/Mac-letterhead/extract.log\\" 2>&1"
+                end if
+                
+                -- For better UX, use the source directory for output and application name for postfix
+                set quoted_input_pdf to quoted form of input_pdf
+                set file_basename to do shell script "basename " & quoted_input_pdf & " .pdf"
+                
+                -- Get the directory of the source PDF for default save location
+                set source_dir to do shell script "dirname " & quoted_input_pdf
+                
+                -- Get the application name for postfix
+                set app_name to do shell script "basename " & quoted form of app_path & " | sed 's/\\\\.app$//'"
+                
+                -- Display progress dialog
+                display dialog "Applying letterhead to " & file_basename & ".pdf..." buttons {} giving up after 1
+                
+                -- Run the command with error handling
+                try
+                    -- Pass explicit HOME to ensure environment is correct
+                    set home_path to POSIX path of (path to home folder)
+                    
+                    -- Create logs directory
+                    do shell script "mkdir -p " & quoted form of home_path & "/Library/Logs/Mac-letterhead"
+                    
+                    -- Build the command 
+                    -- We change the current directory to the source PDF's directory and set the output filename to use app name
+                    set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
+                    set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead print "
+                    set cmd to cmd & quoted form of letterhead_path & " \\"" & file_basename & "\\" " & quoted form of source_dir & " " & quoted_input_pdf & " --strategy darken --output-postfix \\"" & app_name & "\\""
+                    
+                    -- Log the full command and paths for diagnostics
+                    do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App path: " & app_path & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App name: " & app_name & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Source directory: " & source_dir & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Test paths:' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo '  Path 1: " & test_path_1 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo '  Path 2: " & test_path_2 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo '  Path 3: " & test_path_3 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Input PDF: " & input_pdf & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Command: " & cmd & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Checking letterhead exists: ' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "ls -la " & quoted form of letterhead_path & " >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log 2>&1 || echo 'FILE NOT FOUND' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    
+                    -- Execute the command with careful handling for immediate error feedback
+                    try
+                        do shell script cmd with timeout 300
+                        -- Log success but don't show a dialog
+                        do shell script "echo 'Success: Letterhead applied to " & file_basename & ".pdf' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    on error execErr
+                        -- If the command fails, show dialog immediately
+                        do shell script "echo 'EXEC ERROR: " & execErr & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                        display dialog "Error processing file: " & execErr buttons {"OK"} default button "OK" with icon stop
+                        error execErr -- Re-throw the error to be caught by outer handler
+                    end try
+                on error errMsg
+                    -- Log the error
+                    do shell script "echo 'ERROR: " & errMsg & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    
+                    -- Error message with details
+                    display dialog "Error applying letterhead: " & errMsg buttons {"OK"} default button "OK" with icon stop
+                end try
+            else
+                -- Not a PDF file
+                display dialog "File " & this_path & " is not a PDF file." buttons {"OK"} default button "OK" with icon stop
+            end if
+        on error errMsg
+            -- Error getting file info
+            display dialog "Error processing file: " & errMsg buttons {"OK"} default button "OK" with icon stop
+        end try
+    end repeat
+end open
+
+on run
+    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a PDF document:" & return & "1. Drag and drop a PDF file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" buttons {"OK"} default button "OK"
+end run
 '''
-    
-    with open(script_path, 'w') as f:
-        f.write(script_content)
-    os.chmod(script_path, 0o755)
-    logging.info(f"Created PDF Service: {script_path}")
-    print(f"Created PDF Service: {script_path}")
-    print(f"Script has been set to use 'darken' strategy as default")
+        
+        applescript_path = os.path.join(tmp_dir, "letterhead_droplet.applescript")
+        with open(applescript_path, 'w') as f:
+            f.write(applescript_content)
+        
+        # Create Resources directory
+        resources_dir = os.path.join(tmp_dir, "Resources")
+        os.makedirs(resources_dir, exist_ok=True)
+        
+        # Copy letterhead to resources
+        dest_letterhead = os.path.join(resources_dir, "letterhead.pdf")
+        shutil.copy2(abs_letterhead_path, dest_letterhead)
+        logging.info(f"Copied letterhead to: {dest_letterhead}")
+        
+        # Compile AppleScript into application
+        logging.info(f"Compiling AppleScript to: {app_path}")
+        
+        # Use macOS osacompile to create the app
+        result = run(["osacompile", "-o", app_path, applescript_path], 
+                     capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            error_msg = f"Failed to compile AppleScript: {result.stderr}"
+            logging.error(error_msg)
+            raise RuntimeError(error_msg)
+        
+        # Copy letterhead to the compiled app bundle's Resources folder
+        app_resources_dir = os.path.join(app_path, "Contents", "Resources")
+        os.makedirs(app_resources_dir, exist_ok=True)
+        
+        app_letterhead = os.path.join(app_resources_dir, "letterhead.pdf")
+        shutil.copy2(abs_letterhead_path, app_letterhead)
+        logging.info(f"Added letterhead to app bundle: {app_letterhead}")
+        
+        # Set a standard icon if available (PDF document)
+        icon_path = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns"
+        if os.path.exists(icon_path):
+            app_icon = os.path.join(app_resources_dir, "applet.icns")
+            shutil.copy2(icon_path, app_icon)
+            logging.info(f"Set icon: {app_icon}")
+            
+        print(f"Created Letterhead Applier app: {app_path}")
+        print(f"You can now drag and drop PDF files onto the app to apply the letterhead.")
+        
+        return app_path
+        
+    finally:
+        # Clean up temporary directory
+        shutil.rmtree(tmp_dir, ignore_errors=True)
 
 def print_command(args: argparse.Namespace) -> int:
     """Handle the print command"""
@@ -333,14 +461,24 @@ def install_command(args: argparse.Namespace) -> int:
             logging.error(error_msg)
             print(error_msg)
             return 1
-            
-        create_service_script(args.letterhead_path)
-        logging.info("Install command completed successfully")
+        
+        # Get the letterhead filename without extension for app name
+        letterhead_name = os.path.splitext(os.path.basename(args.letterhead_path))[0]
+        app_name = f"Letterhead {letterhead_name}"
+        
+        # Create the AppleScript droplet
+        app_path = create_applescript_droplet(
+            letterhead_path=args.letterhead_path,
+            app_name=app_name if hasattr(args, 'name') and args.name else app_name,
+            output_dir=args.output_dir if hasattr(args, 'output_dir') else None
+        )
+        
+        logging.info(f"Install command completed successfully: {app_path}")
         return 0
         
     except Exception as e:
-        logging.error(f"Error installing service: {str(e)}", exc_info=True)
-        print(f"Error installing service: {str(e)}")
+        logging.error(f"Error creating letterhead app: {str(e)}", exc_info=True)
+        print(f"Error creating letterhead app: {str(e)}")
         return 1
 
 def main(args: Optional[list] = None) -> int:
@@ -354,8 +492,10 @@ def main(args: Optional[list] = None) -> int:
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
     
     # Install command
-    install_parser = subparsers.add_parser('install', help='Install a new letterhead service')
+    install_parser = subparsers.add_parser('install', help='Create a letterhead droplet application')
     install_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
+    install_parser.add_argument('--name', help='Custom name for the applier app (default: "Letterhead <filename>")')
+    install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
     
     # Print command
     print_parser = subparsers.add_parser('print', help='Merge letterhead with document')
