@@ -7,9 +7,10 @@ import logging
 from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
-                      NSRunLoop, NSDate)
+                      NSRunLoop, NSDate, NSDefaultRunLoopMode)
 from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
-                   NSModalResponseOK, NSModalResponseCancel)
+                   NSModalResponseOK, NSModalResponseCancel,
+                   NSApplicationActivationPolicyRegular)
 
 from letterhead_pdf import __version__
 
@@ -23,7 +24,7 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
+        logging.StreamHandler(sys.stderr)  # Log to stderr for PDF Service context
     ]
 )
 
@@ -33,7 +34,10 @@ class PDFMergeError(Exception):
 
 class AppDelegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
-        pass
+        logging.info("Application finished launching")
+
+    def applicationWillTerminate_(self, notification):
+        logging.info("Application will terminate")
 
 class LetterheadPDF:
     def __init__(self, letterhead_path: str, destination: str = "~/Desktop", suffix: str = " wm.pdf"):
@@ -46,42 +50,55 @@ class LetterheadPDF:
         """Show save dialog and return selected path"""
         logging.info(f"Opening save dialog with initial directory: {directory}")
         
-        # Initialize application if needed
-        if NSApp() is None:
+        try:
+            # Initialize application if needed
             app = NSApplication.sharedApplication()
-            delegate = AppDelegate.alloc().init()
-            app.setDelegate_(delegate)
-            app.finishLaunching()
+            if not app.delegate():
+                delegate = AppDelegate.alloc().init()
+                app.setDelegate_(delegate)
+            
+            # Set activation policy to regular to show UI properly
+            app.setActivationPolicy_(NSApplicationActivationPolicyRegular)
+            
+            if not app.isRunning():
+                app.finishLaunching()
+                logging.info("Application initialized")
             
             # Process events to ensure UI is ready
             run_loop = NSRunLoop.currentRunLoop()
             run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
-        
-        panel = NSSavePanel.savePanel()
-        panel.setTitle_("Save PDF with Letterhead")
-        panel.setLevel_(NSFloatingWindowLevel)  # Make dialog float above other windows
-        my_url = NSURL.fileURLWithPath_isDirectory_(directory, True)
-        panel.setDirectoryURL_(my_url)
-        panel.setNameFieldStringValue_(filename)
-        NSApp.activateIgnoringOtherApps_(True)
-        
-        # Process events to ensure window is visible
-        run_loop = NSRunLoop.currentRunLoop()
-        run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
-        
-        ret_value = panel.runModal()
-        logging.info(f"Save dialog return value: {ret_value}")
-        
-        if ret_value == NSModalResponseOK:
-            selected_path = panel.filename()
-            if not selected_path:
-                # If no path but OK was clicked, use default location
-                selected_path = os.path.join(directory, filename)
-            logging.info(f"Save dialog result: {selected_path}")
-            return selected_path
-        else:
-            logging.info("Save dialog cancelled")
-            return ''
+            
+            panel = NSSavePanel.savePanel()
+            panel.setTitle_("Save PDF with Letterhead")
+            panel.setLevel_(NSFloatingWindowLevel)  # Make dialog float above other windows
+            my_url = NSURL.fileURLWithPath_isDirectory_(directory, True)
+            panel.setDirectoryURL_(my_url)
+            panel.setNameFieldStringValue_(filename)
+            
+            # Ensure app is active
+            app.activateIgnoringOtherApps_(True)
+            
+            # Process events again
+            run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
+            
+            logging.info("Running save dialog")
+            ret_value = panel.runModal()
+            logging.info(f"Save dialog return value: {ret_value}")
+            
+            if ret_value == NSModalResponseOK:
+                selected_path = panel.filename()
+                if not selected_path:
+                    # If no path but OK was clicked, use default location
+                    selected_path = os.path.join(directory, filename)
+                logging.info(f"Save dialog result: {selected_path}")
+                return selected_path
+            else:
+                logging.info("Save dialog cancelled")
+                return ''
+                
+        except Exception as e:
+            logging.error(f"Error in save dialog: {str(e)}", exc_info=True)
+            raise PDFMergeError(f"Save dialog error: {str(e)}")
 
     def create_pdf_document(self, path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
         """Create PDF document from path"""
@@ -202,7 +219,7 @@ def create_service_script(letterhead_path: str) -> None:
     
     script_content = f'''#!/bin/bash
 # Letterhead PDF Service for {letterhead_name}
-uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3"
+uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3" 2>&1 | tee -a "{LOG_FILE}"
 '''
     
     with open(script_path, 'w') as f:
@@ -301,5 +318,5 @@ if __name__ == "__main__":
         sys.exit(main())
     except Exception as e:
         logging.error("Fatal error", exc_info=True)
-        print(f"Fatal error: {str(e)}")
+        print(f"Fatal error: {str(e)}", file=sys.stderr)
         sys.exit(1)
