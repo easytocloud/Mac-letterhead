@@ -45,8 +45,8 @@ Available strategies:
 - `reverse`: Draws content first, then letterhead on top with blend mode
 - `overlay`: Uses overlay blend mode for better visibility
 - `transparency`: Uses transparency layers for better blending
-- `darken`: Uses darken blend mode which works well for light letterheads
-- `all`: (Default) Generates files using all strategies for comparison
+- `darken`: **(Default)** Uses darken blend mode which works well for light letterheads with dark text/logos
+- `all`: Generates files using all strategies for comparison (the main output file will use the darken strategy)
 
 ### Version Information
 

@@ -185,8 +185,8 @@ class LetterheadPDF:
                     print(f"Created merged PDF with '{s}' strategy: {strategy_path}")
                 
                 # Also create the requested output with the default strategy
-                merger.merge(input_path, output_path, strategy="overlay")
-                print(f"Created merged PDF with default 'overlay' strategy: {output_path}")
+                merger.merge(input_path, output_path, strategy="darken")
+                print(f"Created merged PDF with default 'darken' strategy: {output_path}")
                 print(f"Generated {len(strategies) + 1} files with different merging strategies for comparison")
             else:
                 # Use the specified strategy

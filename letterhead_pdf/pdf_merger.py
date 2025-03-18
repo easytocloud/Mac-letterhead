@@ -23,7 +23,7 @@ class PDFMerger:
         self.letterhead_path = os.path.expanduser(letterhead_path)
         logging.info(f"Initializing PDFMerger with template: {self.letterhead_path}")
 
-    def merge(self, input_path: str, output_path: str, strategy: str = "overlay") -> None:
+    def merge(self, input_path: str, output_path: str, strategy: str = "darken") -> None:
         """
         Merge letterhead with input PDF using the specified strategy
         
@@ -81,8 +81,8 @@ class PDFMerger:
                 elif strategy == "darken":
                     self._strategy_darken(write_context, page, letterhead_page)
                 else:
-                    # Default strategy - overlay with transparency
-                    self._strategy_overlay(write_context, page, letterhead_page)
+                    # Default strategy - darken blend mode
+                    self._strategy_darken(write_context, page, letterhead_page)
                 
                 CoreGraphics.CGContextEndPage(write_context)
             
