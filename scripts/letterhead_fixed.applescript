@@ -53,11 +53,12 @@ on open these_items
                     set letterhead_path to test_path_3
                 else
                     -- If we can't find the letterhead, extract it from the app
-                    do shell script "find \"" & do shell script "dirname \"" & app_path & "\"" & "\" -name \"letterhead.pdf\" > \"$HOME/Library/Logs/Mac-letterhead/find_letterhead.log\" 2>&1"
+                    set app_dir to do shell script "dirname " & quoted form of app_path
+                    do shell script "find " & quoted form of app_dir & " -name 'letterhead.pdf' > \"$HOME/Library/Logs/Mac-letterhead/find_letterhead.log\" 2>&1"
                     
                     -- As a last resort, make a copy in the Desktop folder
                     display dialog "Extracting letterhead template to Desktop..." buttons {} giving up after 1
-                    do shell script "cp -f \"" & do shell script "find \"" & do shell script "dirname \"" & app_path & "\"" & "\" -name \"letterhead.pdf\" | head -n 1" & "\" \"$HOME/Desktop/letterhead.pdf\" || echo \"Extraction failed\" > \"$HOME/Library/Logs/Mac-letterhead/extract.log\" 2>&1"
+                    do shell script "find " & quoted form of app_dir & " -name 'letterhead.pdf' -print | head -n 1 | xargs -I {} cp -f {} \"" & home_path & "/Desktop/letterhead.pdf\" || echo \"Extraction failed\" > \"$HOME/Library/Logs/Mac-letterhead/extract.log\" 2>&1"
                 end if
                 
                 -- For better UX, use the filename for the output
