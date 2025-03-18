@@ -217,6 +217,15 @@ def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead
     # App path with extension
     app_path = os.path.join(output_dir, f"{app_name}.app")
     
+    # Remove existing app if it exists (to avoid signature issues on macOS)
+    if os.path.exists(app_path):
+        logging.info(f"Removing existing app: {app_path}")
+        import shutil
+        try:
+            shutil.rmtree(app_path)
+        except Exception as e:
+            logging.warning(f"Could not remove existing app: {e} - trying to continue anyway")
+    
     # Create temporary directory structure
     import tempfile
     import shutil
