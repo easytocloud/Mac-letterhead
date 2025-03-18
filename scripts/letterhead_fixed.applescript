@@ -15,12 +15,15 @@ on open these_items
                 -- Get the POSIX path directly
                 set input_pdf to POSIX path of this_item
                 
-                -- Get the application path
+                -- Get the application path (directly to the Resources folder)
                 set app_path to POSIX path of (path to me)
-                set app_container to do shell script "dirname " & quoted form of app_path
                 
-                -- Path to letterhead in the Contents/Resources folder of the app bundle
-                set letterhead_path to app_container & "/Contents/Resources/letterhead.pdf"
+                -- The AppleScript is in "AppName.app/Contents/Resources/Scripts/main.scpt"
+                -- We need to go up to "AppName.app/Contents/Resources/"
+                set app_resources_dir to do shell script "dirname \"" & app_path & "\" | sed 's|/Scripts$||'"
+                
+                -- Path to letterhead in the Resources folder of the app bundle
+                set letterhead_path to app_resources_dir & "/letterhead.pdf"
                 
                 -- For better UX, use the filename for the output
                 set quoted_input_pdf to quoted form of input_pdf
@@ -44,7 +47,8 @@ on open these_items
                     
                     -- Log the full command and paths for diagnostics
                     do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
-                    do shell script "echo 'App container: " & app_container & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App path: " & app_path & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App resources dir: " & app_resources_dir & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Input PDF: " & input_pdf & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Command: " & cmd & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Checking letterhead exists: ' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
