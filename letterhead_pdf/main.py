@@ -195,17 +195,16 @@ class LetterheadPDF:
                 
                 CoreGraphics.CGContextBeginPage(write_context, media_box)
                 
-                # Draw content first with normal blend mode
+                # Draw letterhead first with multiply blend mode
+                CoreGraphics.CGContextSaveGState(write_context)
+                CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeMultiply)
+                CoreGraphics.CGContextDrawPDFPage(write_context, letterhead_page)
+                CoreGraphics.CGContextRestoreGState(write_context)
+                
+                # Draw content on top with normal blend mode
                 CoreGraphics.CGContextSaveGState(write_context)
                 CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeNormal)
                 CoreGraphics.CGContextDrawPDFPage(write_context, page)
-                CoreGraphics.CGContextRestoreGState(write_context)
-                
-                # Draw letterhead on top with overlay blend mode
-                CoreGraphics.CGContextSaveGState(write_context)
-                CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeOverlay)
-                CoreGraphics.CGContextSetAlpha(write_context, 0.85)  # Slightly transparent letterhead
-                CoreGraphics.CGContextDrawPDFPage(write_context, letterhead_page)
                 CoreGraphics.CGContextRestoreGState(write_context)
                 
                 CoreGraphics.CGContextEndPage(write_context)
