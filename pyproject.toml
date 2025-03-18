@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "Mac-letterhead"
 dynamic = ["version"]
-description = "A macOS PDF Service to merge letterhead with printed documents"
+description = "A macOS utility to merge letterhead with PDF documents using a drag-and-drop interface"
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"

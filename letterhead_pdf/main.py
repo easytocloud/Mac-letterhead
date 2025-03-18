@@ -486,7 +486,7 @@ def main(args: Optional[list] = None) -> int:
     if args is None:
         args = sys.argv[1:]
 
-    parser = argparse.ArgumentParser(description="Letterhead PDF Service Manager")
+    parser = argparse.ArgumentParser(description="Letterhead PDF Utility")
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
