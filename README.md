@@ -42,7 +42,7 @@ The application combines your letterhead and document in a way that preserves bo
 If you already know which strategy works best for your letterhead, you can specify it directly:
 
 ```bash
-uvx mac-letterhead print /path/to/your/letterhead.pdf "Document Name" "/path/to/save" /path/to/document.pdf --strategy overlay
+uvx mac-letterhead merge /path/to/your/letterhead.pdf "Document Name" "/path/to/save" /path/to/document.pdf --strategy overlay
 ```
 
 Available strategies:
