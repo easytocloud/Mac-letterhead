@@ -312,7 +312,7 @@ on open these_items
                     -- Build the command 
                     -- We change the current directory to the source PDF's directory and set the output filename to use app name
                     set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                    set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead print "
+                    set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead merge "
                     set cmd to cmd & quoted form of letterhead_path & " \\"" & file_basename & "\\" " & quoted form of source_dir & " " & quoted_input_pdf & " --strategy darken --output-postfix \\"" & app_name & "\\""
                     
                     -- Log the full command and paths for diagnostics
@@ -396,12 +396,19 @@ end run
         shutil.copy2(abs_letterhead_path, app_letterhead)
         logging.info(f"Added letterhead to app bundle: {app_letterhead}")
         
-        # Set a standard icon if available (PDF document)
-        icon_path = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns"
-        if os.path.exists(icon_path):
+        # Use custom icon from resources directory if available
+        custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "output.ico")
+        if os.path.exists(custom_icon_path):
             app_icon = os.path.join(app_resources_dir, "applet.icns")
-            shutil.copy2(icon_path, app_icon)
-            logging.info(f"Set icon: {app_icon}")
+            shutil.copy2(custom_icon_path, app_icon)
+            logging.info(f"Set custom icon: {app_icon}")
+        else:
+            # Fallback to standard icon if available
+            icon_path = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns"
+            if os.path.exists(icon_path):
+                app_icon = os.path.join(app_resources_dir, "applet.icns")
+                shutil.copy2(icon_path, app_icon)
+                logging.info(f"Set default icon: {app_icon}")
             
         print(f"Created Letterhead Applier app: {app_path}")
         print(f"You can now drag and drop PDF files onto the app to apply the letterhead.")
@@ -497,15 +504,15 @@ def main(args: Optional[list] = None) -> int:
     install_parser.add_argument('--name', help='Custom name for the applier app (default: "Letterhead <filename>")')
     install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
     
-    # Print command
-    print_parser = subparsers.add_parser('print', help='Merge letterhead with document')
-    print_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
-    print_parser.add_argument('title', help='Output file title')
-    print_parser.add_argument('save_dir', help='Directory to save the output file')
-    print_parser.add_argument('input_path', help='Input PDF file path')
-    print_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
+    # Merge command
+    merge_parser = subparsers.add_parser('merge', help='Merge letterhead with document')
+    merge_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
+    merge_parser.add_argument('title', help='Output file title')
+    merge_parser.add_argument('save_dir', help='Directory to save the output file')
+    merge_parser.add_argument('input_path', help='Input PDF file path')
+    merge_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
                             default='darken', help='Merging strategy to use (default: darken)')
-    print_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
+    merge_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
     
     args = parser.parse_args(args)
     
@@ -513,7 +520,9 @@ def main(args: Optional[list] = None) -> int:
     
     if args.command == 'install':
         return install_command(args)
-    elif args.command == 'print':
+    elif args.command == 'merge':
+        return print_command(args)
+    elif args.command == 'print':  # Keep support for old print command for backward compatibility
         return print_command(args)
     else:
         parser.print_help()
