@@ -463,6 +463,29 @@ end run
                     if os.path.exists(document_icon):
                         shutil.copy2(custom_icon_path, document_icon)
                         logging.info(f"Set document icon: {document_icon}")
+                    
+                    # Force macOS to use the high-resolution icon by setting Finder attributes
+                    try:
+                        from subprocess import run
+                        # Series of commands to ensure macOS uses the high-res version
+                        
+                        # Touch the app to update modification time
+                        run(["touch", app_path], check=False)
+                        
+                        # Update the app bundle's info.plist to set the icon file
+                        info_plist = os.path.join(app_path, "Contents", "Info.plist")
+                        if os.path.exists(info_plist):
+                            run(["/usr/bin/defaults", "write", info_plist, "CFBundleIconFile", "applet"], check=False)
+                            
+                        # Use SetFile to update Finder attributes if available
+                        run(["/usr/bin/SetFile", "-a", "C", app_path], check=False)
+                        
+                        # Clear icon caches
+                        run(["touch", app_path + "/Icon$'\r'"], check=False)
+                        
+                        logging.info("Updated app icon attributes for high-resolution display")
+                    except Exception as e:
+                        logging.warning(f"Could not optimize icon resolution: {e}")
                 else:
                     logging.info(f"Custom icon not found after all attempts, using default AppleScript icon")
                         
