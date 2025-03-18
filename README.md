@@ -4,7 +4,10 @@
 ![Build Status](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml/badge.svg)
 ![License](https://img.shields.io/github/license/easytocloud/Mac-letterhead.svg)
 
-<img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/Mac-letterhead.icns" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
+<!-- GitHub can't render .icns files directly, so we use HTML to link the icon badge -->
+<a href="https://pypi.org/project/Mac-letterhead/" title="Mac-letterhead on PyPI">
+  <img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/icon.png" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
+</a>
 
 A macOS utility that automatically merges a letterhead template with PDF documents using a simple drag-and-drop interface. Apply corporate letterhead designs to your documents effortlessly.
 
