@@ -1,6 +1,6 @@
 # Mac-letterhead
 
-A macOS PDF Service that automatically merges a letterhead template with printed documents.
+A macOS utility that automatically merges a letterhead template with PDF documents using a simple drag-and-drop interface.
 
 ## Installation
 
@@ -11,17 +11,13 @@ uv pip install -e .
 
 ## Usage
 
-There are two ways to use Mac-letterhead: an AppleScript droplet application (recommended) or a PDF Service.
+Mac-letterhead provides a simple and reliable way to apply letterhead to PDF documents using an AppleScript droplet application.
 
-### Method 1: AppleScript Droplet (Recommended)
-
-This method creates a standalone application that you can use to apply letterhead to any PDF by dragging and dropping.
-
-#### Creating the Letterhead Applier App
+### Creating the Letterhead Applier App
 
 1. First, install the package:
    ```bash
-   uv pip install -e .
+   uv pip install .
    ```
 
 2. Run the script to create your customized Letterhead App:
@@ -29,38 +25,19 @@ This method creates a standalone application that you can use to apply letterhea
    ./scripts/create_letterhead_droplet.sh /path/to/your/letterhead.pdf
    ```
    
-3. The application will be created on your Desktop by default
+3. The application will be created on your Desktop by default. You can customize the name with:
+   ```bash
+   ./scripts/create_letterhead_droplet.sh --name "Company Letterhead" /path/to/your/letterhead.pdf
+   ```
 
-#### Using the Letterhead Applier App
+### Using the Letterhead Applier App
 
 1. Print your document to PDF (using the standard "Save as PDF..." option)
 2. Drag and drop the PDF onto the Letterhead Applier app icon
 3. The letterhead will be applied automatically
 4. You'll be prompted to save the merged document
 
-### Method 2: PDF Service (Advanced)
-
-**Note:** This method may not work reliably on all macOS systems due to environment restrictions.
-
-#### Installing a Letterhead Service
-
-To create a PDF Service for a specific letterhead template:
-
-```bash
-uv run mac-letterhead install /path/to/your/letterhead.pdf
-```
-
-This will create a new PDF Service named "Letterhead <name of your PDF>" in your PDF Services directory.
-
-#### Using the Letterhead Service
-
-1. Open any document you want to print with the letterhead
-2. Choose File > Print
-3. Click the PDF dropdown button
-4. Select "Letterhead <name of your PDF>" from the menu
-5. Choose where to save the merged PDF
-
-By default, this will generate multiple PDF files with different merging strategies so you can choose the one that works best for your specific letterhead and document.
+The application combines your letterhead and document in a way that preserves both document content and letterhead design.
 
 ### Using Different Merge Strategies
 

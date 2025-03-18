@@ -96,8 +96,8 @@ on open these_items
                     -- Execute the command
                     do shell script cmd
                     
-                    -- Success message
-                    display dialog "Letterhead applied successfully to " & file_basename & ".pdf!" buttons {"OK"} default button "OK"
+                    -- Log success but don't show a dialog
+                    do shell script "echo 'Success: Letterhead applied to " & file_basename & ".pdf' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                 on error errMsg
                     -- Log the error
                     do shell script "echo 'ERROR: " & errMsg & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
