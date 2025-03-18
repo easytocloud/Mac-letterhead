@@ -36,6 +36,15 @@ To check the current version:
 uv run mac-letterhead --version
 ```
 
+### Error Logging
+
+The tool logs all operations and errors to:
+```
+~/Library/Logs/Mac-letterhead/letterhead.log
+```
+
+If you encounter any issues while using the tool, check this log file for detailed error messages and stack traces.
+
 ## Features
 
 - Easy installation of letterhead services
@@ -43,7 +52,7 @@ uv run mac-letterhead --version
 - Maintains original PDF metadata
 - Preserves PDF quality
 - Shows save dialog for output location
-- Proper error handling
+- Proper error handling with detailed logging
 - Supports --version flag
 - Type hints for better code maintainability
 
@@ -55,6 +64,19 @@ uv pip install -e .
 ```
 
 ### Publishing a New Release
+
+#### First-time Setup
+
+1. Create an account on PyPI if you don't have one
+2. Create an API token on PyPI:
+   - Go to https://pypi.org/manage/account/token/
+   - Create a token with "Upload packages" scope
+3. Add the token to GitHub repository secrets:
+   - Go to your repository's Settings > Secrets and variables > Actions
+   - Create a new secret named `PYPI_API_TOKEN`
+   - Paste your PyPI token as the value
+
+#### Publishing a Release
 
 1. Update the version in:
    - pyproject.toml
@@ -70,6 +92,22 @@ This will:
 - Create a git tag for the current version
 - Push the tag to GitHub
 - Trigger the GitHub workflow to publish to PyPI
+
+The GitHub workflow will:
+- Build the package
+- Upload it to PyPI using the configured API token
+- Make it available for installation via pip/uv
+
+## Troubleshooting
+
+If you encounter any issues:
+
+1. Check the log file at `~/Library/Logs/Mac-letterhead/letterhead.log`
+2. The log contains detailed information about:
+   - All operations performed
+   - Error messages with stack traces
+   - Input/output file paths
+   - PDF processing steps
 
 ## License
 
