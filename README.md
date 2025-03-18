@@ -1,13 +1,12 @@
 # Mac-letterhead
 
-A macOS utility that automatically merges a letterhead template with PDF documents using a simple drag-and-drop interface.
+![PyPI Version](https://img.shields.io/pypi/v/Mac-letterhead.svg)
+![Build Status](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml/badge.svg)
+![License](https://img.shields.io/github/license/easytocloud/Mac-letterhead.svg)
 
-## Installation
+<img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/Mac-letterhead.icns" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
 
-Install the package using uv:
-```bash
-uv pip install -e .
-```
+A macOS utility that automatically merges a letterhead template with PDF documents using a simple drag-and-drop interface. Apply corporate letterhead designs to your documents effortlessly.
 
 ## Usage
 
@@ -78,50 +77,10 @@ If you encounter any issues while using the tool, check this log file for detail
 - Preserves PDF quality
 - Shows save dialog for output location
 - Proper error handling with detailed logging
-- Supports --version flag
+- Supports standard versioning with --version flag
+- Comprehensive blend modes for different letterhead styles
+- Integration with macOS application design standards
 - Type hints for better code maintainability
-
-## Development
-
-To install in development mode:
-```bash
-uv pip install -e .
-```
-
-### Publishing a New Release
-
-#### First-time Setup
-
-1. Create an account on PyPI if you don't have one
-2. Create an API token on PyPI:
-   - Go to https://pypi.org/manage/account/token/
-   - Create a token with "Upload packages" scope
-3. Add the token to GitHub repository secrets:
-   - Go to your repository's Settings > Secrets and variables > Actions
-   - Create a new secret named `PYPI_API_TOKEN`
-   - Paste your PyPI token as the value
-
-#### Publishing a Release
-
-1. Update the version in:
-   - pyproject.toml
-   - letterhead_pdf/__init__.py
-   - letterhead_pdf/main.py
-
-2. Run the release script:
-```bash
-./tag_release.sh
-```
-
-This will:
-- Create a git tag for the current version
-- Push the tag to GitHub
-- Trigger the GitHub workflow to publish to PyPI
-
-The GitHub workflow will:
-- Build the package
-- Upload it to PyPI using the configured API token
-- Make it available for installation via pip/uv
 
 ## Troubleshooting
 
