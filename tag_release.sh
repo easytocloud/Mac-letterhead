@@ -1,8 +1,8 @@
 #!/bin/bash
 # Script to tag and push a new release
 
-# Get version from pyproject.toml
-VERSION=$(grep '^version = ' pyproject.toml | cut -d'"' -f2)
+# Get version from __init__.py
+VERSION=$(grep '^__version__ = ' letterhead_pdf/__init__.py | cut -d'"' -f2)
 
 # Create and push tag
 git tag -a "v$VERSION" -m "Release version $VERSION"
