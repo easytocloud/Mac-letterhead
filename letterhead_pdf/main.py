@@ -448,28 +448,58 @@ end run
                         shutil.copy2(custom_icon_path, document_icon)
                         logging.info(f"Set document icon: {document_icon}")
                     
-                    # Force macOS to use the high-resolution icon by setting Finder attributes
+                    # Use more direct macOS-specific approaches to set the icon
                     try:
-                        from subprocess import run
-                        # Series of commands to ensure macOS uses the high-res version
+                        from subprocess import run, PIPE
+                        import tempfile
                         
-                        # Touch the app to update modification time
-                        run(["touch", app_path], check=False)
+                        logging.info(f"Setting custom icon using macOS specific methods")
                         
-                        # Update the app bundle's info.plist to set the icon file
-                        info_plist = os.path.join(app_path, "Contents", "Info.plist")
-                        if os.path.exists(info_plist):
-                            run(["/usr/bin/defaults", "write", info_plist, "CFBundleIconFile", "applet"], check=False)
+                        # Create a temporary AppleScript to set the icon
+                        icon_script = f'''
+                        tell application "Finder"
+                            set file_path to POSIX file "{app_path}" as alias
+                            set icon_path to POSIX file "{custom_icon_path}" as alias
+                            set icon of file_path to icon of icon_path
+                        end tell
+                        '''
+                        
+                        # Write the script to a temporary file
+                        fd, script_path = tempfile.mkstemp(suffix='.scpt')
+                        try:
+                            with os.fdopen(fd, 'w') as f:
+                                f.write(icon_script)
                             
-                        # Use SetFile to update Finder attributes if available
-                        run(["/usr/bin/SetFile", "-a", "C", app_path], check=False)
+                            # Execute the AppleScript
+                            run(["osascript", script_path], check=False)
+                            logging.info("Set icon using AppleScript")
+                        finally:
+                            # Clean up the temporary file
+                            os.unlink(script_path)
                         
-                        # Clear icon caches
-                        run(["touch", app_path + "/Icon$'\r'"], check=False)
+                        # Also try the fileicon tool if available
+                        fileicon_result = run(["which", "fileicon"], capture_output=True, text=True, check=False)
+                        if fileicon_result.returncode == 0 and fileicon_result.stdout.strip():
+                            fileicon_path = fileicon_result.stdout.strip()
+                            run([fileicon_path, "set", app_path, custom_icon_path], check=False)
+                            logging.info("Set icon using fileicon tool")
                         
-                        logging.info("Updated app icon attributes for high-resolution display")
+                        # Alternative direct method for macOS
+                        try:
+                            import Cocoa
+                            workspace = Cocoa.NSWorkspace.sharedWorkspace()
+                            workspace.setIcon_forFile_options_(
+                                Cocoa.NSImage.alloc().initWithContentsOfFile_(custom_icon_path),
+                                app_path, 
+                                0
+                            )
+                            logging.info("Set icon using NSWorkspace")
+                        except Exception as cocoa_err:
+                            logging.warning(f"Could not set icon using NSWorkspace: {cocoa_err}")
+                        
+                        logging.info("Tried multiple methods to set the icon")
                     except Exception as e:
-                        logging.warning(f"Could not optimize icon resolution: {e}")
+                        logging.warning(f"Could not set icon: {e}")
                 else:
                     logging.info(f"Custom icon not found after all attempts, using default AppleScript icon")
                         
