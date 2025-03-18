@@ -19,8 +19,8 @@ on open these_items
                 set app_path to POSIX path of (path to me)
                 set app_container to do shell script "dirname " & quoted form of app_path
                 
-                -- Path to letterhead in the Resources folder
-                set letterhead_path to app_container & "/Resources/letterhead.pdf"
+                -- Path to letterhead in the Contents/Resources folder of the app bundle
+                set letterhead_path to app_container & "/Contents/Resources/letterhead.pdf"
                 
                 -- For better UX, use the filename for the output
                 set quoted_input_pdf to quoted form of input_pdf
@@ -42,8 +42,13 @@ on open these_items
                     set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead print "
                     set cmd to cmd & quoted form of letterhead_path & " " & quoted form of file_basename & " \"\" " & quoted_input_pdf & " --strategy darken"
                     
-                    -- Log the full command for diagnostics
-                    do shell script "echo " & quoted form of cmd & " > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    -- Log the full command and paths for diagnostics
+                    do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App container: " & app_container & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Input PDF: " & input_pdf & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Command: " & cmd & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Checking letterhead exists: ' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "ls -la " & quoted form of letterhead_path & " >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log 2>&1 || echo 'FILE NOT FOUND' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     
                     -- Execute the command
                     do shell script cmd
