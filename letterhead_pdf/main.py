@@ -396,19 +396,26 @@ end run
         shutil.copy2(abs_letterhead_path, app_letterhead)
         logging.info(f"Added letterhead to app bundle: {app_letterhead}")
         
-        # Use custom icon from resources directory if available
-        custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "output.ico")
-        if os.path.exists(custom_icon_path):
-            app_icon = os.path.join(app_resources_dir, "applet.icns")
-            shutil.copy2(custom_icon_path, app_icon)
-            logging.info(f"Set custom icon: {app_icon}")
-        else:
-            # Fallback to standard icon if available
-            icon_path = "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericDocumentIcon.icns"
-            if os.path.exists(icon_path):
+        # Try to set a custom icon, but continue if we can't due to permissions
+        try:
+            # Use custom icon from resources directory if available (.icns format is correct for macOS)
+            custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "Mac-letterhead.icns")
+            if os.path.exists(custom_icon_path):
                 app_icon = os.path.join(app_resources_dir, "applet.icns")
-                shutil.copy2(icon_path, app_icon)
-                logging.info(f"Set default icon: {app_icon}")
+                shutil.copy2(custom_icon_path, app_icon)
+                logging.info(f"Set custom icon: {app_icon}")
+                
+                # Also set document icon if it exists
+                document_icon = os.path.join(app_resources_dir, "droplet.icns")
+                if os.path.exists(document_icon):
+                    shutil.copy2(custom_icon_path, document_icon)
+                    logging.info(f"Set document icon: {document_icon}")
+            else:
+                logging.info("Custom icon not found, using default AppleScript icon")
+        except PermissionError:
+            logging.warning("Cannot set icon due to permission restrictions - the app will use the default icon")
+        except Exception as e:
+            logging.warning(f"Cannot set icon: {str(e)} - continuing with default icon")
             
         print(f"Created Letterhead Applier app: {app_path}")
         print(f"You can now drag and drop PDF files onto the app to apply the letterhead.")
