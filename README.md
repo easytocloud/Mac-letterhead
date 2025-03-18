@@ -11,7 +11,38 @@ uv pip install -e .
 
 ## Usage
 
-### Installing a Letterhead Service
+There are two ways to use Mac-letterhead: an AppleScript droplet application (recommended) or a PDF Service.
+
+### Method 1: AppleScript Droplet (Recommended)
+
+This method creates a standalone application that you can use to apply letterhead to any PDF by dragging and dropping.
+
+#### Creating the Letterhead Applier App
+
+1. First, install the package:
+   ```bash
+   uv pip install -e .
+   ```
+
+2. Run the script to create your customized Letterhead App:
+   ```bash
+   ./scripts/create_letterhead_droplet.sh /path/to/your/letterhead.pdf
+   ```
+   
+3. The application will be created on your Desktop by default
+
+#### Using the Letterhead Applier App
+
+1. Print your document to PDF (using the standard "Save as PDF..." option)
+2. Drag and drop the PDF onto the Letterhead Applier app icon
+3. The letterhead will be applied automatically
+4. You'll be prompted to save the merged document
+
+### Method 2: PDF Service (Advanced)
+
+**Note:** This method may not work reliably on all macOS systems due to environment restrictions.
+
+#### Installing a Letterhead Service
 
 To create a PDF Service for a specific letterhead template:
 
@@ -21,7 +52,7 @@ uv run mac-letterhead install /path/to/your/letterhead.pdf
 
 This will create a new PDF Service named "Letterhead <name of your PDF>" in your PDF Services directory.
 
-### Using the Letterhead Service
+#### Using the Letterhead Service
 
 1. Open any document you want to print with the letterhead
 2. Choose File > Print
