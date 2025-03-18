@@ -209,17 +209,83 @@ def create_service_script(letterhead_path: str) -> None:
     script_name = f"Letterhead {letterhead_name}"
     script_path = os.path.join(pdf_services_dir, script_name)
     
+    # Ensure absolute path for letterhead
+    abs_letterhead_path = os.path.abspath(letterhead_path)
+    
+    diag_log = os.path.join(LOG_DIR, "diagnostics.log")
+    
+    # Get user's shell and config files to ensure we load all user environment
+    shell = os.environ.get('SHELL', '/bin/bash')
+    
+    # Create a robust script that will work in any environment
     script_content = f'''#!/bin/bash
 # Letterhead PDF Service for {letterhead_name}
-export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+# Load user profile to ensure all environment variables are available
+if [ -f "$HOME/.bash_profile" ]; then
+    source "$HOME/.bash_profile"
+elif [ -f "$HOME/.profile" ]; then
+    source "$HOME/.profile"
+fi
+
+if [ -f "$HOME/.zshrc" ]; then
+    source "$HOME/.zshrc"
+fi
+
+# Add common locations for uvx/pip installations
+export PATH="$HOME/.local/bin:$HOME/Library/Python/3.9/bin:$HOME/Library/Python/3.8/bin:$HOME/Library/Python/3.10/bin:$HOME/Library/Python/3.11/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+# Set working directory
 cd "$HOME"
-uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3" --strategy all 2>&1 | tee -a "{LOG_FILE}"
+
+# Create diagnostic log directory
+LOGDIR="{LOG_DIR}"
+mkdir -p "$LOGDIR"
+LOGFILE="{LOG_FILE}"
+DIAGFILE="{diag_log}"
+
+# Log environment for diagnostics
+echo "===== PRINT SERVICE RUN $(date) =====" >> "$DIAGFILE"
+echo "PATH: $PATH" >> "$DIAGFILE"
+echo "Arguments: $@" >> "$DIAGFILE"
+echo "Working dir: $(pwd)" >> "$DIAGFILE"
+echo "Current user: $(whoami)" >> "$DIAGFILE"
+echo "Looking for uvx:" >> "$DIAGFILE"
+find "$HOME/.local/bin" "$HOME/Library/Python" /usr/local/bin /opt/homebrew/bin -name "uvx" 2>/dev/null | grep . >> "$DIAGFILE" 2>&1
+echo "" >> "$DIAGFILE"
+
+# Try to find uvx executable
+UVX_PATH=$(which uvx 2>/dev/null || find "$HOME/.local/bin" "$HOME/Library/Python" /usr/local/bin /opt/homebrew/bin -name "uvx" 2>/dev/null | head -1)
+
+if [ -z "$UVX_PATH" ]; then
+    echo "Error: uvx command not found in PATH or common directories" >> "$DIAGFILE"
+    
+    # Fallback - try to directly run the module with python if available
+    echo "Trying fallback with python directly..." >> "$DIAGFILE"
+    
+    for PY in python3 python python3.9 python3.10 python3.11; do
+        if command -v $PY >/dev/null 2>&1; then
+            echo "Found Python: $($PY --version)" >> "$DIAGFILE"
+            $PY -m letterhead_pdf.main print "{abs_letterhead_path}" "$1" "$2" "$3" --strategy darken 2>&1 | tee -a "$LOGFILE" "$DIAGFILE"
+            exit $?
+        fi
+    done
+    
+    echo "Error: No suitable Python installation found" >> "$DIAGFILE"
+    exit 1
+else
+    echo "Found uvx at: $UVX_PATH" >> "$DIAGFILE"
+    "$UVX_PATH" mac-letterhead print "{abs_letterhead_path}" "$1" "$2" "$3" --strategy darken 2>&1 | tee -a "$LOGFILE" "$DIAGFILE"
+    exit $?
+fi
 '''
     
     with open(script_path, 'w') as f:
         f.write(script_content)
     os.chmod(script_path, 0o755)
     logging.info(f"Created PDF Service: {script_path}")
+    print(f"Created PDF Service: {script_path}")
+    print(f"Script has been set to use 'darken' strategy as default")
 
 def print_command(args: argparse.Namespace) -> int:
     """Handle the print command"""
