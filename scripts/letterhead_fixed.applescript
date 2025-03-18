@@ -15,15 +15,50 @@ on open these_items
                 -- Get the POSIX path directly
                 set input_pdf to POSIX path of this_item
                 
-                -- Get the application path (directly to the Resources folder)
+                -- Get the full application path
                 set app_path to POSIX path of (path to me)
                 
-                -- The AppleScript is in "AppName.app/Contents/Resources/Scripts/main.scpt"
-                -- We need to go up to "AppName.app/Contents/Resources/"
-                set app_resources_dir to do shell script "dirname \"" & app_path & "\" | sed 's|/Scripts$||'"
+                -- Find the letterhead PDF by looking in several places
+                -- 1. Try to locate it in the app bundle (multiple possible locations)
+                -- 2. If not found, fall back to creating a temporary copy on the Desktop
+                set test_path_1 to do shell script "dirname \"" & app_path & "\" | sed 's|/Scripts$||'"
+                set test_path_1 to test_path_1 & "/letterhead.pdf"
                 
-                -- Path to letterhead in the Resources folder of the app bundle
-                set letterhead_path to app_resources_dir & "/letterhead.pdf"
+                set test_path_2 to do shell script "dirname \"" & app_path & "\""
+                set test_path_2 to test_path_2 & "/letterhead.pdf"
+                
+                set test_path_3 to do shell script "dirname \"" & app_path & "\" | sed 's|/Contents/Resources/Scripts$|/Contents/Resources|'"
+                set test_path_3 to test_path_3 & "/letterhead.pdf"
+                
+                -- Create a temporary directory for storing diagnostic info
+                do shell script "mkdir -p \"$HOME/Library/Logs/Mac-letterhead\""
+                do shell script "echo 'Testing path 1: " & test_path_1 & "' > \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\""
+                do shell script "ls -la \"" & test_path_1 & "\" >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\" 2>&1 || echo 'Not found' >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\""
+                
+                do shell script "echo 'Testing path 2: " & test_path_2 & "' >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\""
+                do shell script "ls -la \"" & test_path_2 & "\" >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\" 2>&1 || echo 'Not found' >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\""
+                
+                do shell script "echo 'Testing path 3: " & test_path_3 & "' >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\""
+                do shell script "ls -la \"" & test_path_3 & "\" >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\" 2>&1 || echo 'Not found' >> \"$HOME/Library/Logs/Mac-letterhead/path_tests.log\""
+                
+                -- Check each path and use the first one that exists
+                set home_path to POSIX path of (path to home folder)
+                set letterhead_path to home_path & "/Desktop/letterhead.pdf"
+                
+                if (do shell script "[ -f \"" & test_path_1 & "\" ] && echo \"yes\" || echo \"no\"") is "yes" then
+                    set letterhead_path to test_path_1
+                else if (do shell script "[ -f \"" & test_path_2 & "\" ] && echo \"yes\" || echo \"no\"") is "yes" then
+                    set letterhead_path to test_path_2
+                else if (do shell script "[ -f \"" & test_path_3 & "\" ] && echo \"yes\" || echo \"no\"") is "yes" then
+                    set letterhead_path to test_path_3
+                else
+                    -- If we can't find the letterhead, extract it from the app
+                    do shell script "find \"" & do shell script "dirname \"" & app_path & "\"" & "\" -name \"letterhead.pdf\" > \"$HOME/Library/Logs/Mac-letterhead/find_letterhead.log\" 2>&1"
+                    
+                    -- As a last resort, make a copy in the Desktop folder
+                    display dialog "Extracting letterhead template to Desktop..." buttons {} giving up after 1
+                    do shell script "cp -f \"" & do shell script "find \"" & do shell script "dirname \"" & app_path & "\"" & "\" -name \"letterhead.pdf\" | head -n 1" & "\" \"$HOME/Desktop/letterhead.pdf\" || echo \"Extraction failed\" > \"$HOME/Library/Logs/Mac-letterhead/extract.log\" 2>&1"
+                end if
                 
                 -- For better UX, use the filename for the output
                 set quoted_input_pdf to quoted form of input_pdf
@@ -48,7 +83,10 @@ on open these_items
                     -- Log the full command and paths for diagnostics
                     do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'App path: " & app_path & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
-                    do shell script "echo 'App resources dir: " & app_resources_dir & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Test paths:' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo '  Path 1: " & test_path_1 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo '  Path 2: " & test_path_2 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo '  Path 3: " & test_path_3 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Input PDF: " & input_pdf & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Command: " & cmd & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Checking letterhead exists: ' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
