@@ -61,9 +61,15 @@ on open these_items
                     do shell script "find " & quoted form of app_dir & " -name 'letterhead.pdf' -print | head -n 1 | xargs -I {} cp -f {} \"" & home_path & "/Desktop/letterhead.pdf\" || echo \"Extraction failed\" > \"$HOME/Library/Logs/Mac-letterhead/extract.log\" 2>&1"
                 end if
                 
-                -- For better UX, use the filename for the output
+                -- For better UX, use the source directory for output and application name for postfix
                 set quoted_input_pdf to quoted form of input_pdf
                 set file_basename to do shell script "basename " & quoted_input_pdf & " .pdf"
+                
+                -- Get the directory of the source PDF for default save location
+                set source_dir to do shell script "dirname " & quoted_input_pdf
+                
+                -- Get the application name for postfix
+                set app_name to do shell script "basename " & quoted form of app_path & " | sed 's/\\.app$//'"
                 
                 -- Display progress dialog
                 display dialog "Applying letterhead to " & file_basename & ".pdf..." buttons {} giving up after 1
@@ -77,13 +83,16 @@ on open these_items
                     do shell script "mkdir -p " & quoted form of home_path & "/Library/Logs/Mac-letterhead"
                     
                     -- Build the command
-                    set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of home_path
+                    -- We change the current directory to the source PDF's directory and set the output name with app name postfix
+                    set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
                     set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead print "
-                    set cmd to cmd & quoted form of letterhead_path & " " & quoted form of file_basename & " \"\" " & quoted_input_pdf & " --strategy darken"
+                    set cmd to cmd & quoted form of letterhead_path & " \"" & file_basename & " " & app_name & "\" \"\" " & quoted_input_pdf & " --strategy darken"
                     
                     -- Log the full command and paths for diagnostics
                     do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'App path: " & app_path & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App name: " & app_name & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'Source directory: " & source_dir & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Test paths:' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo '  Path 1: " & test_path_1 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo '  Path 2: " & test_path_2 & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
