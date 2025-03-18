@@ -173,17 +173,24 @@ class PDFMerger:
 
     def _strategy_darken(self, context, content_page, letterhead_page):
         """
-        Darken strategy - uses darken blend mode which can work well for light letterheads
+        Darken strategy - modified to combine normal content with letterhead 
+        that's set to a different blend mode
         
-        The darken blend mode only keeps pixels that are darker than the background,
-        which can work well for dark text/logos on light backgrounds.
+        This approach better preserves the content's readability while still showing
+        the letterhead.
         """
-        # Draw content first
-        CoreGraphics.CGContextDrawPDFPage(context, content_page)
-        
-        # Draw letterhead with darken blend mode
+        # First, draw the content page with normal blend mode
         CoreGraphics.CGContextSaveGState(context)
-        CoreGraphics.CGContextSetBlendMode(context, CoreGraphics.kCGBlendModeDarken)
+        CoreGraphics.CGContextSetBlendMode(context, CoreGraphics.kCGBlendModeNormal)
+        CoreGraphics.CGContextDrawPDFPage(context, content_page)
+        CoreGraphics.CGContextRestoreGState(context)
+        
+        # Then draw the letterhead with lighter blend mode and some transparency
+        CoreGraphics.CGContextSaveGState(context)
+        # Try a more compatible blend mode than Darken
+        CoreGraphics.CGContextSetBlendMode(context, CoreGraphics.kCGBlendModeMultiply)
+        # Add some transparency to ensure content remains readable
+        CoreGraphics.CGContextSetAlpha(context, 0.7)  # 70% opacity
         CoreGraphics.CGContextDrawPDFPage(context, letterhead_page)
         CoreGraphics.CGContextRestoreGState(context)
 
