@@ -26,4 +26,4 @@ path = "letterhead_pdf/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["letterhead_pdf"]
-include = ["resources/**/*"]
+include = ["resources/**/*", "letterhead_pdf/resources/**/*"]

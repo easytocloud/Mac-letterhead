@@ -406,26 +406,56 @@ end run
             
             # First check if we can find the resource in the package
             try:
-                # Try with importlib.resources API
-                with pkg_resources.path('letterhead_pdf', 'resources') as resources_path:
-                    custom_icon_path = os.path.join(resources_path, "Mac-letterhead.icns")
-                    if not os.path.exists(custom_icon_path):
-                        # Try directly within the package directory
-                        custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "Mac-letterhead.icns")
-                    
-                    if os.path.exists(custom_icon_path):
-                        # Copy icon to app resources
-                        app_icon = os.path.join(app_resources_dir, "applet.icns")
-                        shutil.copy2(custom_icon_path, app_icon)
-                        logging.info(f"Set custom icon: {app_icon}")
-                        
-                        # Also set document icon if it exists
-                        document_icon = os.path.join(app_resources_dir, "droplet.icns")
-                        if os.path.exists(document_icon):
-                            shutil.copy2(custom_icon_path, document_icon)
-                            logging.info(f"Set document icon: {document_icon}")
+                logging.info("Attempting to locate custom icon through various methods...")
+                
+                # Method 1: Try directly with package resources for Python 3.9+
+                try:
+                    if hasattr(pkg_resources, 'files'):
+                        # Python 3.9+ approach
+                        resources = pkg_resources.files('letterhead_pdf')
+                        icns_file = resources.joinpath('resources', 'Mac-letterhead.icns')
+                        custom_icon_path = str(icns_file)
+                        logging.info(f"Method 1 path: {custom_icon_path}")
                     else:
-                        logging.info(f"Custom icon not found at {custom_icon_path}, using default AppleScript icon")
+                        # For older Python versions
+                        with pkg_resources.path('letterhead_pdf.resources', 'Mac-letterhead.icns') as p:
+                            custom_icon_path = str(p)
+                            logging.info(f"Method 1 path (legacy): {custom_icon_path}")
+                except (ImportError, ModuleNotFoundError, FileNotFoundError) as e:
+                    logging.info(f"Method 1 failed: {str(e)}")
+                    custom_icon_path = None
+                        
+                # Method 2: Try relative to package
+                if not custom_icon_path or not os.path.exists(custom_icon_path):
+                    resource_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
+                    candidate = os.path.join(resource_dir, "Mac-letterhead.icns")
+                    logging.info(f"Method 2 path: {candidate}")
+                    if os.path.exists(candidate):
+                        custom_icon_path = candidate
+                        
+                # Method 3: Try with global site packages resources
+                if not custom_icon_path or not os.path.exists(custom_icon_path):
+                    import site
+                    for site_dir in site.getsitepackages():
+                        candidate = os.path.join(site_dir, "resources", "Mac-letterhead.icns")
+                        logging.info(f"Method 3 checking: {candidate}")
+                        if os.path.exists(candidate):
+                            custom_icon_path = candidate
+                            break
+                    
+                if custom_icon_path and os.path.exists(custom_icon_path):
+                    # Copy icon to app resources
+                    app_icon = os.path.join(app_resources_dir, "applet.icns")
+                    shutil.copy2(custom_icon_path, app_icon)
+                    logging.info(f"Set custom icon: {app_icon}")
+                    
+                    # Also set document icon if it exists
+                    document_icon = os.path.join(app_resources_dir, "droplet.icns")
+                    if os.path.exists(document_icon):
+                        shutil.copy2(custom_icon_path, document_icon)
+                        logging.info(f"Set document icon: {document_icon}")
+                else:
+                    logging.info(f"Custom icon not found after all attempts, using default AppleScript icon")
                         
             except (ImportError, FileNotFoundError, NotADirectoryError):
                 # Fallback to traditional path
