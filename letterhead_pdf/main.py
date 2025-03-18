@@ -13,6 +13,7 @@ from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
                    NSApplicationActivationPolicyRegular)
 
 from letterhead_pdf import __version__
+from letterhead_pdf.pdf_merger import PDFMerger, PDFMergeError
 
 # Set up logging
 LOG_DIR = os.path.expanduser("~/Library/Logs/Mac-letterhead")
@@ -27,10 +28,6 @@ logging.basicConfig(
         logging.StreamHandler(sys.stderr)  # Log to stderr for PDF Service context
     ]
 )
-
-class PDFMergeError(Exception):
-    """Custom exception for PDF merge errors"""
-    pass
 
 class AppDelegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
@@ -160,56 +157,41 @@ class LetterheadPDF:
             return mutable_metadata
         return metadata
 
-    def merge_pdfs(self, input_path: str, output_path: str) -> None:
-        """Merge letterhead with input PDF"""
+    def merge_pdfs(self, input_path: str, output_path: str, strategy: str = "all") -> None:
+        """
+        Merge letterhead with input PDF
+        
+        Args:
+            input_path: Path to the content PDF
+            output_path: Path to save the merged PDF
+            strategy: Merging strategy to use. If "all", attempts multiple strategies
+                     in separate files to compare results.
+        """
         try:
-            logging.info(f"Starting PDF merge: {input_path} -> {output_path}")
-            logging.info(f"Using letterhead: {self.letterhead_path}")
+            logging.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
             
-            metadata = self.get_doc_info(input_path)
-            write_context = self.create_output_context(output_path, metadata)
-            read_pdf = self.create_pdf_document(input_path)
-            letterhead_pdf = self.create_pdf_document(self.letterhead_path)
-
-            if not all([write_context, read_pdf, letterhead_pdf]):
-                error_msg = "Failed to create PDF context or load PDFs"
-                logging.error(error_msg)
-                raise PDFMergeError(error_msg)
-
-            num_pages = CoreGraphics.CGPDFDocumentGetNumberOfPages(read_pdf)
-            logging.info(f"Processing {num_pages} pages")
+            # Create the PDF merger with our letterhead
+            merger = PDFMerger(self.letterhead_path)
             
-            for page_num in range(1, num_pages + 1):
-                logging.info(f"Processing page {page_num}")
-                page = CoreGraphics.CGPDFDocumentGetPage(read_pdf, page_num)
-                letterhead_page = CoreGraphics.CGPDFDocumentGetPage(letterhead_pdf, 1)
+            if strategy == "all":
+                # Try multiple strategies and save as separate files for comparison
+                strategies = ["multiply", "reverse", "overlay", "transparency", "darken"]
+                base_name, ext = os.path.splitext(output_path)
                 
-                if not page or not letterhead_page:
-                    error_msg = f"Failed to get page {page_num}"
-                    logging.error(error_msg)
-                    raise PDFMergeError(error_msg)
+                for s in strategies:
+                    strategy_path = f"{base_name}_{s}{ext}"
+                    logging.info(f"Trying strategy '{s}': {strategy_path}")
+                    merger.merge(input_path, strategy_path, strategy=s)
+                    print(f"Created merged PDF with '{s}' strategy: {strategy_path}")
                 
-                media_box = CoreGraphics.CGPDFPageGetBoxRect(page, CoreGraphics.kCGPDFMediaBox)
-                if CoreGraphics.CGRectIsEmpty(media_box):
-                    media_box = None
-                
-                CoreGraphics.CGContextBeginPage(write_context, media_box)
-                
-                # Draw letterhead first with multiply blend mode
-                CoreGraphics.CGContextSaveGState(write_context)
-                CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeMultiply)
-                CoreGraphics.CGContextDrawPDFPage(write_context, letterhead_page)
-                CoreGraphics.CGContextRestoreGState(write_context)
-                
-                # Draw content on top with normal blend mode
-                CoreGraphics.CGContextSaveGState(write_context)
-                CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeNormal)
-                CoreGraphics.CGContextDrawPDFPage(write_context, page)
-                CoreGraphics.CGContextRestoreGState(write_context)
-                
-                CoreGraphics.CGContextEndPage(write_context)
+                # Also create the requested output with the default strategy
+                merger.merge(input_path, output_path, strategy="overlay")
+                print(f"Created merged PDF with default 'overlay' strategy: {output_path}")
+                print(f"Generated {len(strategies) + 1} files with different merging strategies for comparison")
+            else:
+                # Use the specified strategy
+                merger.merge(input_path, output_path, strategy=strategy)
             
-            CoreGraphics.CGPDFContextClose(write_context)
             logging.info("PDF merge completed successfully")
 
         except Exception as e:
@@ -231,7 +213,7 @@ def create_service_script(letterhead_path: str) -> None:
 # Letterhead PDF Service for {letterhead_name}
 export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 cd "$HOME"
-uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3" 2>&1 | tee -a "{LOG_FILE}"
+uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3" --strategy all 2>&1 | tee -a "{LOG_FILE}"
 '''
     
     with open(script_path, 'w') as f:
@@ -260,7 +242,7 @@ def print_command(args: argparse.Namespace) -> int:
             print(error_msg)
             return 1
             
-        letterhead.merge_pdfs(args.input_path, output_path)
+        letterhead.merge_pdfs(args.input_path, output_path, strategy=args.strategy)
         logging.info("Print command completed successfully")
         return 0
         
@@ -312,6 +294,8 @@ def main(args: Optional[list] = None) -> int:
     print_parser.add_argument('title', help='Output file title')
     print_parser.add_argument('options', help='Print options')
     print_parser.add_argument('input_path', help='Input PDF file path')
+    print_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
+                            default='all', help='Merging strategy to use (default: all - try multiple strategies)')
     
     args = parser.parse_args(args)
     

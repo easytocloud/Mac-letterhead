@@ -29,6 +29,25 @@ This will create a new PDF Service named "Letterhead <name of your PDF>" in your
 4. Select "Letterhead <name of your PDF>" from the menu
 5. Choose where to save the merged PDF
 
+By default, this will generate multiple PDF files with different merging strategies so you can choose the one that works best for your specific letterhead and document.
+
+### Using Different Merge Strategies
+
+If you already know which strategy works best for your letterhead, you can specify it directly:
+
+```bash
+uv run mac-letterhead print /path/to/your/letterhead.pdf "Document Name" "" /path/to/document.pdf --strategy overlay
+```
+
+Available strategies:
+
+- `multiply`: Original strategy using multiply blend mode
+- `reverse`: Draws content first, then letterhead on top with blend mode
+- `overlay`: Uses overlay blend mode for better visibility
+- `transparency`: Uses transparency layers for better blending
+- `darken`: Uses darken blend mode which works well for light letterheads
+- `all`: (Default) Generates files using all strategies for comparison
+
 ### Version Information
 
 To check the current version:
