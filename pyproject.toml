@@ -26,4 +26,7 @@ path = "letterhead_pdf/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["letterhead_pdf"]
-include = ["resources/**/*", "letterhead_pdf/resources/**/*"]
+include = ["letterhead_pdf/resources/**/*"]
+
+# We're moving to using only in-package resources
+# to follow Python best practices for package resources

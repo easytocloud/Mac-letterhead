@@ -407,50 +407,34 @@ end run
         
         # Try to set a custom icon, but continue if we can't due to permissions
         try:
-            # Use custom icon from resources directory if available (.icns format is correct for macOS)
-            # Use importlib.resources to access package resources (works with installed packages)
+            # Standardized approach: Use only letterhead_pdf/resources for icon
+            # This is the proper way to access package resources that works for installed packages
             import importlib.resources as pkg_resources
-            from importlib.abc import Traversable
             import tempfile
             
-            # First check if we can find the resource in the package
+            # Use Python's importlib.resources to locate the icon
             try:
-                logging.info("Attempting to locate custom icon through various methods...")
+                logging.info("Locating icon using package resources...")
                 
-                # Method 1: Try directly with package resources for Python 3.9+
+                # Try to get the icon path, with fallbacks for different Python versions
                 try:
+                    # Modern approach (Python 3.9+)
                     if hasattr(pkg_resources, 'files'):
-                        # Python 3.9+ approach
-                        resources = pkg_resources.files('letterhead_pdf')
-                        icns_file = resources.joinpath('resources', 'Mac-letterhead.icns')
+                        resources = pkg_resources.files('letterhead_pdf.resources')
+                        icns_file = resources.joinpath('Mac-letterhead.icns')
                         custom_icon_path = str(icns_file)
-                        logging.info(f"Method 1 path: {custom_icon_path}")
+                        logging.info(f"Found icon using modern importlib.resources: {custom_icon_path}")
                     else:
-                        # For older Python versions
+                        # Legacy approach (Python 3.7-3.8)
                         with pkg_resources.path('letterhead_pdf.resources', 'Mac-letterhead.icns') as p:
                             custom_icon_path = str(p)
-                            logging.info(f"Method 1 path (legacy): {custom_icon_path}")
+                            logging.info(f"Found icon using legacy importlib.resources: {custom_icon_path}")
                 except (ImportError, ModuleNotFoundError, FileNotFoundError) as e:
-                    logging.info(f"Method 1 failed: {str(e)}")
-                    custom_icon_path = None
-                        
-                # Method 2: Try relative to package
-                if not custom_icon_path or not os.path.exists(custom_icon_path):
-                    resource_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
-                    candidate = os.path.join(resource_dir, "Mac-letterhead.icns")
-                    logging.info(f"Method 2 path: {candidate}")
-                    if os.path.exists(candidate):
-                        custom_icon_path = candidate
-                        
-                # Method 3: Try with global site packages resources
-                if not custom_icon_path or not os.path.exists(custom_icon_path):
-                    import site
-                    for site_dir in site.getsitepackages():
-                        candidate = os.path.join(site_dir, "resources", "Mac-letterhead.icns")
-                        logging.info(f"Method 3 checking: {candidate}")
-                        if os.path.exists(candidate):
-                            custom_icon_path = candidate
-                            break
+                    logging.warning(f"Could not find icon using importlib.resources: {str(e)}")
+                    
+                    # Direct path fallback - last resort for development environments
+                    custom_icon_path = os.path.join(os.path.dirname(__file__), "resources", "Mac-letterhead.icns")
+                    logging.info(f"Falling back to direct path: {custom_icon_path}")
                     
                 if custom_icon_path and os.path.exists(custom_icon_path):
                     # Copy icon to app resources
