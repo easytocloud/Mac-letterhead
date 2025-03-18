@@ -194,9 +194,11 @@ class LetterheadPDF:
                     media_box = None
                 
                 CoreGraphics.CGContextBeginPage(write_context, media_box)
-                CoreGraphics.CGContextDrawPDFPage(write_context, page)
-                CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeNormal)
+                # Draw letterhead first
                 CoreGraphics.CGContextDrawPDFPage(write_context, letterhead_page)
+                # Then draw content on top
+                CoreGraphics.CGContextSetBlendMode(write_context, CoreGraphics.kCGBlendModeNormal)
+                CoreGraphics.CGContextDrawPDFPage(write_context, page)
                 CoreGraphics.CGContextEndPage(write_context)
             
             CoreGraphics.CGPDFContextClose(write_context)
@@ -219,6 +221,8 @@ def create_service_script(letterhead_path: str) -> None:
     
     script_content = f'''#!/bin/bash
 # Letterhead PDF Service for {letterhead_name}
+export PATH="/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+cd "$HOME"
 uvx mac-letterhead print "{os.path.abspath(letterhead_path)}" "$1" "$2" "$3" 2>&1 | tee -a "{LOG_FILE}"
 '''
     
