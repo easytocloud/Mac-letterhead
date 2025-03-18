@@ -399,19 +399,43 @@ end run
         # Try to set a custom icon, but continue if we can't due to permissions
         try:
             # Use custom icon from resources directory if available (.icns format is correct for macOS)
-            custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "Mac-letterhead.icns")
-            if os.path.exists(custom_icon_path):
-                app_icon = os.path.join(app_resources_dir, "applet.icns")
-                shutil.copy2(custom_icon_path, app_icon)
-                logging.info(f"Set custom icon: {app_icon}")
-                
-                # Also set document icon if it exists
-                document_icon = os.path.join(app_resources_dir, "droplet.icns")
-                if os.path.exists(document_icon):
-                    shutil.copy2(custom_icon_path, document_icon)
-                    logging.info(f"Set document icon: {document_icon}")
-            else:
-                logging.info("Custom icon not found, using default AppleScript icon")
+            # Use importlib.resources to access package resources (works with installed packages)
+            import importlib.resources as pkg_resources
+            from importlib.abc import Traversable
+            import tempfile
+            
+            # First check if we can find the resource in the package
+            try:
+                # Try with importlib.resources API
+                with pkg_resources.path('letterhead_pdf', 'resources') as resources_path:
+                    custom_icon_path = os.path.join(resources_path, "Mac-letterhead.icns")
+                    if not os.path.exists(custom_icon_path):
+                        # Try directly within the package directory
+                        custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "Mac-letterhead.icns")
+                    
+                    if os.path.exists(custom_icon_path):
+                        # Copy icon to app resources
+                        app_icon = os.path.join(app_resources_dir, "applet.icns")
+                        shutil.copy2(custom_icon_path, app_icon)
+                        logging.info(f"Set custom icon: {app_icon}")
+                        
+                        # Also set document icon if it exists
+                        document_icon = os.path.join(app_resources_dir, "droplet.icns")
+                        if os.path.exists(document_icon):
+                            shutil.copy2(custom_icon_path, document_icon)
+                            logging.info(f"Set document icon: {document_icon}")
+                    else:
+                        logging.info(f"Custom icon not found at {custom_icon_path}, using default AppleScript icon")
+                        
+            except (ImportError, FileNotFoundError, NotADirectoryError):
+                # Fallback to traditional path
+                custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "Mac-letterhead.icns")
+                if os.path.exists(custom_icon_path):
+                    app_icon = os.path.join(app_resources_dir, "applet.icns")
+                    shutil.copy2(custom_icon_path, app_icon)
+                    logging.info(f"Set custom icon (fallback): {app_icon}")
+                else:
+                    logging.info("Custom icon not found on fallback path, using default AppleScript icon")
         except PermissionError:
             logging.warning("Cannot set icon due to permission restrictions - the app will use the default icon")
         except Exception as e:
