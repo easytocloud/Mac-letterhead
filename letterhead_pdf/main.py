@@ -6,8 +6,10 @@ import argparse
 import logging
 from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
-from Foundation import NSURL, kCFAllocatorDefault, NSObject, NSApplication
-from AppKit import NSSavePanel, NSApp, NSFloatingWindowLevel
+from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
+                      NSRunLoop, NSDate)
+from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
+                   NSModalResponseOK, NSModalResponseCancel)
 
 from letterhead_pdf import __version__
 
@@ -50,6 +52,10 @@ class LetterheadPDF:
             delegate = AppDelegate.alloc().init()
             app.setDelegate_(delegate)
             app.finishLaunching()
+            
+            # Process events to ensure UI is ready
+            run_loop = NSRunLoop.currentRunLoop()
+            run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
         
         panel = NSSavePanel.savePanel()
         panel.setTitle_("Save PDF with Letterhead")
@@ -59,10 +65,14 @@ class LetterheadPDF:
         panel.setNameFieldStringValue_(filename)
         NSApp.activateIgnoringOtherApps_(True)
         
+        # Process events to ensure window is visible
+        run_loop = NSRunLoop.currentRunLoop()
+        run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
+        
         ret_value = panel.runModal()
         logging.info(f"Save dialog return value: {ret_value}")
         
-        if ret_value:
+        if ret_value == NSModalResponseOK:
             selected_path = panel.filename()
             if not selected_path:
                 # If no path but OK was clicked, use default location
