@@ -214,9 +214,6 @@ def create_service_script(letterhead_path: str) -> None:
     
     diag_log = os.path.join(LOG_DIR, "diagnostics.log")
     
-    # Get user's shell and config files to ensure we load all user environment
-    shell = os.environ.get('SHELL', '/bin/bash')
-    
     # Create a robust script that will work in any environment
     script_content = f'''#!/bin/bash
 # Letterhead PDF Service for {letterhead_name}
@@ -291,7 +288,13 @@ def print_command(args: argparse.Namespace) -> int:
     """Handle the print command"""
     try:
         logging.info(f"Starting print command with args: {args}")
-        letterhead = LetterheadPDF(letterhead_path=args.letterhead_path)
+        
+        # Initialize with custom suffix if provided
+        suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " wm.pdf"
+        
+        # Create LetterheadPDF instance with custom suffix and destination
+        destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
+        letterhead = LetterheadPDF(letterhead_path=args.letterhead_path, destination=destination, suffix=suffix)
         
         # Use save dialog to get output location
         short_name = os.path.splitext(args.title)[0]
@@ -358,10 +361,11 @@ def main(args: Optional[list] = None) -> int:
     print_parser = subparsers.add_parser('print', help='Merge letterhead with document')
     print_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
     print_parser.add_argument('title', help='Output file title')
-    print_parser.add_argument('options', help='Print options')
+    print_parser.add_argument('save_dir', help='Directory to save the output file')
     print_parser.add_argument('input_path', help='Input PDF file path')
     print_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
-                            default='all', help='Merging strategy to use (default: all - try multiple strategies)')
+                            default='darken', help='Merging strategy to use (default: darken)')
+    print_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
     
     args = parser.parse_args(args)
     

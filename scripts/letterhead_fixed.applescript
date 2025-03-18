@@ -82,11 +82,11 @@ on open these_items
                     -- Create logs directory
                     do shell script "mkdir -p " & quoted form of home_path & "/Library/Logs/Mac-letterhead"
                     
-                    -- Build the command
-                    -- We change the current directory to the source PDF's directory and set the output name with app name postfix
+                    -- Build the command 
+                    -- We change the current directory to the source PDF's directory and set the output filename to use app name
                     set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
                     set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead print "
-                    set cmd to cmd & quoted form of letterhead_path & " \"" & file_basename & " " & app_name & "\" \"\" " & quoted_input_pdf & " --strategy darken"
+                    set cmd to cmd & quoted form of letterhead_path & " \"" & file_basename & "\" " & quoted form of source_dir & " " & quoted_input_pdf & " --strategy darken --output-postfix \"" & app_name & "\""
                     
                     -- Log the full command and paths for diagnostics
                     do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
@@ -102,11 +102,17 @@ on open these_items
                     do shell script "echo 'Checking letterhead exists: ' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "ls -la " & quoted form of letterhead_path & " >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log 2>&1 || echo 'FILE NOT FOUND' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     
-                    -- Execute the command
-                    do shell script cmd
-                    
-                    -- Log success but don't show a dialog
-                    do shell script "echo 'Success: Letterhead applied to " & file_basename & ".pdf' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    -- Execute the command with careful handling for immediate error feedback
+                    try
+                        do shell script cmd with timeout 300
+                        -- Log success but don't show a dialog
+                        do shell script "echo 'Success: Letterhead applied to " & file_basename & ".pdf' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    on error execErr
+                        -- If the command fails, show dialog immediately
+                        do shell script "echo 'EXEC ERROR: " & execErr & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                        display dialog "Error processing file: " & execErr buttons {"OK"} default button "OK" with icon stop
+                        error execErr -- Re-throw the error to be caught by outer handler
+                    end try
                 on error errMsg
                     -- Log the error
                     do shell script "echo 'ERROR: " & errMsg & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
