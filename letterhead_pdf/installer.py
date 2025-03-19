@@ -72,8 +72,9 @@ on open these_items
                 -- We know exactly where the letterhead PDF is located
                 do shell script "mkdir -p \\"$HOME/Library/Logs/Mac-letterhead\\""
                 
-                -- Get the app bundle path
-                set app_bundle to do shell script "dirname " & quoted form of app_path & " | sed 's:/Contents/.*::'"
+                -- Get the app bundle path (correctly including the app name)
+                set app_dir to do shell script "dirname " & quoted form of app_path
+                set app_bundle to do shell script "dirname " & quoted form of app_dir
                 
                 -- The letterhead is always in the Resources folder (we put it there during creation)
                 set letterhead_path to app_bundle & "/Contents/Resources/letterhead.pdf"
@@ -86,9 +87,10 @@ on open these_items
                 
                 -- Make sure the letterhead file exists
                 if (do shell script "[ -f \\"" & letterhead_path & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "no" then
+                    -- Log the error without showing dialog yet (we'll handle it in the outer error catch)
                     do shell script "echo 'ERROR: Letterhead.pdf not found at expected location' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                    display dialog "Error: Letterhead template not found at " & letterhead_path & ". Please reinstall the letterhead applier." buttons {"OK"} default button "OK" with icon stop
-                    error "Letterhead template not found at expected location"
+                    -- Just throw the error to be caught by outer handler
+                    error "Letterhead template not found at " & letterhead_path & ". Please reinstall the letterhead applier."
                 end if
                 
                 -- For better UX, use the source directory for output and application name for postfix
