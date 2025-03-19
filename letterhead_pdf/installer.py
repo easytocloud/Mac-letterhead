@@ -9,8 +9,8 @@ import tempfile
 from subprocess import run, PIPE
 from typing import Optional
 
-# Import logging constants from main
-from letterhead_pdf.main import LOG_DIR, LOG_FILE
+# Import logging configuration
+from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
 
 def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead Applier", output_dir: str = None) -> str:
     """Create an AppleScript droplet application for the given letterhead"""

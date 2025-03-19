@@ -16,10 +16,8 @@ from letterhead_pdf import __version__
 from letterhead_pdf.pdf_merger import PDFMerger, PDFMergeError
 from letterhead_pdf.installer import create_applescript_droplet
 
-# Define log location constants
-LOG_DIR = os.path.expanduser("~/Library/Logs/Mac-letterhead")
-os.makedirs(LOG_DIR, exist_ok=True)
-LOG_FILE = os.path.join(LOG_DIR, "letterhead.log")
+# Import logging configuration
+from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
 
 class AppDelegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
@@ -301,14 +299,7 @@ def main(args: Optional[list] = None) -> int:
             log_level = logging.INFO  # More verbose for other commands
     
     # Configure logging with the appropriate level
-    logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(LOG_FILE),
-            logging.StreamHandler(sys.stderr)  # Log to stderr for PDF Service context
-        ]
-    )
+    configure_logging(level=log_level)
     
     # Now that logging is configured with the appropriate level
     if log_level <= logging.INFO:
