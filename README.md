@@ -39,6 +39,21 @@ uvx mac-letterhead install /path/to/your/letterhead.pdf --name "Company Letterhe
 
 The application combines your letterhead and document in a way that preserves both document content and letterhead design.
 
+### Multi-Page Letterhead Support
+
+Mac-letterhead now intelligently handles multi-page letterhead templates:
+
+- **Single-page letterhead**: Applied to all pages of the document
+- **Two-page letterhead**: 
+  - First page applied to the first page of your document
+  - Second page applied to all other pages of your document
+- **Three-page letterhead**:
+  - First page applied to the first page of your document
+  - Second page applied to all even-numbered pages (except the first if it's even)
+  - Third page applied to all odd-numbered pages (except the first if it's odd)
+
+This is particularly useful for creating documents with different header/footer designs for first pages, even pages, and odd pages, matching professional print standards.
+
 ### Using Different Merge Strategies
 
 If you already know which strategy works best for your letterhead, you can specify it directly:
@@ -76,6 +91,7 @@ If you encounter any issues while using the tool, check this log file for detail
 
 - Easy installation of letterhead services
 - Supports multiple letterhead templates
+- **Advanced multi-page letterhead support** for different first/even/odd page designs
 - Maintains original PDF metadata
 - Preserves PDF quality
 - Shows save dialog for output location
