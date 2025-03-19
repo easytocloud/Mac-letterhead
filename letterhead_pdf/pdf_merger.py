@@ -217,7 +217,7 @@ class PDFMerger:
         # Try a more compatible blend mode than Darken
         CoreGraphics.CGContextSetBlendMode(context, CoreGraphics.kCGBlendModeMultiply)
         # Add some transparency to ensure content remains readable
-        CoreGraphics.CGContextSetAlpha(context, 0.7)  # 70% opacity
+        CoreGraphics.CGContextSetAlpha(context, 0.9)  # 90% opacity
         CoreGraphics.CGContextDrawPDFPage(context, letterhead_page)
         CoreGraphics.CGContextRestoreGState(context)
 
