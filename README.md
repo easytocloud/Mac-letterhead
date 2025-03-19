@@ -92,6 +92,8 @@ If you encounter any issues while using the tool, check this log file for detail
 - Easy installation of letterhead services
 - Supports multiple letterhead templates
 - **Advanced multi-page letterhead support** for different first/even/odd page designs
+- Self-contained application bundles with embedded letterhead templates
+- No temporary file extraction - letterheads are used directly from the app bundle
 - Maintains original PDF metadata
 - Preserves PDF quality
 - Shows save dialog for output location
