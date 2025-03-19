@@ -72,9 +72,17 @@ on open these_items
                 -- We know exactly where the letterhead PDF is located
                 do shell script "mkdir -p \\"$HOME/Library/Logs/Mac-letterhead\\""
                 
-                -- Get the app bundle path (correctly including the app name)
+                -- Get the app bundle path
+                -- First get the directory of the executable (Contents/MacOS)
                 set app_dir to do shell script "dirname " & quoted form of app_path
-                set app_bundle to do shell script "dirname " & quoted form of app_dir
+                
+                -- Then go up to the .app bundle, containing the required components
+                -- We need to extract just the .app bundle path without removing it
+                set app_bundle to do shell script "echo " & quoted form of app_path & " | sed -E 's:/Contents/.*$::'"
+                
+                -- For diagnostics and verification
+                do shell script "echo 'Full app path: " & app_path & "' > \\"$HOME/Library/Logs/Mac-letterhead/bundle.log\\""
+                do shell script "echo 'Derived bundle: " & app_bundle & "' >> \\"$HOME/Library/Logs/Mac-letterhead/bundle.log\\""
                 
                 -- The letterhead is always in the Resources folder (we put it there during creation)
                 set letterhead_path to app_bundle & "/Contents/Resources/letterhead.pdf"
