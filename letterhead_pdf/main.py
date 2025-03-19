@@ -13,8 +13,10 @@ from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
                    NSApplicationActivationPolicyRegular)
 
 from letterhead_pdf import __version__
-from letterhead_pdf.pdf_merger import PDFMerger, PDFMergeError
+from letterhead_pdf.pdf_merger import PDFMerger
 from letterhead_pdf.installer import create_applescript_droplet
+from letterhead_pdf.exceptions import (PDFMergeError, PDFCreationError, PDFMetadataError, 
+                                     UIError, InstallerError, FilePathError)
 
 # Import logging configuration
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
@@ -220,7 +222,31 @@ def print_command(args: argparse.Namespace) -> int:
         return 0
         
     except PDFMergeError as e:
-        logging.error(str(e))
+        logging.error(f"PDF merge error: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except PDFCreationError as e:
+        logging.error(f"PDF creation error: {str(e)}")
+        print(f"Error creating PDF: {str(e)}")
+        return 1
+    except PDFMetadataError as e:
+        logging.error(f"PDF metadata error: {str(e)}")
+        print(f"Error reading PDF metadata: {str(e)}")
+        return 1
+    except UIError as e:
+        logging.error(f"UI error: {str(e)}")
+        print(f"User interface error: {str(e)}")
+        return 1
+    except FileNotFoundError as e:
+        logging.error(f"File not found: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except PermissionError as e:
+        logging.error(f"Permission error: {str(e)}")
+        print(f"Error: Insufficient permissions: {str(e)}")
+        return 1
+    except ValueError as e:
+        logging.error(f"Invalid value: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except Exception as e:
@@ -252,9 +278,21 @@ def install_command(args: argparse.Namespace) -> int:
         logging.info(f"Install command completed successfully: {app_path}")
         return 0
         
+    except FileNotFoundError as e:
+        logging.error(f"File not found: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except PermissionError as e:
+        logging.error(f"Permission error: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except InstallerError as e:
+        logging.error(f"Installation error: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
     except Exception as e:
         logging.error(f"Error creating letterhead app: {str(e)}", exc_info=True)
-        print(f"Error creating letterhead app: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
         return 1
 
 def main(args: Optional[list] = None) -> int:

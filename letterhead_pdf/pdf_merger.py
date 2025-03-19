@@ -6,9 +6,7 @@ from typing import Optional, Dict, Any, Tuple
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import NSURL
 
-class PDFMergeError(Exception):
-    """Custom exception for PDF merge errors"""
-    pass
+from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, PDFMetadataError
 
 class PDFMerger:
     """Handles merging of letterhead and content PDFs"""
@@ -33,8 +31,35 @@ class PDFMerger:
             strategy: Merging strategy to use (overlay, multiply, transparency, etc.)
         
         Raises:
-            PDFMergeError: If the merge operation fails
+            FileNotFoundError: If input files don't exist
+            PermissionError: If there are permission issues
+            PDFCreationError: If PDF creation fails
+            PDFMetadataError: If metadata extraction fails
+            PDFMergeError: For other merge operation failures
         """
+        # Validate strategy
+        valid_strategies = ["multiply", "transparency", "reverse", "overlay", "darken"]
+        if strategy not in valid_strategies:
+            error_msg = f"Invalid strategy: {strategy}. Must be one of: {', '.join(valid_strategies)}"
+            logging.error(error_msg)
+            raise ValueError(error_msg)
+        
+        # Expand paths
+        input_path = os.path.expanduser(input_path)
+        output_path = os.path.expanduser(output_path)
+        
+        # Validate input file
+        if not os.path.isfile(input_path):
+            error_msg = f"Input file not found: {input_path}"
+            logging.error(error_msg)
+            raise FileNotFoundError(error_msg)
+            
+        # Validate letterhead
+        if not os.path.isfile(self.letterhead_path):
+            error_msg = f"Letterhead template not found: {self.letterhead_path}"
+            logging.error(error_msg)
+            raise FileNotFoundError(error_msg)
+        
         try:
             logging.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
             logging.info(f"Using letterhead: {self.letterhead_path}")
@@ -116,10 +141,21 @@ class PDFMerger:
             CoreGraphics.CGPDFContextClose(write_context)
             logging.info("PDF merge completed successfully")
 
-        except Exception as e:
-            error_msg = f"Error merging PDFs: {str(e)}"
+        except PDFCreationError as e:
+            # Specific handling for PDF creation errors
+            error_msg = f"Failed to create PDF components: {str(e)}"
             logging.error(error_msg, exc_info=True)
-            raise PDFMergeError(error_msg)
+            raise PDFMergeError(error_msg) from e
+        except (FileNotFoundError, PermissionError) as e:
+            # Handle file access errors
+            error_msg = f"File access error: {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFMergeError(error_msg) from e
+        except Exception as e:
+            # Fallback for unexpected errors
+            error_msg = f"Unexpected error merging PDFs: {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFMergeError(error_msg) from e
 
     def _strategy_multiply(self, context, content_page, letterhead_page):
         """
@@ -224,59 +260,116 @@ class PDFMerger:
     def create_pdf_document(self, path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
         """Create PDF document from path"""
         logging.info(f"Creating PDF document from: {path}")
-        path_bytes = path.encode('utf-8')
-        url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
-            CoreGraphics.kCFAllocatorDefault,
-            path_bytes,
-            len(path_bytes),
-            False
-        )
-        if not url:
-            error_msg = f"Failed to create URL for path: {path}"
+        
+        # Validate file path
+        if not os.path.isfile(path):
+            error_msg = f"File not found: {path}"
             logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        doc = CoreGraphics.CGPDFDocumentCreateWithURL(url)
-        if not doc:
-            error_msg = f"Failed to create PDF document from: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        return doc
+            raise FileNotFoundError(error_msg)
+            
+        try:
+            path_bytes = path.encode('utf-8')
+            url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
+                CoreGraphics.kCFAllocatorDefault,
+                path_bytes,
+                len(path_bytes),
+                False
+            )
+            if not url:
+                error_msg = f"Failed to create URL for path: {path}"
+                logging.error(error_msg)
+                raise PDFCreationError(error_msg)
+                
+            doc = CoreGraphics.CGPDFDocumentCreateWithURL(url)
+            if not doc:
+                error_msg = f"Failed to create PDF document from: {path}"
+                logging.error(error_msg)
+                raise PDFCreationError(error_msg)
+                
+            return doc
+        except (UnicodeEncodeError, UnicodeDecodeError) as e:
+            error_msg = f"Unicode error with path '{path}': {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFCreationError(error_msg) from e
 
     def create_output_context(self, path: str, metadata: Dict[str, Any]) -> Optional[CoreGraphics.CGContextRef]:
         """Create PDF context for output"""
         logging.info(f"Creating output context for: {path}")
-        path_bytes = path.encode('utf-8')
-        url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
-            CoreGraphics.kCFAllocatorDefault,
-            path_bytes,
-            len(path_bytes),
-            False
-        )
-        if not url:
-            error_msg = f"Failed to create output URL for path: {path}"
+        
+        # Check if parent directory exists
+        parent_dir = os.path.dirname(path)
+        if not os.path.isdir(parent_dir):
+            error_msg = f"Parent directory does not exist: {parent_dir}"
             logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        context = CoreGraphics.CGPDFContextCreateWithURL(url, None, metadata)
-        if not context:
-            error_msg = f"Failed to create PDF context for: {path}"
+            raise FileNotFoundError(error_msg)
+        
+        # Check write permissions
+        if os.path.exists(parent_dir) and not os.access(parent_dir, os.W_OK):
+            error_msg = f"No write permission for directory: {parent_dir}"
             logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        return context
+            raise PermissionError(error_msg)
+            
+        try:
+            path_bytes = path.encode('utf-8')
+            url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
+                CoreGraphics.kCFAllocatorDefault,
+                path_bytes,
+                len(path_bytes),
+                False
+            )
+            if not url:
+                error_msg = f"Failed to create output URL for path: {path}"
+                logging.error(error_msg)
+                raise PDFCreationError(error_msg)
+                
+            context = CoreGraphics.CGPDFContextCreateWithURL(url, None, metadata)
+            if not context:
+                error_msg = f"Failed to create PDF context for: {path}"
+                logging.error(error_msg)
+                raise PDFCreationError(error_msg)
+                
+            return context
+        except (UnicodeEncodeError, UnicodeDecodeError) as e:
+            error_msg = f"Unicode error with path '{path}': {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFCreationError(error_msg) from e
 
     def get_doc_info(self, file_path: str) -> Dict[str, Any]:
         """Get PDF metadata"""
         logging.info(f"Getting document info from: {file_path}")
-        pdf_url = NSURL.fileURLWithPath_(file_path)
-        pdf_doc = PDFKit.PDFDocument.alloc().initWithURL_(pdf_url)
-        if not pdf_doc:
-            error_msg = f"Failed to read PDF metadata from: {file_path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
         
-        metadata = pdf_doc.documentAttributes()
-        if "Keywords" in metadata:
-            keys = metadata["Keywords"]
-            mutable_metadata = metadata.mutableCopy()
-            mutable_metadata["Keywords"] = tuple(keys)
-            return mutable_metadata
-        return metadata
+        # Validate file path
+        if not os.path.isfile(file_path):
+            error_msg = f"File not found: {file_path}"
+            logging.error(error_msg)
+            raise FileNotFoundError(error_msg)
+            
+        try:
+            pdf_url = NSURL.fileURLWithPath_(file_path)
+            pdf_doc = PDFKit.PDFDocument.alloc().initWithURL_(pdf_url)
+            if not pdf_doc:
+                error_msg = f"Failed to read PDF metadata from: {file_path}"
+                logging.error(error_msg)
+                raise PDFMetadataError(error_msg)
+            
+            metadata = pdf_doc.documentAttributes()
+            if not metadata:
+                # Return empty dict instead of None
+                logging.warning(f"No metadata found in PDF: {file_path}")
+                return {}
+                
+            if "Keywords" in metadata:
+                try:
+                    keys = metadata["Keywords"]
+                    mutable_metadata = metadata.mutableCopy()
+                    mutable_metadata["Keywords"] = tuple(keys)
+                    return mutable_metadata
+                except Exception as e:
+                    logging.warning(f"Error processing PDF keywords: {str(e)}")
+                    # Continue with original metadata if keywords processing fails
+            
+            return metadata
+        except Exception as e:
+            error_msg = f"Error reading PDF metadata from '{file_path}': {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFMetadataError(error_msg) from e
