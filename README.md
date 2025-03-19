@@ -9,110 +9,108 @@
   <img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/icon.png" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
 </a>
 
-A macOS utility that automatically merges a letterhead template with PDF documents using a simple drag-and-drop interface. Apply corporate letterhead designs to your documents effortlessly.
+A macOS utility for merging letterhead templates with PDF documents. Apply company letterheads, watermarks, or stationery to PDFs with a simple drag-and-drop interface.
 
-## Usage
+## Why Mac-letterhead?
 
-Mac-letterhead provides a simple and reliable way to apply letterhead to PDF documents using a drag-and-drop application.
+- **Drag & Drop Simplicity**: Convert your letterhead PDF into a macOS app that applies your letterhead with a simple drag-and-drop
+- **Professional Results**: Merge PDFs without quality loss, preserving all formatting and content
+- **Multi-page Letterhead Support**: Different designs for first page, even pages, and odd pages
+- **Multiple Merging Strategies**: Various blending modes to suit different letterhead designs
+- **No Subscription Fees**: Free, open-source solution for businesses of all sizes
 
-### Creating the Letterhead Applier App
+## Installation
 
-Simply install the letterhead PDF as a drag-and-drop application:
+### Prerequisites
+
+You should have the python uv package manager installed (when not: `pip install uv`).
+
+## Quick Start
+
+### 1. Create a Letterhead Application
+
+Turn your letterhead PDF into a drag-and-drop application:
 
 ```bash
 uvx mac-letterhead install /path/to/your/letterhead.pdf
 ```
 
-This will create a droplet application on your Desktop. The application will be named based on your letterhead file (e.g., "Letterhead CompanyLogo").
+This creates a desktop application named based on your letterhead file.
 
-You can customize the name and location:
+### 2. Apply Letterhead to Documents
+
+1. Export your document as a PDF
+2. Drag and drop the PDF onto your letterhead application
+3. Save the merged document
+
+That's it! Your document now has the letterhead applied.
+
+## Advanced Options
+
+### Custom Application Name and Location
+
 ```bash
-uvx mac-letterhead install /path/to/your/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
 ```
 
-### Using the Letterhead Applier App
+### Different Merging Strategies
 
-1. Print your document to PDF (using the standard "Save as PDF..." option)
-2. Drag and drop the PDF onto the Letterhead Applier app icon
-3. The letterhead will be applied automatically
-4. You'll be prompted to save the merged document
-
-The application combines your letterhead and document in a way that preserves both document content and letterhead design.
-
-### Multi-Page Letterhead Support
-
-Mac-letterhead now intelligently handles multi-page letterhead templates:
-
-- **Single-page letterhead**: Applied to all pages of the document
-- **Two-page letterhead**: 
-  - First page applied to the first page of your document
-  - Second page applied to all other pages of your document
-- **Three-page letterhead**:
-  - First page applied to the first page of your document
-  - Second page applied to all even-numbered pages (except the first if it's even)
-  - Third page applied to all odd-numbered pages (except the first if it's odd)
-
-This is particularly useful for creating documents with different header/footer designs for first pages, even pages, and odd pages, matching professional print standards.
-
-### Using Different Merge Strategies
-
-If you already know which strategy works best for your letterhead, you can specify it directly:
+You can directly merge PDFs with specific strategies:
 
 ```bash
-uvx mac-letterhead merge /path/to/your/letterhead.pdf "Document Name" "/path/to/save" /path/to/document.pdf --strategy overlay
+uvx mac-letterhead merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
 ```
 
 Available strategies:
 
-- `multiply`: Original strategy using multiply blend mode
-- `reverse`: Draws content first, then letterhead on top with blend mode
-- `overlay`: Uses overlay blend mode for better visibility
-- `transparency`: Uses transparency layers for better blending
-- `darken`: **(Default)** Uses darken blend mode which works well for light letterheads with dark text/logos
-- `all`: Generates files using all strategies for comparison (the main output file will use the darken strategy)
+- `darken`: **(Default)** Works well for light letterheads with dark text/logos
+- `multiply`: Good for adding watermark-like elements
+- `overlay`: Better visibility of both document and letterhead
+- `transparency`: Smooth blending between elements
+- `reverse`: Places letterhead on top of content
+- `all`: Compare all strategies at once
 
-### Version Information
+### Multi-Page Letterhead Support
 
-To check the current version:
-```bash
-uvx mac-letterhead --version
-```
+Mac-letterhead intelligently handles multi-page letterhead templates:
 
-### Error Logging
+- **Single-page letterhead**: Applied to all document pages
+- **Two-page letterhead**:
+  - First page → First document page
+  - Second page → All other document pages
+- **Three-page letterhead**:
+  - First page → First document page
+  - Second page → Even-numbered pages
+  - Third page → Odd-numbered pages
 
-The tool logs all operations and errors to:
-```
-~/Library/Logs/Mac-letterhead/letterhead.log
-```
+This is ideal for professional documents with customized headers/footers for various page positions.
 
-If you encounter any issues while using the tool, check this log file for detailed error messages and stack traces.
+## Logging and Troubleshooting
+
+- Check logs at: `~/Library/Logs/Mac-letterhead/letterhead.log`
+- Adjust log level: `uvx mac-letterhead --log-level WARNING install /path/to/letterhead.pdf`
+- View version: `uvx mac-letterhead --version`
+
+## Use Cases
+
+- **Corporate Communications**: Apply company letterhead to business documents
+- **Legal Documents**: Add watermarks or legal disclaimers to contracts
+- **Invoices & Statements**: Brand financial documents with your company logo and information
+- **Proposals & Reports**: Create professional-looking documents for clients
+- **Academic Papers**: Add university/institution letterhead to research papers
 
 ## Features
 
-- Easy installation of letterhead services
-- Supports multiple letterhead templates
-- **Advanced multi-page letterhead support** for different first/even/odd page designs
-- Self-contained application bundles with embedded letterhead templates
-- No temporary file extraction - letterheads are used directly from the app bundle
-- Maintains original PDF metadata
-- Preserves PDF quality
-- Shows save dialog for output location
-- Proper error handling with detailed logging
-- Supports standard versioning with --version flag
-- Comprehensive blend modes for different letterhead styles
-- Integration with macOS application design standards
-- Type hints for better code maintainability
-
-## Troubleshooting
-
-If you encounter any issues:
-
-1. Check the log file at `~/Library/Logs/Mac-letterhead/letterhead.log`
-2. The log contains detailed information about:
-   - All operations performed
-   - Error messages with stack traces
-   - Input/output file paths
-   - PDF processing steps
+- Easy installation and usage
+- Multiple letterhead templates support
+- Advanced multi-page letterhead handling for different page designs
+- Self-contained application bundles with embedded templates
+- Direct template usage with no temporary file extraction
+- Original PDF metadata preservation
+- High-quality PDF output
+- Customizable output location
+- Detailed error handling and logging
+- Multiple blend modes for different letterhead styles
 
 ## License
 
