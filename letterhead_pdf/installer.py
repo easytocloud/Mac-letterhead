@@ -204,117 +204,36 @@ end run
         shutil.copy2(abs_letterhead_path, app_letterhead)
         logging.info(f"Added letterhead to app bundle: {app_letterhead}")
         
-        # Try to set a custom icon, but continue if we can't due to permissions
+        # Set the custom icon
         try:
-            # Standardized approach: Use only letterhead_pdf/resources for icon
-            # This is the proper way to access package resources that works for installed packages
-            import importlib.resources as pkg_resources
-            import tempfile
+            # Direct path to icon resources - we know exactly where they are
+            custom_icon_path = os.path.join(os.path.dirname(__file__), "resources", "Mac-letterhead.icns")
             
-            # Use Python's importlib.resources to locate the icon
-            try:
-                logging.info("Locating icon using package resources...")
+            if os.path.exists(custom_icon_path):
+                # Copy icon to app resources
+                app_icon = os.path.join(app_resources_dir, "applet.icns")
+                shutil.copy2(custom_icon_path, app_icon)
+                logging.info(f"Set custom icon: {app_icon}")
                 
-                # Try to get the icon path, with fallbacks for different Python versions
+                # Also set document icon if it exists
+                document_icon = os.path.join(app_resources_dir, "droplet.icns")
+                if os.path.exists(document_icon):
+                    shutil.copy2(custom_icon_path, document_icon)
+                    logging.info(f"Set document icon: {document_icon}")
+                
+                # Use the fileicon tool if available (simple method)
                 try:
-                    # Modern approach (Python 3.9+)
-                    if hasattr(pkg_resources, 'files'):
-                        resources = pkg_resources.files('letterhead_pdf.resources')
-                        icns_file = resources.joinpath('Mac-letterhead.icns')
-                        custom_icon_path = str(icns_file)
-                        logging.info(f"Found icon using modern importlib.resources: {custom_icon_path}")
-                    else:
-                        # Legacy approach (Python 3.7-3.8)
-                        with pkg_resources.path('letterhead_pdf.resources', 'Mac-letterhead.icns') as p:
-                            custom_icon_path = str(p)
-                            logging.info(f"Found icon using legacy importlib.resources: {custom_icon_path}")
-                except (ImportError, ModuleNotFoundError, FileNotFoundError) as e:
-                    logging.warning(f"Could not find icon using importlib.resources: {str(e)}")
-                    
-                    # Direct path fallback - last resort for development environments
-                    custom_icon_path = os.path.join(os.path.dirname(__file__), "resources", "Mac-letterhead.icns")
-                    logging.info(f"Falling back to direct path: {custom_icon_path}")
-                    
-                if custom_icon_path and os.path.exists(custom_icon_path):
-                    # Copy icon to app resources
-                    app_icon = os.path.join(app_resources_dir, "applet.icns")
-                    shutil.copy2(custom_icon_path, app_icon)
-                    logging.info(f"Set custom icon: {app_icon}")
-                    
-                    # Also set document icon if it exists
-                    document_icon = os.path.join(app_resources_dir, "droplet.icns")
-                    if os.path.exists(document_icon):
-                        shutil.copy2(custom_icon_path, document_icon)
-                        logging.info(f"Set document icon: {document_icon}")
-                    
-                    # Use more direct macOS-specific approaches to set the icon
-                    try:
-                        from subprocess import run, PIPE
-                        import tempfile
-                        
-                        logging.info(f"Setting custom icon using macOS specific methods")
-                        
-                        # Create a temporary AppleScript to set the icon
-                        icon_script = f'''
-                        tell application "Finder"
-                            set file_path to POSIX file "{app_path}" as alias
-                            set icon_path to POSIX file "{custom_icon_path}" as alias
-                            set icon of file_path to icon of icon_path
-                        end tell
-                        '''
-                        
-                        # Write the script to a temporary file
-                        fd, script_path = tempfile.mkstemp(suffix='.scpt')
-                        try:
-                            with os.fdopen(fd, 'w') as f:
-                                f.write(icon_script)
-                            
-                            # Execute the AppleScript
-                            run(["osascript", script_path], check=False)
-                            logging.info("Set icon using AppleScript")
-                        finally:
-                            # Clean up the temporary file
-                            os.unlink(script_path)
-                        
-                        # Also try the fileicon tool if available
-                        fileicon_result = run(["which", "fileicon"], capture_output=True, text=True, check=False)
-                        if fileicon_result.returncode == 0 and fileicon_result.stdout.strip():
-                            fileicon_path = fileicon_result.stdout.strip()
-                            run([fileicon_path, "set", app_path, custom_icon_path], check=False)
-                            logging.info("Set icon using fileicon tool")
-                        
-                        # Alternative direct method for macOS
-                        try:
-                            import Cocoa
-                            workspace = Cocoa.NSWorkspace.sharedWorkspace()
-                            workspace.setIcon_forFile_options_(
-                                Cocoa.NSImage.alloc().initWithContentsOfFile_(custom_icon_path),
-                                app_path, 
-                                0
-                            )
-                            logging.info("Set icon using NSWorkspace")
-                        except Exception as cocoa_err:
-                            logging.warning(f"Could not set icon using NSWorkspace: {cocoa_err}")
-                        
-                        logging.info("Tried multiple methods to set the icon")
-                    except Exception as e:
-                        logging.warning(f"Could not set icon: {e}")
-                else:
-                    logging.info(f"Custom icon not found after all attempts, using default AppleScript icon")
-                        
-            except (ImportError, FileNotFoundError, NotADirectoryError):
-                # Fallback to traditional path
-                custom_icon_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources", "Mac-letterhead.icns")
-                if os.path.exists(custom_icon_path):
-                    app_icon = os.path.join(app_resources_dir, "applet.icns")
-                    shutil.copy2(custom_icon_path, app_icon)
-                    logging.info(f"Set custom icon (fallback): {app_icon}")
-                else:
-                    logging.info("Custom icon not found on fallback path, using default AppleScript icon")
-        except PermissionError:
-            logging.warning("Cannot set icon due to permission restrictions - the app will use the default icon")
+                    fileicon_result = run(["which", "fileicon"], capture_output=True, text=True, check=False)
+                    if fileicon_result.returncode == 0 and fileicon_result.stdout.strip():
+                        fileicon_path = fileicon_result.stdout.strip()
+                        run([fileicon_path, "set", app_path, custom_icon_path], check=False)
+                        logging.info("Set app icon using fileicon tool")
+                except Exception as e:
+                    logging.warning(f"Could not set icon with fileicon tool: {e}")
+            else:
+                logging.warning(f"Custom icon not found at {custom_icon_path}, using default AppleScript icon")
         except Exception as e:
-            logging.warning(f"Cannot set icon: {str(e)} - continuing with default icon")
+            logging.warning(f"Could not set custom icon: {str(e)} - using default icon")
             
         print(f"Created Letterhead Applier app: {app_path}")
         print(f"You can now drag and drop PDF files onto the app to apply the letterhead.")
