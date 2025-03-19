@@ -49,17 +49,44 @@ class PDFMerger:
                 logging.error(error_msg)
                 raise PDFMergeError(error_msg)
 
+            # Get page counts for both PDFs
             num_pages = CoreGraphics.CGPDFDocumentGetNumberOfPages(read_pdf)
-            logging.info(f"Processing {num_pages} pages")
+            num_letterhead_pages = CoreGraphics.CGPDFDocumentGetNumberOfPages(letterhead_pdf)
+            
+            logging.info(f"Processing {num_pages} content pages with {num_letterhead_pages} letterhead pages")
             
             # Process each page of the content document
             for page_num in range(1, num_pages + 1):
                 logging.info(f"Processing page {page_num}")
                 page = CoreGraphics.CGPDFDocumentGetPage(read_pdf, page_num)
-                letterhead_page = CoreGraphics.CGPDFDocumentGetPage(letterhead_pdf, 1)
+                
+                # Select the appropriate letterhead page based on the number of letterhead pages
+                # and the current page number
+                if num_letterhead_pages == 1:
+                    # Single page letterhead: Use on all pages
+                    letterhead_page_num = 1
+                elif num_letterhead_pages == 2:
+                    # Two page letterhead: First page on first page, second page on all other pages
+                    letterhead_page_num = 1 if page_num == 1 else 2
+                elif num_letterhead_pages == 3:
+                    # Three page letterhead: 
+                    # - First page on first page
+                    # - Second page on all even pages (except first if it's even)
+                    # - Third page on all odd pages (except first if it's odd)
+                    if page_num == 1:
+                        letterhead_page_num = 1
+                    elif page_num % 2 == 0:  # Even page
+                        letterhead_page_num = 2
+                    else:  # Odd page other than first
+                        letterhead_page_num = 3
+                else:
+                    # For more than 3 pages or any other case, just use first page
+                    letterhead_page_num = 1
+                
+                letterhead_page = CoreGraphics.CGPDFDocumentGetPage(letterhead_pdf, letterhead_page_num)
                 
                 if not page or not letterhead_page:
-                    error_msg = f"Failed to get page {page_num}"
+                    error_msg = f"Failed to get page {page_num} with letterhead page {letterhead_page_num}"
                     logging.error(error_msg)
                     raise PDFMergeError(error_msg)
                 
