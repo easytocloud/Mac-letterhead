@@ -13,8 +13,9 @@ from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
                    NSApplicationActivationPolicyRegular)
 
 from letterhead_pdf import __version__
-from letterhead_pdf.pdf_merger import PDFMerger, PDFMergeError
+from letterhead_pdf.pdf_merger import PDFMerger
 from letterhead_pdf.installer import create_applescript_droplet
+from letterhead_pdf.pdf_utils import PDFMergeError, create_pdf_document, create_output_context, get_doc_info
 
 # Import logging configuration
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
@@ -87,65 +88,7 @@ class LetterheadPDF:
             logging.error(f"Error in save dialog: {str(e)}", exc_info=True)
             raise PDFMergeError(f"Save dialog error: {str(e)}")
 
-    def create_pdf_document(self, path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
-        """Create PDF document from path"""
-        logging.info(f"Creating PDF document from: {path}")
-        path_bytes = path.encode('utf-8')
-        url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
-            kCFAllocatorDefault,
-            path_bytes,
-            len(path_bytes),
-            False
-        )
-        if not url:
-            error_msg = f"Failed to create URL for path: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        doc = CoreGraphics.CGPDFDocumentCreateWithURL(url)
-        if not doc:
-            error_msg = f"Failed to create PDF document from: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        return doc
-
-    def create_output_context(self, path: str, metadata: Dict[str, Any]) -> Optional[CoreGraphics.CGContextRef]:
-        """Create PDF context for output"""
-        logging.info(f"Creating output context for: {path}")
-        path_bytes = path.encode('utf-8')
-        url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
-            kCFAllocatorDefault,
-            path_bytes,
-            len(path_bytes),
-            False
-        )
-        if not url:
-            error_msg = f"Failed to create output URL for path: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        context = CoreGraphics.CGPDFContextCreateWithURL(url, None, metadata)
-        if not context:
-            error_msg = f"Failed to create PDF context for: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        return context
-
-    def get_doc_info(self, file_path: str) -> Dict[str, Any]:
-        """Get PDF metadata"""
-        logging.info(f"Getting document info from: {file_path}")
-        pdf_url = NSURL.fileURLWithPath_(file_path)
-        pdf_doc = PDFKit.PDFDocument.alloc().initWithURL_(pdf_url)
-        if not pdf_doc:
-            error_msg = f"Failed to read PDF metadata from: {file_path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        
-        metadata = pdf_doc.documentAttributes()
-        if "Keywords" in metadata:
-            keys = metadata["Keywords"]
-            mutable_metadata = metadata.mutableCopy()
-            mutable_metadata["Keywords"] = tuple(keys)
-            return mutable_metadata
-        return metadata
+    # The PDF utility methods have been moved to pdf_utils.py
 
     def merge_pdfs(self, input_path: str, output_path: str, strategy: str = "all") -> None:
         """
@@ -184,7 +127,12 @@ class LetterheadPDF:
             
             logging.info("PDF merge completed successfully")
 
+        except PDFMergeError as e:
+            # Specific handling for PDF merge errors
+            logging.error(f"PDF merge error: {str(e)}")
+            raise
         except Exception as e:
+            # General exception handling for other unexpected errors
             error_msg = f"Error merging PDFs: {str(e)}"
             logging.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg)

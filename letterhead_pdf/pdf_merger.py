@@ -3,12 +3,9 @@
 import os
 import logging
 from typing import Optional, Dict, Any, Tuple
-from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
-from Foundation import NSURL
+from Quartz import CoreGraphics
 
-class PDFMergeError(Exception):
-    """Custom exception for PDF merge errors"""
-    pass
+from letterhead_pdf.pdf_utils import create_pdf_document, create_output_context, get_doc_info, PDFMergeError
 
 class PDFMerger:
     """Handles merging of letterhead and content PDFs"""
@@ -39,10 +36,10 @@ class PDFMerger:
             logging.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
             logging.info(f"Using letterhead: {self.letterhead_path}")
             
-            metadata = self.get_doc_info(input_path)
-            write_context = self.create_output_context(output_path, metadata)
-            read_pdf = self.create_pdf_document(input_path)
-            letterhead_pdf = self.create_pdf_document(self.letterhead_path)
+            metadata = get_doc_info(input_path)
+            write_context = create_output_context(output_path, metadata)
+            read_pdf = create_pdf_document(input_path)
+            letterhead_pdf = create_pdf_document(self.letterhead_path)
 
             if not all([write_context, read_pdf, letterhead_pdf]):
                 error_msg = "Failed to create PDF context or load PDFs"
@@ -221,62 +218,4 @@ class PDFMerger:
         CoreGraphics.CGContextDrawPDFPage(context, letterhead_page)
         CoreGraphics.CGContextRestoreGState(context)
 
-    def create_pdf_document(self, path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
-        """Create PDF document from path"""
-        logging.info(f"Creating PDF document from: {path}")
-        path_bytes = path.encode('utf-8')
-        url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
-            CoreGraphics.kCFAllocatorDefault,
-            path_bytes,
-            len(path_bytes),
-            False
-        )
-        if not url:
-            error_msg = f"Failed to create URL for path: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        doc = CoreGraphics.CGPDFDocumentCreateWithURL(url)
-        if not doc:
-            error_msg = f"Failed to create PDF document from: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        return doc
-
-    def create_output_context(self, path: str, metadata: Dict[str, Any]) -> Optional[CoreGraphics.CGContextRef]:
-        """Create PDF context for output"""
-        logging.info(f"Creating output context for: {path}")
-        path_bytes = path.encode('utf-8')
-        url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
-            CoreGraphics.kCFAllocatorDefault,
-            path_bytes,
-            len(path_bytes),
-            False
-        )
-        if not url:
-            error_msg = f"Failed to create output URL for path: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        context = CoreGraphics.CGPDFContextCreateWithURL(url, None, metadata)
-        if not context:
-            error_msg = f"Failed to create PDF context for: {path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        return context
-
-    def get_doc_info(self, file_path: str) -> Dict[str, Any]:
-        """Get PDF metadata"""
-        logging.info(f"Getting document info from: {file_path}")
-        pdf_url = NSURL.fileURLWithPath_(file_path)
-        pdf_doc = PDFKit.PDFDocument.alloc().initWithURL_(pdf_url)
-        if not pdf_doc:
-            error_msg = f"Failed to read PDF metadata from: {file_path}"
-            logging.error(error_msg)
-            raise PDFMergeError(error_msg)
-        
-        metadata = pdf_doc.documentAttributes()
-        if "Keywords" in metadata:
-            keys = metadata["Keywords"]
-            mutable_metadata = metadata.mutableCopy()
-            mutable_metadata["Keywords"] = tuple(keys)
-            return mutable_metadata
-        return metadata
+    # The PDF utility methods have been moved to pdf_utils.py
