@@ -16,19 +16,10 @@ from letterhead_pdf import __version__
 from letterhead_pdf.pdf_merger import PDFMerger, PDFMergeError
 from letterhead_pdf.installer import create_applescript_droplet
 
-# Set up logging
+# Define log location constants
 LOG_DIR = os.path.expanduser("~/Library/Logs/Mac-letterhead")
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "letterhead.log")
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler(sys.stderr)  # Log to stderr for PDF Service context
-    ]
-)
 
 class AppDelegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
@@ -275,6 +266,8 @@ def main(args: Optional[list] = None) -> int:
 
     parser = argparse.ArgumentParser(description="Letterhead PDF Utility")
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
+    parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], 
+                        help='Set logging level (default depends on command)')
     
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
     
@@ -296,7 +289,30 @@ def main(args: Optional[list] = None) -> int:
     
     args = parser.parse_args(args)
     
-    logging.info(f"Starting Mac-letterhead v{__version__}")
+    # Set log level based on command and command-line arguments
+    if args.log_level:
+        # Use user-provided log level if specified
+        log_level = getattr(logging, args.log_level)
+    else:
+        # Default log levels per command
+        if args.command == 'install':
+            log_level = logging.WARNING  # Less verbose for install command
+        else:
+            log_level = logging.INFO  # More verbose for other commands
+    
+    # Configure logging with the appropriate level
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(LOG_FILE),
+            logging.StreamHandler(sys.stderr)  # Log to stderr for PDF Service context
+        ]
+    )
+    
+    # Now that logging is configured with the appropriate level
+    if log_level <= logging.INFO:
+        logging.info(f"Starting Mac-letterhead v{__version__}")
     
     if args.command == 'install':
         return install_command(args)
