@@ -69,43 +69,26 @@ on open these_items
                 -- Get the full application path
                 set app_path to POSIX path of (path to me)
                 
-                -- Find the letterhead PDF inside the app bundle
-                -- Create a temporary directory for storing diagnostic info
+                -- We know exactly where the letterhead PDF is located
                 do shell script "mkdir -p \\"$HOME/Library/Logs/Mac-letterhead\\""
                 
-                -- First, identify the app bundle directory
-                set app_dir to do shell script "dirname " & quoted form of app_path
-                set bundle_root to do shell script "dirname " & quoted form of app_dir | sed 's|/Contents/MacOS$||; s|/Contents/Resources/Scripts$||'"
+                -- Get the app bundle path
+                set app_bundle to do shell script "dirname " & quoted form of app_path & " | sed 's:/Contents/.*::'"
                 
-                -- Most reliable path is in the Resources directory
-                set resources_path to bundle_root & "/Contents/Resources/letterhead.pdf"
-                
-                -- Log all our resolution attempts for diagnostics
-                do shell script "echo 'App path: " & app_path & "' > \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                do shell script "echo 'App dir: " & app_dir & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                do shell script "echo 'Bundle root: " & bundle_root & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                do shell script "echo 'Resources path: " & resources_path & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                
-                -- First try the main Resources path (where we explicitly copy the letterhead)
+                -- The letterhead is always in the Resources folder (we put it there during creation)
+                set letterhead_path to app_bundle & "/Contents/Resources/letterhead.pdf"
                 set home_path to POSIX path of (path to home folder)
-                set letterhead_path to resources_path
                 
-                -- Check if the resources path exists
-                if (do shell script "[ -f \\"" & resources_path & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "no" then
-                    -- If not found in main Resources folder, search the entire app bundle
-                    do shell script "echo 'Letterhead not found at expected location, searching app bundle...' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                    set search_result to do shell script "find " & quoted form of bundle_root & " -name 'letterhead.pdf' -print | head -n 1"
-                    
-                    -- If found elsewhere in the bundle, use that path
-                    if search_result is not "" then
-                        set letterhead_path to search_result
-                        do shell script "echo 'Found letterhead at: " & letterhead_path & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                    else
-                        -- Only show error if we absolutely can't find the letterhead anywhere
-                        do shell script "echo 'ERROR: Could not find letterhead.pdf in app bundle' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
-                        display dialog "Error: Letterhead template not found in application bundle. Please reinstall the letterhead applier." buttons {"OK"} default button "OK" with icon stop
-                        error "Letterhead template not found in application bundle"
-                    end if
+                -- Log the paths for diagnostics
+                do shell script "echo 'App path: " & app_path & "' > \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                do shell script "echo 'App bundle: " & app_bundle & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                do shell script "echo 'Letterhead path: " & letterhead_path & "' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                
+                -- Make sure the letterhead file exists
+                if (do shell script "[ -f \\"" & letterhead_path & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "no" then
+                    do shell script "echo 'ERROR: Letterhead.pdf not found at expected location' >> \\"$HOME/Library/Logs/Mac-letterhead/path_tests.log\\""
+                    display dialog "Error: Letterhead template not found at " & letterhead_path & ". Please reinstall the letterhead applier." buttons {"OK"} default button "OK" with icon stop
+                    error "Letterhead template not found at expected location"
                 end if
                 
                 -- For better UX, use the source directory for output and application name for postfix
@@ -118,8 +101,8 @@ on open these_items
                 -- Get the application name for postfix
                 set app_name to do shell script "basename " & quoted form of app_path & " | sed 's/\\\\.app$//'"
                 
-                -- Display progress dialog
-                display dialog "Applying letterhead to " & file_basename & ".pdf..." buttons {} giving up after 1
+                -- No progress dialog to avoid confusing users with small files
+                -- We'll only show feedback if there's an error
                 
                 -- Run the command with error handling
                 try
@@ -140,8 +123,7 @@ on open these_items
                     do shell script "echo 'App path: " & app_path & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'App name: " & app_name & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Source directory: " & source_dir & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
-                    do shell script "echo 'Bundle root: " & bundle_root & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
-                    do shell script "echo 'Resources path: " & resources_path & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
+                    do shell script "echo 'App bundle: " & app_bundle & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Input PDF: " & input_pdf & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Command: " & cmd & "' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
                     do shell script "echo 'Checking letterhead exists: ' >> " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
