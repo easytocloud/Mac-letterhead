@@ -8,9 +8,10 @@ import tempfile
 from subprocess import run, PIPE
 from typing import Optional
 
-# Import logging configuration
+# Import logging configuration and version
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
 from letterhead_pdf.exceptions import InstallerError
+from letterhead_pdf import __version__
 
 def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead Applier", output_dir: str = None) -> str:
     """Create an AppleScript droplet application for the given letterhead"""
@@ -94,9 +95,8 @@ on open these_items
                 
                 -- Build the command
                 set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                -- Get the version from the app bundle's Info.plist
-                set version_cmd to "defaults read " & quoted form of app_bundle & "/Contents/Info CFBundleShortVersionString 2>/dev/null || echo \\"0.6.9\\""
-                set version to do shell script version_cmd
+                -- Use the version from the package
+                set version to "\\"''' + __version__ + '''\\"" 
                 
                 set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & version & " "
                 
