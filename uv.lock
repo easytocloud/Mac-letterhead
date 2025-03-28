@@ -1,22 +1,31 @@
 version = 1
-requires-python = ">=3.7"
+requires-python = ">=3.13"
 resolution-markers = [
-    "python_full_version >= '3.9'",
-    "python_full_version == '3.8.*'",
-    "python_full_version < '3.8'",
+    "python_full_version >= '3.13'",
 ]
 
 [[package]]
 name = "mac-letterhead"
-version = "0.1.0"
+version = "0.6.0"
 source = { editable = "." }
 dependencies = [
-    { name = "pyobjc-framework-cocoa", version = "9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8'" },
-    { name = "pyobjc-framework-cocoa", version = "10.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
-    { name = "pyobjc-framework-cocoa", version = "11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
-    { name = "pyobjc-framework-quartz", version = "9.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.8'" },
-    { name = "pyobjc-framework-quartz", version = "10.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.8.*'" },
-    { name = "pyobjc-framework-quartz", version = "11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9'" },
+    { name = "pyobjc-framework-Quartz", version = "11.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "pyobjc-framework-Cocoa", version = "11.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "weasyprint", version = "65.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "markdown", version = "3.7", source = { registry = "https://pypi.org/simple" } },
+    { name = "pymupdf", version = "1.25.4", source = { registry = "https://pypi.org/simple" } },
+    { name = "cffi", version = "1.17.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "pydyf", version = "0.11.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "cssselect2", version = "0.8.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "tinycss2", version = "1.4.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "tinyhtml5", version = "2.0.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "pillow", version = "11.1.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "fonttools", version = "4.56.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "pyphen", version = "0.17.2", source = { registry = "https://pypi.org/simple" } },
+    { name = "brotli", version = "1.1.0", source = { registry = "https://pypi.org/simple" } },
+    { name = "pycparser", version = "2.22", source = { registry = "https://pypi.org/simple" } },
+    { name = "webencodings", version = "0.5.1", source = { registry = "https://pypi.org/simple" } },
+    { name = "zopfli", version = "0.2.3.post1", source = { registry = "https://pypi.org/simple" } }
 ]
 
 [package.metadata]
