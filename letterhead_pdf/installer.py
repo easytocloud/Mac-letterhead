@@ -40,6 +40,10 @@ def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead
         except Exception as e:
             logging.warning(f"Could not remove existing app: {e} - trying to continue anyway")
     
+    # Store version for use in AppleScript
+    version = __version__
+    logging.info(f"Using version for droplet: {version}")
+    
     # Create temporary directory structure
     tmp_dir = tempfile.mkdtemp()
     try:
@@ -96,12 +100,8 @@ on open these_items
                 
                 -- Build the command
                 set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                -- Use hardcoded version from Python
-                set version to "{__version__}"
-                do shell script "echo 'DEBUG: Using version: " & version & "' >> /tmp/letterhead.log"
-                
-                -- Log the command we're about to run
-                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & version
+                -- Use version from Python
+                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@{version} "
                 
                 if file_ext is equal to ".md" then
                     -- For markdown files, use merge-md command
