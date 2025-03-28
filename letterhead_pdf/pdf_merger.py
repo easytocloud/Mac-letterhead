@@ -5,7 +5,8 @@ import logging
 from typing import Optional, Dict, Any, Tuple
 from Quartz import CoreGraphics
 
-from letterhead_pdf.pdf_utils import create_pdf_document, create_output_context, get_doc_info, PDFMergeError
+from letterhead_pdf.pdf_utils import create_pdf_document, create_output_context, get_doc_info
+from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, PDFMetadataError
 
 class PDFMerger:
     """Handles merging of letterhead and content PDFs"""
@@ -30,8 +31,35 @@ class PDFMerger:
             strategy: Merging strategy to use (overlay, multiply, transparency, etc.)
         
         Raises:
-            PDFMergeError: If the merge operation fails
+            FileNotFoundError: If input files don't exist
+            PermissionError: If there are permission issues
+            PDFCreationError: If PDF creation fails
+            PDFMetadataError: If metadata extraction fails
+            PDFMergeError: For other merge operation failures
         """
+        # Validate strategy
+        valid_strategies = ["multiply", "transparency", "reverse", "overlay", "darken"]
+        if strategy not in valid_strategies:
+            error_msg = f"Invalid strategy: {strategy}. Must be one of: {', '.join(valid_strategies)}"
+            logging.error(error_msg)
+            raise ValueError(error_msg)
+        
+        # Expand paths
+        input_path = os.path.expanduser(input_path)
+        output_path = os.path.expanduser(output_path)
+        
+        # Validate input file
+        if not os.path.isfile(input_path):
+            error_msg = f"Input file not found: {input_path}"
+            logging.error(error_msg)
+            raise FileNotFoundError(error_msg)
+            
+        # Validate letterhead
+        if not os.path.isfile(self.letterhead_path):
+            error_msg = f"Letterhead template not found: {self.letterhead_path}"
+            logging.error(error_msg)
+            raise FileNotFoundError(error_msg)
+        
         try:
             logging.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
             logging.info(f"Using letterhead: {self.letterhead_path}")
@@ -113,10 +141,21 @@ class PDFMerger:
             CoreGraphics.CGPDFContextClose(write_context)
             logging.info("PDF merge completed successfully")
 
-        except Exception as e:
-            error_msg = f"Error merging PDFs: {str(e)}"
+        except PDFCreationError as e:
+            # Specific handling for PDF creation errors
+            error_msg = f"Failed to create PDF components: {str(e)}"
             logging.error(error_msg, exc_info=True)
-            raise PDFMergeError(error_msg)
+            raise PDFMergeError(error_msg) from e
+        except (FileNotFoundError, PermissionError) as e:
+            # Handle file access errors
+            error_msg = f"File access error: {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFMergeError(error_msg) from e
+        except Exception as e:
+            # Fallback for unexpected errors
+            error_msg = f"Unexpected error merging PDFs: {str(e)}"
+            logging.error(error_msg, exc_info=True)
+            raise PDFMergeError(error_msg) from e
 
     def _strategy_multiply(self, context, content_page, letterhead_page):
         """
@@ -217,5 +256,3 @@ class PDFMerger:
         CoreGraphics.CGContextSetAlpha(context, 0.9)  # 90% opacity
         CoreGraphics.CGContextDrawPDFPage(context, letterhead_page)
         CoreGraphics.CGContextRestoreGState(context)
-
-    # The PDF utility methods have been moved to pdf_utils.py

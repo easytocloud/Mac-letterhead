@@ -9,12 +9,13 @@
   <img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/icon.png" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
 </a>
 
-A macOS utility for merging letterhead templates with PDF documents. Apply company letterheads, watermarks, or stationery to PDFs with a simple drag-and-drop interface.
+A macOS utility for merging letterhead templates with PDF and Markdown documents. Apply company letterheads, watermarks, or stationery to your documents with a simple drag-and-drop interface.
 
 ## Why Mac-letterhead?
 
 - **Drag & Drop Simplicity**: Convert your letterhead PDF into a macOS app that applies your letterhead with a simple drag-and-drop
 - **Professional Results**: Merge PDFs without quality loss, preserving all formatting and content
+- **Markdown Support**: Convert Markdown files to beautifully formatted PDFs with proper letterhead margins
 - **Multi-page Letterhead Support**: Different designs for first page, even pages, and odd pages
 - **Multiple Merging Strategies**: Various blending modes to suit different letterhead designs
 - **No Subscription Fees**: Free, open-source solution for businesses of all sizes
@@ -39,11 +40,36 @@ This creates a desktop application named based on your letterhead file.
 
 ### 2. Apply Letterhead to Documents
 
+You can use either PDF or Markdown files:
+
+#### For PDF Documents
 1. Export your document as a PDF
 2. Drag and drop the PDF onto your letterhead application
 3. Save the merged document
 
+#### For Markdown Documents
+1. Write your document in Markdown (.md)
+2. Drag and drop the Markdown file onto your letterhead application
+3. The file will be converted to PDF with proper margins and merged with the letterhead
+4. Save the merged document
+
 That's it! Your document now has the letterhead applied.
+
+### Markdown Features
+
+Mac-letterhead supports common Markdown elements with proper formatting:
+
+- Headers and paragraphs
+- Tables with borders and cell padding
+- Code blocks with syntax highlighting
+- Footnotes and references
+- Lists and blockquotes
+- Links and images
+
+The system automatically:
+- Detects safe printable areas from your letterhead
+- Adjusts margins to avoid overlapping with letterhead elements
+- Maintains consistent formatting across pages
 
 ## Advanced Options
 
@@ -55,10 +81,17 @@ uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Letterhead" -
 
 ### Different Merging Strategies
 
-You can directly merge PDFs with specific strategies:
+You can directly merge documents with specific strategies:
+
+For PDF files:
 
 ```bash
 uvx mac-letterhead merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
+```
+
+For Markdown files:
+```bash
+uvx mac-letterhead merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
 ```
 
 Available strategies:
@@ -96,8 +129,10 @@ This is ideal for professional documents with customized headers/footers for var
 - **Corporate Communications**: Apply company letterhead to business documents
 - **Legal Documents**: Add watermarks or legal disclaimers to contracts
 - **Invoices & Statements**: Brand financial documents with your company logo and information
-- **Proposals & Reports**: Create professional-looking documents for clients
+- **Proposals & Reports**: Create professional-looking documents from Markdown or PDF
 - **Academic Papers**: Add university/institution letterhead to research papers
+- **Documentation**: Convert Markdown documentation to letterhead-branded PDFs
+- **Meeting Minutes**: Write in Markdown and automatically apply corporate styling
 
 ## Features
 
@@ -111,6 +146,10 @@ This is ideal for professional documents with customized headers/footers for var
 - Customizable output location
 - Detailed error handling and logging
 - Multiple blend modes for different letterhead styles
+- Markdown to PDF conversion with proper margins
+- Smart letterhead space detection
+- Professional document formatting
+- Support for tables, code blocks, and footnotes
 
 ## License
 

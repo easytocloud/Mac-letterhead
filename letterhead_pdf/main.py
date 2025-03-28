@@ -4,10 +4,12 @@ import sys
 import os
 import argparse
 import logging
+import tempfile
 from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
                       NSRunLoop, NSDate, NSDefaultRunLoopMode)
+from letterhead_pdf.markdown_processor import MarkdownProcessor
 from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
                    NSModalResponseOK, NSModalResponseCancel,
                    NSApplicationActivationPolicyRegular)
@@ -15,7 +17,6 @@ from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
 from letterhead_pdf import __version__
 from letterhead_pdf.pdf_merger import PDFMerger
 from letterhead_pdf.installer import create_applescript_droplet
-from letterhead_pdf.pdf_utils import PDFMergeError, create_pdf_document, create_output_context, get_doc_info
 
 # Import logging configuration
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
@@ -136,6 +137,60 @@ class LetterheadPDF:
             error_msg = f"Error merging PDFs: {str(e)}"
             logging.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg)
+def merge_md_command(args: argparse.Namespace) -> int:
+    """Handle the merge-md command for Markdown files"""
+    try:
+        logging.info(f"Starting merge-md command with args: {args}")
+        
+        # Initialize with custom suffix if provided
+        suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " wm.pdf"
+        
+        # Create LetterheadPDF instance with custom suffix and destination
+        destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
+        letterhead = LetterheadPDF(letterhead_path=args.letterhead_path, destination=destination, suffix=suffix)
+        
+        # Use save dialog to get output location
+        short_name = os.path.splitext(args.title)[0]
+        output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
+        
+        if not output_path:
+            logging.warning("Save dialog cancelled")
+            print("Save dialog cancelled.")
+            return 1
+            
+        if not os.path.exists(args.input_path):
+            error_msg = f"Input file not found: {args.input_path}"
+            logging.error(error_msg)
+            print(error_msg)
+            return 1
+        
+        # Create a temporary directory for intermediate files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Convert markdown to PDF
+            md_processor = MarkdownProcessor()
+            temp_pdf = os.path.join(temp_dir, "converted.pdf")
+            
+            try:
+                # Convert markdown to PDF with proper margins
+                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path)
+                
+                # Merge the converted PDF with letterhead
+                letterhead.merge_pdfs(temp_pdf, output_path, strategy=args.strategy)
+                
+                logging.info("Merge-md command completed successfully")
+                return 0
+                
+            except Exception as e:
+                error_msg = f"Error processing markdown: {str(e)}"
+                logging.error(error_msg)
+                print(error_msg)
+                return 1
+                
+    except Exception as e:
+        logging.error(f"Error in merge-md command: {str(e)}", exc_info=True)
+        print(f"Error: {str(e)}")
+        return 1
+
 def print_command(args: argparse.Namespace) -> int:
     """Handle the print command"""
     try:
@@ -168,7 +223,31 @@ def print_command(args: argparse.Namespace) -> int:
         return 0
         
     except PDFMergeError as e:
-        logging.error(str(e))
+        logging.error(f"PDF merge error: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except PDFCreationError as e:
+        logging.error(f"PDF creation error: {str(e)}")
+        print(f"Error creating PDF: {str(e)}")
+        return 1
+    except PDFMetadataError as e:
+        logging.error(f"PDF metadata error: {str(e)}")
+        print(f"Error reading PDF metadata: {str(e)}")
+        return 1
+    except UIError as e:
+        logging.error(f"UI error: {str(e)}")
+        print(f"User interface error: {str(e)}")
+        return 1
+    except FileNotFoundError as e:
+        logging.error(f"File not found: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except PermissionError as e:
+        logging.error(f"Permission error: {str(e)}")
+        print(f"Error: Insufficient permissions: {str(e)}")
+        return 1
+    except ValueError as e:
+        logging.error(f"Invalid value: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except Exception as e:
@@ -200,9 +279,21 @@ def install_command(args: argparse.Namespace) -> int:
         logging.info(f"Install command completed successfully: {app_path}")
         return 0
         
+    except FileNotFoundError as e:
+        logging.error(f"File not found: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except PermissionError as e:
+        logging.error(f"Permission error: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
+    except InstallerError as e:
+        logging.error(f"Installation error: {str(e)}")
+        print(f"Error: {str(e)}")
+        return 1
     except Exception as e:
         logging.error(f"Error creating letterhead app: {str(e)}", exc_info=True)
-        print(f"Error creating letterhead app: {str(e)}")
+        print(f"Unexpected error: {str(e)}")
         return 1
 
 def main(args: Optional[list] = None) -> int:
@@ -223,8 +314,8 @@ def main(args: Optional[list] = None) -> int:
     install_parser.add_argument('--name', help='Custom name for the applier app (default: "Letterhead <filename>")')
     install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
     
-    # Merge command
-    merge_parser = subparsers.add_parser('merge', help='Merge letterhead with document')
+    # Merge commands
+    merge_parser = subparsers.add_parser('merge', help='Merge letterhead with PDF document')
     merge_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
     merge_parser.add_argument('title', help='Output file title')
     merge_parser.add_argument('save_dir', help='Directory to save the output file')
@@ -232,6 +323,16 @@ def main(args: Optional[list] = None) -> int:
     merge_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
                             default='darken', help='Merging strategy to use (default: darken)')
     merge_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
+    
+    # Add merge-md command
+    merge_md_parser = subparsers.add_parser('merge-md', help='Convert Markdown to PDF and merge with letterhead')
+    merge_md_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
+    merge_md_parser.add_argument('title', help='Output file title')
+    merge_md_parser.add_argument('save_dir', help='Directory to save the output file')
+    merge_md_parser.add_argument('input_path', help='Input Markdown file path')
+    merge_md_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
+                              default='darken', help='Merging strategy to use (default: darken)')
+    merge_md_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
     
     args = parser.parse_args(args)
     
@@ -257,6 +358,8 @@ def main(args: Optional[list] = None) -> int:
         return install_command(args)
     elif args.command == 'merge':
         return print_command(args)
+    elif args.command == 'merge-md':
+        return merge_md_command(args)
     elif args.command == 'print':  # Keep support for old print command for backward compatibility
         return print_command(args)
     else:

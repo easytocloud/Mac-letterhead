@@ -59,8 +59,8 @@ on open these_items
             -- Get the file path as string directly from the dropped item
             set this_path to this_item as string
             
-            -- Check if it's a PDF file by extension
-            if this_path ends with ".pdf" or this_path ends with ".PDF" then
+            -- Check if it's a PDF or Markdown file by extension
+            if this_path ends with ".pdf" or this_path ends with ".PDF" or this_path ends with ".md" or this_path ends with ".MD" then
                 -- Get the POSIX path directly
                 set input_pdf to POSIX path of this_item
                 
@@ -120,11 +120,22 @@ on open these_items
                     -- Create logs directory
                     do shell script "mkdir -p " & quoted form of home_path & "/Library/Logs/Mac-letterhead"
                     
-                    -- Build the command 
-                    -- We change the current directory to the source PDF's directory and set the output filename to use app name
-                    set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                    set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead merge "
-                    set cmd to cmd & quoted form of letterhead_path & " \\"" & file_basename & "\\" " & quoted form of source_dir & " " & quoted_input_pdf & " --strategy darken --output-postfix \\"" & app_name & "\\""
+                -- Get file extension
+                set file_ext to do shell script "echo " & quoted form of this_path & " | tr '[:upper:]' '[:lower:]' | grep -o '\\.[^.]*$'"
+                
+                -- Build the command based on file type
+                set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
+                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead "
+                
+                if file_ext is ".md" then
+                    -- For markdown files, use merge-md command
+                    set cmd to cmd & "merge-md "
+                else
+                    -- For PDF files, use merge command
+                    set cmd to cmd & "merge "
+                end if
+                
+                set cmd to cmd & quoted form of letterhead_path & " \\"" & file_basename & "\\" " & quoted form of source_dir & " " & quoted_input_pdf & " --strategy darken --output-postfix \\"" & app_name & "\\""
                     
                     -- Log the full command and paths for diagnostics
                     do shell script "echo 'Letterhead path: " & letterhead_path & "' > " & quoted form of home_path & "/Library/Logs/Mac-letterhead/applescript.log"
@@ -156,8 +167,8 @@ on open these_items
                     display dialog "Error applying letterhead: " & errMsg buttons {"OK"} default button "OK" with icon stop
                 end try
             else
-                -- Not a PDF file
-                display dialog "File " & this_path & " is not a PDF file." buttons {"OK"} default button "OK" with icon stop
+                -- Not a supported file type
+                display dialog "File " & this_path & " is not a supported file type. Please use PDF or Markdown (.md) files." buttons {"OK"} default button "OK" with icon stop
             end if
         on error errMsg
             -- Error getting file info
@@ -167,7 +178,7 @@ on open these_items
 end open
 
 on run
-    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a PDF document:" & return & "1. Drag and drop a PDF file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" buttons {"OK"} default button "OK"
+    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Note: Markdown files will be converted to PDF with proper margins before merging" buttons {"OK"} default button "OK"
 end run
 '''
         
@@ -236,7 +247,7 @@ end run
             logging.warning(f"Could not set custom icon: {str(e)} - using default icon")
             
         print(f"Created Letterhead Applier app: {app_path}")
-        print(f"You can now drag and drop PDF files onto the app to apply the letterhead.")
+        print(f"You can now drag and drop PDF or Markdown (.md) files onto the app to apply the letterhead.")
         
         return app_path
         
