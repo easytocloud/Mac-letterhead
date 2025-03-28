@@ -101,7 +101,7 @@ on open these_items
                 do shell script "echo 'DEBUG: Using version: " & version & "' >> /tmp/letterhead.log"
                 
                 -- Log the command we're about to run
-                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & quoted form of version & " "
+                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & version
                 
                 if file_ext is equal to ".md" then
                     -- For markdown files, use merge-md command
