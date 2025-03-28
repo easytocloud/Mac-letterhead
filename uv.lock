@@ -6,7 +6,7 @@ resolution-markers = [
 
 [[package]]
 name = "mac-letterhead"
-version = "0.7.2"
+version = "0.7.3"
 source = { editable = "." }
 dependencies = [
     { name = "pyobjc-framework-Quartz", version = "11.0", source = { registry = "https://pypi.org/simple" } },

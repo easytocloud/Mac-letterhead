@@ -16,6 +16,7 @@ from letterhead_pdf import __version__
 def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead Applier", output_dir: str = None) -> str:
     """Create an AppleScript droplet application for the given letterhead"""
     logging.info(f"Creating AppleScript droplet for: {letterhead_path}")
+    logging.info(f"Using version from __init__.py: {__version__}")
     
     # Ensure absolute path for letterhead
     abs_letterhead_path = os.path.abspath(letterhead_path)
@@ -96,9 +97,11 @@ on open these_items
                 -- Build the command
                 set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
                 -- Use the version from the package
-                set version to "\\"''' + __version__ + '''\\"" 
+                set version to "''' + __version__ + '''"
+                do shell script "echo 'DEBUG: Version from __init__.py: " & version & "' >> /tmp/letterhead.log"
                 
-                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & version & " "
+                -- Log the command we're about to run
+                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & quoted form of version & " "
                 
                 if file_ext is equal to ".md" then
                     -- For markdown files, use merge-md command
@@ -112,6 +115,7 @@ on open these_items
                 
                 -- Execute the command with careful handling for immediate error feedback
                 try
+                    do shell script "echo 'DEBUG: Final command: " & cmd & "' >> /tmp/letterhead.log"
                     do shell script cmd
                 on error execErr
                     display dialog "Error processing file: " & execErr buttons {"OK"} default button "OK" with icon stop
