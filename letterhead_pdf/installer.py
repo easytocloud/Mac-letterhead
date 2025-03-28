@@ -44,7 +44,7 @@ def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead
     tmp_dir = tempfile.mkdtemp()
     try:
         # Create the AppleScript
-        applescript_content = '''-- Letterhead Applier AppleScript Droplet
+        applescript_content = f'''-- Letterhead Applier AppleScript Droplet
 -- This script takes dropped PDF files and applies a letterhead template
 
 on open these_items
@@ -96,9 +96,9 @@ on open these_items
                 
                 -- Build the command
                 set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                -- Use the version from the package
-                set version to "''' + __version__ + '''"
-                do shell script "echo 'DEBUG: Version from __init__.py: " & version & "' >> /tmp/letterhead.log"
+                -- Use hardcoded version from Python
+                set version to "{__version__}"
+                do shell script "echo 'DEBUG: Using version: " & version & "' >> /tmp/letterhead.log"
                 
                 -- Log the command we're about to run
                 set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & quoted form of version & " "
