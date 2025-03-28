@@ -16,7 +16,7 @@ dependencies = [
     "pyobjc-framework-Quartz",
     "pyobjc-framework-Cocoa",
     "importlib-resources; python_version < '3.9'",  # For accessing package resources in installed packages
-    "weasyprint>=59.0",  # For converting markdown/HTML to PDF
+    "weasyprint[macos]>=59.0",  # For converting markdown/HTML to PDF with macOS binary wheels
     "markdown>=3.4.0",   # For parsing markdown to HTML
     "pymupdf>=1.22.0",   # For PDF analysis and margin detection
 ]
