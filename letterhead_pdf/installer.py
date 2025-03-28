@@ -118,22 +118,22 @@ on open these_items
                     do shell script "echo 'DEBUG: Final command: " & cmd & "' >> /tmp/letterhead.log"
                     do shell script cmd
                 on error execErr
-                    display dialog "Error processing file: " & execErr buttons {"OK"} default button "OK" with icon stop
+                    display dialog "Error processing file: " & execErr buttons {{"OK"}} default button "OK" with icon stop
                     error execErr
                 end try
             else
                 -- Not a supported file type
-                display dialog "Unsupported file type. Please use PDF (.pdf) or Markdown (.md) files." buttons {"OK"} default button "OK" with icon stop
+                display dialog "Unsupported file type. Please use PDF (.pdf) or Markdown (.md) files." buttons {{"OK"}} default button "OK" with icon stop
             end if
         on error errMsg
             -- Error getting file info
-            display dialog "Error processing file: " & errMsg buttons {"OK"} default button "OK" with icon stop
+            display dialog "Error processing file: " & errMsg buttons {{"OK"}} default button "OK" with icon stop
         end try
     end repeat
 end open
 
 on run
-    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md) - will be converted to PDF with proper margins" buttons {"OK"} default button "OK"
+    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md) - will be converted to PDF with proper margins" buttons {{"OK"}} default button "OK"
 end run'''
         
         applescript_path = os.path.join(tmp_dir, "letterhead_droplet.applescript")
