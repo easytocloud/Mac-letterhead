@@ -94,7 +94,11 @@ on open these_items
                 
                 -- Build the command
                 set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead "
+                -- Get the version from the app bundle's Info.plist
+                set version_cmd to "defaults read " & quoted form of app_bundle & "/Contents/Info CFBundleShortVersionString 2>/dev/null || echo \\"0.6.9\\""
+                set version to do shell script version_cmd
+                
+                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@" & version & " "
                 
                 if file_ext is equal to ".md" then
                     -- For markdown files, use merge-md command
