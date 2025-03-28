@@ -32,7 +32,7 @@ dependencies = [
     "brotli==1.1.0",
     "pycparser==2.22",
     "webencodings==0.5.1",
-    "zopfli==2.2.3.post1"
+    "zopfli==0.2.3.post1"
 ]
 
 [project.scripts]
