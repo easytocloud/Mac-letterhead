@@ -17,6 +17,7 @@ from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
 from letterhead_pdf import __version__
 from letterhead_pdf.pdf_merger import PDFMerger
 from letterhead_pdf.installer import create_applescript_droplet
+from letterhead_pdf.exceptions import InstallerError, PDFMergeError, PDFCreationError, PDFMetadataError
 
 # Import logging configuration
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging

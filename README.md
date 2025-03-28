@@ -15,7 +15,7 @@ A macOS utility for merging letterhead templates with PDF and Markdown documents
 
 - **Drag & Drop Simplicity**: Convert your letterhead PDF into a macOS app that applies your letterhead with a simple drag-and-drop
 - **Professional Results**: Merge PDFs without quality loss, preserving all formatting and content
-- **Markdown Support**: Convert Markdown files to beautifully formatted PDFs with proper letterhead margins
+- **Smart Markdown Support**: Convert Markdown files to beautifully formatted PDFs, automatically detecting and respecting letterhead margins
 - **Multi-page Letterhead Support**: Different designs for first page, even pages, and odd pages
 - **Multiple Merging Strategies**: Various blending modes to suit different letterhead designs
 - **No Subscription Fees**: Free, open-source solution for businesses of all sizes
@@ -55,21 +55,22 @@ You can use either PDF or Markdown files:
 
 That's it! Your document now has the letterhead applied.
 
-### Markdown Features
+### Markdown Features (New in v0.6.0)
 
-Mac-letterhead supports common Markdown elements with proper formatting:
+Mac-letterhead now provides intelligent Markdown-to-PDF conversion with letterhead support:
 
-- Headers and paragraphs
-- Tables with borders and cell padding
-- Code blocks with syntax highlighting
-- Footnotes and references
-- Lists and blockquotes
-- Links and images
-
-The system automatically:
-- Detects safe printable areas from your letterhead
-- Adjusts margins to avoid overlapping with letterhead elements
-- Maintains consistent formatting across pages
+- **Smart Space Detection**: Automatically analyzes letterhead PDFs to find safe areas for content
+- **Professional Formatting**:
+  - Headers (h1-h6) with proper sizing and spacing
+  - Tables with clean borders and consistent padding
+  - Code blocks with syntax highlighting
+  - Lists, blockquotes, and footnotes
+  - Links and images
+- **Layout Intelligence**:
+  - Detects both text and graphics in letterhead
+  - Adjusts margins to avoid overlapping with logos and footer text
+  - Maintains consistent formatting across pages
+  - Prevents table splitting across pages
 
 ## Advanced Options
 
