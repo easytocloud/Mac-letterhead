@@ -6,7 +6,7 @@ resolution-markers = [
 
 [[package]]
 name = "mac-letterhead"
-version = "0.7.7"
+version = "0.7.8"
 source = { editable = "." }
 dependencies = [
     { name = "pyobjc-framework-Quartz", version = "11.0", source = { registry = "https://pypi.org/simple" } },
@@ -25,7 +25,7 @@ dependencies = [
     { name = "brotli", version = "1.1.0", source = { registry = "https://pypi.org/simple" } },
     { name = "pycparser", version = "2.22", source = { registry = "https://pypi.org/simple" } },
     { name = "webencodings", version = "0.5.1", source = { registry = "https://pypi.org/simple" } },
-    { name = "zopfli", version = "0.2.3.post1", source = { registry = "https://pypi.org/simple" } }
+    { name = "zopfli", version = "0.2.3", source = { registry = "https://pypi.org/simple" } }
 ]
 
 [package.metadata]

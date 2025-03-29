@@ -193,33 +193,35 @@ class MarkdownProcessor:
                 page_rect = regions['page_rect']
                 
                 # Calculate margins based on detected regions
+                # Use header's left position for consistent alignment with logo
+                left_margin = regions['header'].x0 if regions['header'] else 0
                 margins['first_page'] = {
                     'top': regions['header'].y1 if regions['header'] else 0,
-                    'right': page_rect.width - (regions['middle'].x1 if regions['middle'] else page_rect.width),
+                    'right': page_rect.width - (page_rect.width - left_margin),  # Match left margin for symmetry
                     'bottom': page_rect.height - (regions['footer'].y0 if regions['footer'] else page_rect.height),
-                    'left': regions['middle'].x0 if regions['middle'] else 0
+                    'left': left_margin
                 }
                 
                 # If there's a second page, analyze it for other pages template
                 if doc.page_count > 1:
                     regions = self.analyze_page_regions(doc[1])
+                    # Use header's left position for consistent alignment
+                    left_margin = regions['header'].x0 if regions['header'] else 0
                     margins['other_pages'] = {
                         'top': regions['header'].y1 if regions['header'] else 0,
-                        'right': page_rect.width - (regions['middle'].x1 if regions['middle'] else page_rect.width),
+                        'right': page_rect.width - (page_rect.width - left_margin),  # Match left margin for symmetry
                         'bottom': page_rect.height - (regions['footer'].y0 if regions['footer'] else page_rect.height),
-                        'left': regions['middle'].x0 if regions['middle'] else 0
+                        'left': left_margin
                     }
                 else:
                     # If no second page, use first page margins
                     margins['other_pages'] = margins['first_page'].copy()
             
-            # Add padding to ensure we don't overlap with letterhead
-            # More padding for top/bottom where letterhead content is likely to be
+            # Add minimal padding only for top and bottom
+            # No extra padding on sides to maintain alignment with logo
             for page_type in margins:
-                margins[page_type]['top'] += 40  # Extra padding for header
-                margins[page_type]['bottom'] += 40  # Extra padding for footer
-                margins[page_type]['left'] += 20  # Standard padding for sides
-                margins[page_type]['right'] += 20
+                margins[page_type]['top'] += 20  # Padding for header
+                margins[page_type]['bottom'] += 20  # Padding for footer
             
             # Log detected regions
             logging.info(f"Detected margins for first page: {margins['first_page']}")
@@ -290,8 +292,8 @@ class MarkdownProcessor:
             
             logging.info(f"Using page size from letterhead: {page_size} ({page_width}x{page_height})")
             
-            # Calculate content height (page height minus top and bottom margins)
-            content_height = page_height - margins['first_page']['top'] - margins['first_page']['bottom']
+            # Calculate content width (page width minus left and right margins)
+            content_width = page_width - margins['first_page']['left'] - margins['first_page']['right']
             
             # Create CSS with margins and page-specific styles
             margin_css = CSS(string=f'''
@@ -313,16 +315,28 @@ class MarkdownProcessor:
                 body {{
                     margin: 0;
                     padding: 0;
-                    font-size: 9pt;  /* Slightly smaller base font */
+                    font-size: 9pt;
                     line-height: 1.3;
-                    max-width: 100%;
+                    max-width: {content_width}pt;  /* Ensure content stays within margins */
                     box-sizing: border-box;
+                    overflow-wrap: break-word;  /* Allow long words to break */
+                    word-wrap: break-word;
+                    background: white;  /* White background for content area */
+                }}
+                
+                /* Content wrapper with background */
+                .content-wrapper {{
+                    background: white;  /* White background for content */
+                    min-height: 100%;
+                    padding: 1pt;  /* Small padding to ensure background is visible */
                 }}
                 
                 /* Content sections */
                 .content-section {{
                     margin-bottom: 1em;
                     page-break-inside: avoid;
+                    max-width: 100%;  /* Ensure content respects parent width */
+                    overflow-x: hidden;  /* Hide horizontal overflow */
                 }}
                 
                 /* Ensure proper spacing between sections */
@@ -339,51 +353,50 @@ class MarkdownProcessor:
                 h1, h2, h3, h4, h5, h6 {{
                     page-break-after: avoid;
                     break-after: avoid;
+                    max-width: 100%;  /* Ensure headers don't overflow */
+                    overflow-wrap: break-word;
                 }}
                 
-                /* Keep lists together */
+                /* Keep lists together and handle overflow */
                 li {{
                     page-break-inside: avoid;
                     break-inside: avoid;
+                    max-width: 100%;
+                    overflow-wrap: break-word;
                 }}
                 
-                /* Table handling */
+                /* Table handling with overflow control */
                 table {{
                     width: 100%;
                     margin: 1em 0;
-                    page-break-inside: avoid;  /* Keep tables together */
-                }}
-                
-                tr {{
                     page-break-inside: avoid;
+                    table-layout: fixed;  /* Fixed table layout for better overflow control */
                 }}
                 
-                /* Ensure proper spacing and page breaks */
-                p, h1, h2, h3, h4, h5, h6, ul, ol, table {{
+                td, th {{
+                    overflow-wrap: break-word;  /* Allow cell content to wrap */
+                    word-wrap: break-word;
+                    max-width: 100%;
+                }}
+                
+                /* Ensure all block elements respect margins */
+                p, ul, ol, pre, table {{
                     margin-top: 0;
                     margin-bottom: 1em;
-                    break-inside: avoid;
-                    page-break-inside: avoid;
+                    max-width: 100%;
+                    overflow-wrap: break-word;
                 }}
                 
-                /* Prevent orphaned headers */
-                h1, h2, h3, h4, h5, h6 {{
-                    page-break-after: avoid;
+                /* Handle code blocks */
+                pre {{
+                    white-space: pre-wrap;  /* Allow code to wrap */
+                    overflow-x: hidden;  /* Hide horizontal scrollbar */
+                    max-width: 100%;
                 }}
                 
-                /* Keep lists together */
-                li {{
-                    page-break-inside: avoid;
-                }}
-                
-                /* Table handling */
-                table {{
-                    page-break-inside: auto;
-                }}
-                
-                tr {{
-                    page-break-inside: avoid;
-                    page-break-after: auto;
+                code {{
+                    overflow-wrap: break-word;
+                    word-wrap: break-word;
                 }}
             ''', font_config=self.font_config)
             
