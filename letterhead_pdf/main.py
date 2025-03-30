@@ -9,7 +9,22 @@ from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
                       NSRunLoop, NSDate, NSDefaultRunLoopMode)
-from letterhead_pdf.markdown_processor import MarkdownProcessor
+# Import markdown processor conditionally
+try:
+    # Add site-packages directory to Python path
+    import site
+    import os
+    venv_dir = os.environ.get('VIRTUAL_ENV')
+    if venv_dir:
+        site_packages = os.path.join(venv_dir, 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}', 'site-packages')
+        if os.path.exists(site_packages) and site_packages not in sys.path:
+            sys.path.append(site_packages)
+            print(f"Added site-packages directory to Python path: {site_packages}")
+    
+    from letterhead_pdf.markdown_processor import MarkdownProcessor, MARKDOWN_AVAILABLE
+except ImportError as e:
+    print(f"Error importing markdown module: {e}")
+    MARKDOWN_AVAILABLE = False
 from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
                    NSModalResponseOK, NSModalResponseCancel,
                    NSApplicationActivationPolicyRegular)
@@ -143,6 +158,28 @@ def merge_md_command(args: argparse.Namespace) -> int:
     try:
         logging.info(f"Starting merge-md command with args: {args}")
         
+        # Check if Markdown is available
+        if not MARKDOWN_AVAILABLE:
+            error_msg = (
+                "Markdown module not available. For Markdown processing, please install the required dependencies:\n"
+                "Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@0.8.0\n\n"
+                "For more information, see the installation instructions in the README."
+            )
+            logging.error("Markdown module not available for Markdown processing")
+            print(error_msg)
+            return 1
+        
+        # Check if WeasyPrint is available
+        import importlib.util
+        weasyprint_available = importlib.util.find_spec("weasyprint") is not None
+        
+        if not weasyprint_available:
+            logging.warning("WeasyPrint not available, falling back to ReportLab for Markdown processing")
+            print("Note: WeasyPrint is not installed. Using ReportLab for Markdown processing (limited formatting).")
+            print("For high-quality Markdown processing, please install the required dependencies:")
+            print("1. Install system dependencies: brew install pango cairo fontconfig freetype harfbuzz")
+            print("2. Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@0.8.0")
+        
         # Initialize with custom suffix if provided
         suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " wm.pdf"
         
@@ -150,14 +187,20 @@ def merge_md_command(args: argparse.Namespace) -> int:
         destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
         letterhead = LetterheadPDF(letterhead_path=args.letterhead_path, destination=destination, suffix=suffix)
         
-        # Use save dialog to get output location
-        short_name = os.path.splitext(args.title)[0]
-        output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
-        
-        if not output_path:
-            logging.warning("Save dialog cancelled")
-            print("Save dialog cancelled.")
-            return 1
+        # Determine output path
+        if hasattr(args, 'output') and args.output:
+            # Use specified output path directly
+            output_path = os.path.expanduser(args.output)
+            logging.info(f"Using specified output path: {output_path}")
+        else:
+            # Use save dialog to get output location
+            short_name = os.path.splitext(args.title)[0]
+            output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
+            
+            if not output_path:
+                logging.warning("Save dialog cancelled")
+                print("Save dialog cancelled.")
+                return 1
             
         if not os.path.exists(args.input_path):
             error_msg = f"Input file not found: {args.input_path}"
@@ -179,6 +222,7 @@ def merge_md_command(args: argparse.Namespace) -> int:
                 letterhead.merge_pdfs(temp_pdf, output_path, strategy=args.strategy)
                 
                 logging.info("Merge-md command completed successfully")
+                print(f"Successfully created PDF with letterhead: {output_path}")
                 return 0
                 
             except Exception as e:
@@ -204,14 +248,20 @@ def print_command(args: argparse.Namespace) -> int:
         destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
         letterhead = LetterheadPDF(letterhead_path=args.letterhead_path, destination=destination, suffix=suffix)
         
-        # Use save dialog to get output location
-        short_name = os.path.splitext(args.title)[0]
-        output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
-        
-        if not output_path:
-            logging.warning("Save dialog cancelled")
-            print("Save dialog cancelled.")
-            return 1
+        # Determine output path
+        if hasattr(args, 'output') and args.output:
+            # Use specified output path directly
+            output_path = os.path.expanduser(args.output)
+            logging.info(f"Using specified output path: {output_path}")
+        else:
+            # Use save dialog to get output location
+            short_name = os.path.splitext(args.title)[0]
+            output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
+            
+            if not output_path:
+                logging.warning("Save dialog cancelled")
+                print("Save dialog cancelled.")
+                return 1
             
         if not os.path.exists(args.input_path):
             error_msg = f"Input file not found: {args.input_path}"
@@ -324,6 +374,7 @@ def main(args: Optional[list] = None) -> int:
     merge_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
                             default='darken', help='Merging strategy to use (default: darken)')
     merge_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
+    merge_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     
     # Add merge-md command
     merge_md_parser = subparsers.add_parser('merge-md', help='Convert Markdown to PDF and merge with letterhead')
@@ -334,6 +385,7 @@ def main(args: Optional[list] = None) -> int:
     merge_md_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
                               default='darken', help='Merging strategy to use (default: darken)')
     merge_md_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
+    merge_md_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     
     args = parser.parse_args(args)
     
