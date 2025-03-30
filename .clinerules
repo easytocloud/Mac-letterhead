@@ -1,0 +1,39 @@
+Mac-letterhead is a Python module that provides a drag-and-drop interface for merging letterhead templates with PDF and Markdown documents.
+The letterhead is applied 'under' the content, as if the document was printed on company stationery.
+
+Key Features:
+- Drag & drop interface for easy document processing
+- Support for both PDF and Markdown input files
+- Smart letterhead space detection to avoid content overlap (for Markdown)
+- Multiple merging strategies (darken, multiply, overlay, etc.)
+- Multi-page letterhead support (different designs for first/subsequent pages)
+
+Usage Modes:
+1. Install Mode:
+   ```
+   uvx mac-letterhead install /path/to/letterhead.pdf
+   ```
+   Creates a desktop application for drag-and-drop document processing
+
+2. Direct Merge Mode:
+   For PDF files:
+   ```
+   uvx mac-letterhead merge /path/to/letterhead.pdf "Title" output_dir input.pdf
+   ```
+   For Markdown files:
+   ```
+   uvx mac-letterhead merge-md /path/to/letterhead.pdf "Title" output_dir input.md
+   ```
+
+Current State:
+- Fully functional PDF and Markdown document processing
+- Smart margin detection for letterhead content
+- Multiple merging strategies implemented
+- Professional document formatting with proper spacing
+
+# Developer information
+Keep this package 'self contained' so that it relies only on components in the package.
+Avoid relying on installed software packages outside, either python or brew.
+
+Use - and update when necessary - make and the Makefile in the project root to test and publish the package.
+Avoid making changes to tests/utils unless explicitely asked for, the utils are considered static and finished.
