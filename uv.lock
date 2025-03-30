@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = "==3.11.*"
 
 [[package]]
@@ -120,14 +120,6 @@ wheels = [
 name = "mac-letterhead"
 source = { editable = "." }
 dependencies = [
-    { name = "pymupdf" },
-    { name = "pyobjc-core" },
-    { name = "pyobjc-framework-cocoa" },
-    { name = "pyobjc-framework-quartz" },
-]
-
-[package.optional-dependencies]
-markdown = [
     { name = "cffi" },
     { name = "cssselect2" },
     { name = "fonttools" },
@@ -136,6 +128,10 @@ markdown = [
     { name = "pillow" },
     { name = "pydyf" },
     { name = "pygments" },
+    { name = "pymupdf" },
+    { name = "pyobjc-core" },
+    { name = "pyobjc-framework-cocoa" },
+    { name = "pyobjc-framework-quartz" },
     { name = "pyphen" },
     { name = "six" },
     { name = "tinycss2" },
@@ -145,24 +141,24 @@ markdown = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cffi", marker = "extra == 'markdown'", specifier = ">=1.15.0" },
-    { name = "cssselect2", marker = "extra == 'markdown'", specifier = ">=0.7.0" },
-    { name = "fonttools", marker = "extra == 'markdown'", specifier = ">=4.38.0" },
-    { name = "html5lib", marker = "extra == 'markdown'", specifier = "==1.1" },
+    { name = "cffi", specifier = ">=1.15.0" },
+    { name = "cssselect2", specifier = ">=0.7.0" },
+    { name = "fonttools", specifier = ">=4.38.0" },
+    { name = "html5lib", specifier = "==1.1" },
     { name = "importlib-resources", marker = "python_full_version < '3.9'" },
-    { name = "markdown", marker = "extra == 'markdown'", specifier = "==3.7" },
-    { name = "pillow", marker = "extra == 'markdown'", specifier = "==11.1.0" },
-    { name = "pydyf", marker = "extra == 'markdown'", specifier = ">=0.5.0" },
-    { name = "pygments", marker = "extra == 'markdown'", specifier = ">=2.16.0" },
+    { name = "markdown", specifier = "==3.7" },
+    { name = "pillow", specifier = "==11.1.0" },
+    { name = "pydyf", specifier = ">=0.5.0" },
+    { name = "pygments", specifier = ">=2.16.0" },
     { name = "pymupdf", specifier = "==1.25.4" },
     { name = "pyobjc-core", specifier = "==11.0" },
     { name = "pyobjc-framework-cocoa", specifier = "==11.0" },
     { name = "pyobjc-framework-quartz", specifier = "==11.0" },
-    { name = "pyphen", marker = "extra == 'markdown'", specifier = ">=0.13.0" },
-    { name = "six", marker = "extra == 'markdown'", specifier = "==1.16.0" },
-    { name = "tinycss2", marker = "extra == 'markdown'", specifier = ">=1.2.0" },
-    { name = "weasyprint", marker = "extra == 'markdown'", specifier = "==65.0" },
-    { name = "webencodings", marker = "extra == 'markdown'", specifier = "==0.5.1" },
+    { name = "pyphen", specifier = ">=0.13.0" },
+    { name = "six", specifier = "==1.16.0" },
+    { name = "tinycss2", specifier = ">=1.2.0" },
+    { name = "weasyprint", specifier = "==65.0" },
+    { name = "webencodings", specifier = "==0.5.1" },
 ]
 provides-extras = ["markdown"]
 
