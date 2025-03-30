@@ -18,10 +18,6 @@ dependencies = [
     "pyobjc-core==11.0",
     "importlib-resources; python_version < '3.9'",  # For accessing package resources
     "pymupdf==1.25.4",   # For PDF analysis and margin detection
-]
-
-[project.optional-dependencies]
-markdown = [
     "markdown==3.7",     # For parsing markdown to HTML
     "html5lib==1.1",     # For HTML parsing
     "weasyprint==65.0",  # For converting markdown/HTML to PDF
@@ -36,6 +32,10 @@ markdown = [
     "tinycss2>=1.2.0",   # Required by WeasyPrint
     "pygments>=2.16.0"   # For syntax highlighting in code blocks
 ]
+
+# Keep empty optional dependencies section for backward compatibility
+[project.optional-dependencies]
+markdown = []
 
 [project.scripts]
 mac-letterhead = "letterhead_pdf.main:main"

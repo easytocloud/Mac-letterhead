@@ -24,29 +24,23 @@ A macOS utility for merging letterhead templates with PDF and Markdown documents
 
 Mac-letterhead requires the Python uv package manager (install with `pip install uv` if you don't have it).
 
-### Recommended Installation (with Markdown Support)
+### System Dependencies
 
-For the full experience with Markdown support (recommended for version 0.8.0+):
-
-1. **Install System Dependencies** (one-time setup):
-   ```bash
-   brew install pango cairo fontconfig freetype harfbuzz
-   ```
-
-2. **Install Mac-letterhead with Markdown Support**:
-   ```bash
-   uvx mac-letterhead[markdown]@0.8.0
-   ```
-
-> **Note**: Version 0.8.0 and above are designed to work best with Markdown support. The basic version lacks significant improvements over earlier releases.
-
-### Basic Installation (PDF Only)
-
-If you only need to apply letterhead to PDF documents and don't need Markdown support:
+First, install the required system dependencies (one-time setup):
 
 ```bash
-uvx mac-letterhead
+brew install pango cairo fontconfig freetype harfbuzz
 ```
+
+### Install Mac-letterhead
+
+Starting with version 0.8.1, Markdown support is included by default:
+
+```bash
+uvx mac-letterhead@0.8.1
+```
+
+> **Note**: Version 0.8.1 includes full Markdown support with syntax highlighting and improved formatting.
 
 ## Quick Start
 
@@ -55,7 +49,7 @@ uvx mac-letterhead
 The "install" command creates a desktop application (droplet) that you can use to apply your letterhead:
 
 ```bash
-uvx mac-letterhead[markdown]@0.8.0 install /path/to/your/letterhead.pdf
+uvx mac-letterhead@0.8.1 install /path/to/your/letterhead.pdf
 ```
 
 This creates a desktop application icon that you can drag-and-drop documents onto. The application is named based on your letterhead file.
@@ -94,6 +88,13 @@ Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead s
   - Maintains consistent formatting across pages
   - Prevents table splitting across pages
 
+#### New in v0.8.1
+
+- **Markdown Support Included by Default**:
+  - No need for optional [markdown] installation
+  - All Markdown features available out-of-the-box
+  - System dependencies still required (pango, cairo, etc.)
+
 #### New in v0.8.0
 
 - **Enhanced Code Block Formatting**:
@@ -114,7 +115,7 @@ Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead s
 ### Custom Application Name and Location
 
 ```bash
-uvx mac-letterhead[markdown]@0.8.0 install /path/to/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
+uvx mac-letterhead@0.8.1 install /path/to/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
 ```
 
 ### Different Merging Strategies
@@ -124,12 +125,12 @@ You can directly merge documents with specific strategies:
 For PDF files:
 
 ```bash
-uvx mac-letterhead[markdown]@0.8.0 merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
+uvx mac-letterhead@0.8.1 merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
 ```
 
 For Markdown files:
 ```bash
-uvx mac-letterhead[markdown]@0.8.0 merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
+uvx mac-letterhead@0.8.1 merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
 ```
 
 Available strategies:
@@ -159,8 +160,8 @@ This is ideal for professional documents with customized headers/footers for var
 ## Logging and Troubleshooting
 
 - Check logs at: `~/Library/Logs/Mac-letterhead/letterhead.log`
-- Adjust log level: `uvx mac-letterhead[markdown]@0.8.0 --log-level WARNING install /path/to/letterhead.pdf`
-- View version: `uvx mac-letterhead[markdown]@0.8.0 --version`
+- Adjust log level: `uvx mac-letterhead@0.8.1 --log-level WARNING install /path/to/letterhead.pdf`
+- View version: `uvx mac-letterhead@0.8.1 --version`
 
 ## Use Cases
 
