@@ -168,7 +168,7 @@ on open these_items
 end open
 
 on run
-    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md, .markdown) - converted to PDF with proper margins" & return & return & "Note: On macOS Tahoe beta, you may need to approve file access the first time." buttons {{"OK"}} default button "OK"
+    display dialog "Letterhead Applier v{version}" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md, .markdown) - converted to PDF with proper margins" & return & return & "Note: On macOS Tahoe beta, you may need to approve file access the first time." buttons {{"OK"}} default button "OK"
 end run
 
 -- Helper function to convert text to lowercase
