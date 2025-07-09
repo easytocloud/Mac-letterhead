@@ -1,7 +1,24 @@
+# Local development targets
+.PHONY: install-local local-droplet test-dev-droplet clean-local-droplets
+
+install-local:
+	pip install -e .
+
+local-droplet:
+	python3 -c "from letterhead_pdf.installer import create_applescript_droplet; create_applescript_droplet('$(HOME)/Stationery/easy.pdf', app_name='Local Test Droplet', output_dir='$(HOME)/Applications', local=True, python_path='$(shell which python3)')"
+
+test-dev-droplet: test-files
+	@echo "Creating development test droplet..."
+	uv run python -m letterhead_pdf.main install $(TEST_LETTERHEAD) --dev --name "Test Dev Droplet" --output-dir $(HOME)/Desktop
+	@echo "Development droplet created on Desktop"
+
+clean-local-droplets:
+	rm -rf $(HOME)/Applications/Local\ Test\ Droplet.app
+	rm -rf $(HOME)/Desktop/Test\ Dev\ Droplet.app
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.8.5
+VERSION := 0.9.0
 
 # Directory setup
 TEST_DIR := tests
@@ -161,9 +178,17 @@ help:
 	@echo "  test-py<X>-basic - Test basic functionality with Python <X> (e.g., test-py3.11-basic)"
 	@echo "  test-py<X>-full  - Test full functionality with Python <X> (e.g., test-py3.11-full)"
 	@echo "  test-py<X>-full-weasyprint - Test full functionality with WeasyPrint with Python <X> (e.g., test-py3.11-full-weasyprint)"
+	@echo "  test-dev-droplet - Create a development droplet using local code"
+	@echo "  local-droplet - Create legacy local droplet (requires ~/Stationery/easy.pdf)"
+	@echo "  clean-local-droplets - Remove development and local test droplets"
 	@echo "  clean        - Remove build artifacts and test files"
 	@echo "  test-files   - Set up test files in test directory"
 	@echo "  publish      - Update version, push to GitHub, and trigger PyPI release"
 	@echo "  help         - Show this help message"
+	@echo ""
+	@echo "Development workflow:"
+	@echo "  1. make test-dev-droplet  # Create test droplet with local code"
+	@echo "  2. Test the droplet by dragging files onto it"
+	@echo "  3. make clean-local-droplets  # Clean up when done"
 	@echo ""
 	@echo "Current version: $(VERSION)"

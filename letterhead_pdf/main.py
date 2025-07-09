@@ -311,11 +311,21 @@ def install_command(args: argparse.Namespace) -> int:
         letterhead_name = os.path.splitext(os.path.basename(args.letterhead_path))[0]
         app_name = f"Letterhead {letterhead_name}"
         
+        # Check for development mode
+        is_dev = hasattr(args, 'dev') and args.dev
+        python_path = getattr(args, 'python_path', None) if is_dev else None
+        
+        if is_dev:
+            app_name += " (Dev)"
+            logging.info("Creating development droplet")
+        
         # Create the AppleScript droplet
         app_path = create_applescript_droplet(
             letterhead_path=args.letterhead_path,
             app_name=app_name if hasattr(args, 'name') and args.name else app_name,
-            output_dir=args.output_dir if hasattr(args, 'output_dir') else None
+            output_dir=args.output_dir if hasattr(args, 'output_dir') else None,
+            local=is_dev,
+            python_path=python_path
         )
         
         logging.info(f"Install command completed successfully: {app_path}")
@@ -355,6 +365,8 @@ def main(args: Optional[list] = None) -> int:
     install_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
     install_parser.add_argument('--name', help='Custom name for the applier app (default: "Letterhead <filename>")')
     install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
+    install_parser.add_argument('--dev', action='store_true', help='Create a development droplet using local code')
+    install_parser.add_argument('--python-path', help='Path to Python interpreter for development mode (default: current interpreter)')
     
     # Merge commands
     merge_parser = subparsers.add_parser('merge', help='Merge letterhead with PDF document')
