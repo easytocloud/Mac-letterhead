@@ -47,94 +47,149 @@ def create_applescript_droplet(letterhead_path: str, app_name: str = "Letterhead
     # Create temporary directory structure
     tmp_dir = tempfile.mkdtemp()
     try:
-        # Create the AppleScript
+        # Create the AppleScript with enhanced security and error handling
         applescript_content = f'''-- Letterhead Applier AppleScript Droplet
--- This script takes dropped PDF files and applies a letterhead template
+-- This script takes dropped PDF and Markdown files and applies a letterhead template
+-- Enhanced for macOS Tahoe beta security requirements
 
 on open these_items
-    -- Process each dropped file
+    -- First, check if we have any items
+    if (count of these_items) is 0 then
+        display dialog "No files were dropped. Please drag PDF or Markdown files onto this application." buttons {{"OK"}} default button "OK" with icon note
+        return
+    end if
+    
+    -- Process each dropped file with enhanced error handling
     repeat with i from 1 to count of these_items
         set this_item to item i of these_items
         
         try
-            -- Get the file path as string directly from the dropped item
-            set this_path to this_item as string
+            -- Enhanced file validation for security
+            tell application "System Events"
+                set file_exists to exists file (this_item as string)
+                if not file_exists then
+                    display dialog "File no longer exists or cannot be accessed: " & (this_item as string) buttons {{"OK"}} default button "OK" with icon caution
+                    return
+                end if
+                
+                set file_info to info for this_item
+                set file_name to name of file_info
+                set file_extension to name extension of file_info
+            end tell
             
-            -- Check if it's a supported file type
-            if this_path ends with ".pdf" or this_path ends with ".PDF" or this_path ends with ".md" or this_path ends with ".MD" then
-                -- Get the POSIX path and determine file type
-                set input_file to POSIX path of this_item
-                
-                -- Get the full application path
-                set app_path to POSIX path of (path to me)
-                
-                -- We know exactly where the letterhead PDF is located
-                do shell script "mkdir -p \\"$HOME/Library/Logs/Mac-letterhead\\""
-                
-                -- Get the app bundle path
-                -- First get the directory of the executable (Contents/MacOS)
-                set app_dir to do shell script "dirname " & quoted form of app_path
-                
-                -- Then go up to the .app bundle, containing the required components
-                set app_bundle to do shell script "echo " & quoted form of app_path & " | sed -E 's:/Contents/.*$::'"
-                
-                -- The letterhead is always in the Resources folder (we put it there during creation)
-                set letterhead_path to app_bundle & "/Contents/Resources/letterhead.pdf"
-                set home_path to POSIX path of (path to home folder)
-                
-                -- Make sure the letterhead file exists
-                if (do shell script "[ -f \\"" & letterhead_path & "\\" ] && echo \\"yes\\" || echo \\"no\\"") is "no" then
-                    error "Letterhead template not found at " & letterhead_path & ". Please reinstall the letterhead applier."
-                end if
-                
-                -- Get file extension and basename
-                set file_ext to do shell script "echo " & quoted form of this_path & " | tr '[:upper:]' '[:lower:]' | grep -o '\\\\.[^.]*$'"
-                set quoted_input_file to quoted form of input_file
-                set file_basename to do shell script "basename " & quoted_input_file & " " & file_ext
-                
-                -- Get the directory of the source file for default save location
-                set source_dir to do shell script "dirname " & quoted_input_file
-                
-                -- Get the application name for postfix
-                set app_name to do shell script "basename " & quoted form of app_path & " | sed 's/\\\\.app$//'"
-                
-                -- Build the command
-                set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
-                -- Use version from Python
-                set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx mac-letterhead@{version} "
-                
-                if file_ext is equal to ".md" then
-                    -- For markdown files, use merge-md command
-                    set cmd to cmd & "merge-md "
-                else
-                    -- For PDF files, use merge command
-                    set cmd to cmd & "merge "
-                end if
-                
-                set cmd to cmd & quoted form of letterhead_path & " \\"" & file_basename & "\\" " & quoted form of source_dir & " " & quoted_input_file & " --strategy darken --output-postfix \\"" & app_name & "\\""
-                
-                -- Execute the command with careful handling for immediate error feedback
-                try
-                    do shell script "echo 'DEBUG: Final command: " & cmd & "' >> /tmp/letterhead.log"
-                    do shell script cmd
-                on error execErr
-                    display dialog "Error processing file: " & execErr buttons {{"OK"}} default button "OK" with icon stop
-                    error execErr
-                end try
-            else
-                -- Not a supported file type
-                display dialog "Unsupported file type. Please use PDF (.pdf) or Markdown (.md) files." buttons {{"OK"}} default button "OK" with icon stop
+            -- Check if it's a supported file type (case insensitive)
+            set file_extension_lower to my toLower(file_extension)
+            if file_extension_lower is not in {{"pdf", "md", "markdown"}} then
+                display dialog "Unsupported file type: " & file_extension & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md, .markdown)" buttons {{"OK"}} default button "OK" with icon stop
+                return
             end if
+            
+            -- Get the POSIX path safely
+            set input_file to POSIX path of this_item
+            
+            -- Get paths and validate letterhead
+            set app_path to POSIX path of (path to me)
+            set app_bundle to my getAppBundle(app_path)
+            set letterhead_path to app_bundle & "/Contents/Resources/letterhead.pdf"
+            
+            -- Validate letterhead exists
+            tell application "System Events"
+                if not (exists file letterhead_path) then
+                    display dialog "Letterhead template not found. Please reinstall the letterhead applier." buttons {{"OK"}} default button "OK" with icon stop
+                    return
+                end if
+            end tell
+            
+            -- Create log directory
+            do shell script "mkdir -p \\"$HOME/Library/Logs/Mac-letterhead\\""
+            
+            -- Get file basename without extension
+            set file_basename to my getBasename(file_name, file_extension)
+            
+            -- Get the directory of the source file for default save location
+            set source_dir to do shell script "dirname " & quoted form of input_file
+            set home_path to POSIX path of (path to home folder)
+            
+            -- Get the application name for postfix
+            set app_name to do shell script "basename " & quoted form of app_path & " | sed 's/\\\\.app$//'"
+            
+            -- Build the command with proper quoting and error handling
+            set cmd to "export HOME=" & quoted form of home_path & " && cd " & quoted form of source_dir
+            set cmd to cmd & " && /usr/bin/env PATH=$HOME/.local/bin:$HOME/Library/Python/*/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin uvx --quiet mac-letterhead@{version} "
+            
+            -- Choose command based on file type
+            if file_extension_lower is in {{"md", "markdown"}} then
+                set cmd to cmd & "merge-md "
+            else
+                set cmd to cmd & "merge "
+            end if
+            
+            set cmd to cmd & quoted form of letterhead_path & " \\"" & file_basename & "\\" " & quoted form of source_dir & " " & quoted form of input_file & " --strategy darken --output-postfix \\"" & app_name & "\\""
+            
+            -- Execute the command with enhanced error handling
+            try
+                -- Log the command for debugging
+                do shell script "echo 'Processing: " & file_name & "' >> \\"$HOME/Library/Logs/Mac-letterhead/droplet.log\\""
+                do shell script "echo 'Command: " & cmd & "' >> \\"$HOME/Library/Logs/Mac-letterhead/droplet.log\\""
+                
+                -- Execute the main command
+                set result_output to do shell script cmd
+                
+                -- Log success
+                do shell script "echo 'Success: " & file_name & "' >> \\"$HOME/Library/Logs/Mac-letterhead/droplet.log\\""
+                
+                -- Show success notification (brief)
+                display notification "Successfully processed " & file_name with title "Letterhead Applied"
+                
+            on error execErr
+                -- Enhanced error handling with user-friendly messages
+                set error_msg to "Error processing " & file_name & ":" & return & return
+                
+                if execErr contains "Markdown module not available" then
+                    set error_msg to error_msg & "Markdown processing is not available. This may be due to missing dependencies." & return & return & "Solutions:" & return & "1. Try processing a PDF file instead" & return & "2. Contact support for assistance with Markdown files"
+                else if execErr contains "uvx" then
+                    set error_msg to error_msg & "Could not run mac-letterhead. Please ensure it's properly installed." & return & return & "Try running this in Terminal:" & return & "uvx mac-letterhead@{version} --version"
+                else
+                    set error_msg to error_msg & execErr
+                end if
+                
+                -- Log the error
+                do shell script "echo 'Error: " & execErr & "' >> \\"$HOME/Library/Logs/Mac-letterhead/droplet.log\\""
+                
+                display dialog error_msg buttons {{"OK"}} default button "OK" with icon stop
+            end try
+            
         on error errMsg
-            -- Error getting file info
+            -- Top-level error handling
+            do shell script "echo 'Top-level error: " & errMsg & "' >> \\"$HOME/Library/Logs/Mac-letterhead/droplet.log\\""
             display dialog "Error processing file: " & errMsg buttons {{"OK"}} default button "OK" with icon stop
         end try
     end repeat
 end open
 
 on run
-    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md) - will be converted to PDF with proper margins" buttons {{"OK"}} default button "OK"
-end run'''
+    display dialog "Letterhead Applier" & return & return & "To apply a letterhead to a document:" & return & "1. Drag and drop a PDF or Markdown (.md) file onto this application icon" & return & "2. The letterhead will be applied automatically" & return & "3. You'll be prompted to save the merged document" & return & return & "Supported file types:" & return & "• PDF files (.pdf)" & return & "• Markdown files (.md, .markdown) - converted to PDF with proper margins" & return & return & "Note: On macOS Tahoe beta, you may need to approve file access the first time." buttons {{"OK"}} default button "OK"
+end run
+
+-- Helper function to convert text to lowercase
+on toLower(str)
+    return do shell script "echo " & quoted form of str & " | tr '[:upper:]' '[:lower:]'"
+end toLower
+
+-- Helper function to get app bundle path
+on getAppBundle(app_path)
+    return do shell script "echo " & quoted form of app_path & " | sed -E 's:/Contents/.*$::'"
+end getAppBundle
+
+-- Helper function to get basename without extension
+on getBasename(file_name, file_extension)
+    if file_extension is "" then
+        return file_name
+    else
+        set ext_length to (length of file_extension) + 1
+        return text 1 thru -(ext_length) of file_name
+    end if
+end getBasename'''
         
         applescript_path = os.path.join(tmp_dir, "letterhead_droplet.applescript")
         with open(applescript_path, 'w') as f:

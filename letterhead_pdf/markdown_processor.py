@@ -14,14 +14,24 @@ import re
 try:
     import markdown
     MARKDOWN_AVAILABLE = True
-    print("Markdown module imported successfully")
 except ImportError as e:
     MARKDOWN_AVAILABLE = False
-    print(f"Error importing markdown module: {e}")
-    logging.warning(f"Markdown module not available: {e}. Install with: uvx mac-letterhead[markdown]@0.8.0")
+    logging.warning(f"Markdown module not available: {e}. Install with: uvx mac-letterhead@0.8.2")
 
-# Check if WeasyPrint is available
-WEASYPRINT_AVAILABLE = importlib.util.find_spec("weasyprint") is not None
+# Check if WeasyPrint is available and functional
+WEASYPRINT_AVAILABLE = False
+if importlib.util.find_spec("weasyprint") is not None:
+    try:
+        # Try to import and test WeasyPrint functionality
+        from weasyprint import HTML
+        # Create a simple test to verify WeasyPrint can actually work
+        test_html = HTML(string="<html><body>Test</body></html>")
+        # If this doesn't raise an exception, WeasyPrint is functional
+        WEASYPRINT_AVAILABLE = True
+        logging.info("WeasyPrint is available and functional")
+    except Exception as e:
+        WEASYPRINT_AVAILABLE = False
+        logging.warning(f"WeasyPrint installed but not functional: {e}. Using ReportLab fallback.")
 
 # Check if Pygments is available for syntax highlighting
 PYGMENTS_AVAILABLE = importlib.util.find_spec("pygments") is not None
@@ -44,15 +54,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
-# Import WeasyPrint if available
-if WEASYPRINT_AVAILABLE:
-    import weasyprint
-    from weasyprint import HTML, CSS
-    from weasyprint.text.fonts import FontConfiguration
-    logging.info("Using WeasyPrint for Markdown to PDF conversion")
-else:
-    logging.warning("WeasyPrint not available. Using ReportLab for Markdown to PDF conversion. "
-                   "For better quality, install WeasyPrint with: uvx mac-letterhead[markdown]@0.8.0")
+# WeasyPrint will be imported later when needed to avoid import errors
 
 # Define point unit (1/72 inch)
 pt = 1
@@ -316,7 +318,20 @@ class MarkdownProcessor:
 
     def clean_html_for_reportlab(self, html_content):
         """Clean HTML content to be compatible with ReportLab"""
-        # Clean links - remove title attribute
+        # Remove Pygments code highlighting divs and spans - they're not compatible with ReportLab
+        # Replace codehilite divs with simple pre tags
+        html_content = re.sub(r'<div class="codehilite"><pre><span></span>(.*?)</pre></div>', 
+                             r'<pre>\1</pre>', html_content, flags=re.DOTALL)
+        
+        # Remove all span elements with class attributes (from Pygments)
+        html_content = re.sub(r'<span[^>]*class="[^"]*"[^>]*>(.*?)</span>', r'\1', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<span[^>]*>(.*?)</span>', r'\1', html_content, flags=re.DOTALL)
+        
+        # Remove any remaining div tags with classes
+        html_content = re.sub(r'<div[^>]*class="[^"]*"[^>]*>(.*?)</div>', r'\1', html_content, flags=re.DOTALL)
+        html_content = re.sub(r'<div[^>]*>(.*?)</div>', r'\1', html_content, flags=re.DOTALL)
+        
+        # Clean links - remove title and other attributes
         link_pattern = re.compile(r'<a\s+([^>]+)>')
         
         def clean_link(match):
@@ -333,7 +348,12 @@ class MarkdownProcessor:
         # Convert HTML formatting to ReportLab formatting
         html_content = html_content.replace('<strong>', '<b>').replace('</strong>', '</b>')
         html_content = html_content.replace('<em>', '<i>').replace('</em>', '</i>')
-        html_content = html_content.replace('<code>', '<font face="Courier">', 1).replace('</code>', '</font>', 1)
+        
+        # Handle inline code tags more carefully
+        html_content = re.sub(r'<code[^>]*>(.*?)</code>', r'<font face="Courier">\1</font>', html_content)
+        
+        # Remove any remaining class attributes from any tags
+        html_content = re.sub(r'(\s+class="[^"]*")', '', html_content)
         
         return html_content
 
@@ -617,6 +637,10 @@ class MarkdownProcessor:
     def _md_to_pdf_weasyprint(self, html_content, output_path, margins, page_size):
         """Convert HTML to PDF using WeasyPrint"""
         logging.info("Using WeasyPrint for PDF generation")
+        
+        # Import WeasyPrint components when needed
+        from weasyprint import HTML, CSS
+        from weasyprint.text.fonts import FontConfiguration
         
         # Generate Pygments CSS for syntax highlighting if available
         pygments_css = ""

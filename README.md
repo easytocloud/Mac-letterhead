@@ -34,13 +34,13 @@ brew install pango cairo fontconfig freetype harfbuzz
 
 ### Install Mac-letterhead
 
-Starting with version 0.8.1, Markdown support is included by default:
+Starting with version 0.8.2, Markdown support is included by default with improved fallback rendering:
 
 ```bash
-uvx mac-letterhead@0.8.1
+uvx mac-letterhead@0.8.2
 ```
 
-> **Note**: Version 0.8.1 includes full Markdown support with syntax highlighting and improved formatting.
+> **Note**: Version 0.8.2 includes full Markdown support with syntax highlighting, improved formatting, and proper fallback rendering.
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ uvx mac-letterhead@0.8.1
 The "install" command creates a desktop application (droplet) that you can use to apply your letterhead:
 
 ```bash
-uvx mac-letterhead@0.8.1 install /path/to/your/letterhead.pdf
+uvx mac-letterhead@0.8.2 install /path/to/your/letterhead.pdf
 ```
 
 This creates a desktop application icon that you can drag-and-drop documents onto. The application is named based on your letterhead file.
@@ -88,6 +88,13 @@ Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead s
   - Maintains consistent formatting across pages
   - Prevents table splitting across pages
 
+#### New in v0.8.2
+
+- **Fixed ReportLab Dependency**:
+  - Added ReportLab as a required dependency
+  - Ensures proper fallback rendering when WeasyPrint is not available
+  - Improves compatibility with different system configurations
+
 #### New in v0.8.1
 
 - **Markdown Support Included by Default**:
@@ -115,7 +122,7 @@ Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead s
 ### Custom Application Name and Location
 
 ```bash
-uvx mac-letterhead@0.8.1 install /path/to/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
+uvx mac-letterhead@0.8.2 install /path/to/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
 ```
 
 ### Different Merging Strategies
@@ -125,12 +132,12 @@ You can directly merge documents with specific strategies:
 For PDF files:
 
 ```bash
-uvx mac-letterhead@0.8.1 merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
+uvx mac-letterhead@0.8.2 merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
 ```
 
 For Markdown files:
 ```bash
-uvx mac-letterhead@0.8.1 merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
+uvx mac-letterhead@0.8.2 merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
 ```
 
 Available strategies:
@@ -160,8 +167,8 @@ This is ideal for professional documents with customized headers/footers for var
 ## Logging and Troubleshooting
 
 - Check logs at: `~/Library/Logs/Mac-letterhead/letterhead.log`
-- Adjust log level: `uvx mac-letterhead@0.8.1 --log-level WARNING install /path/to/letterhead.pdf`
-- View version: `uvx mac-letterhead@0.8.1 --version`
+- Adjust log level: `uvx mac-letterhead@0.8.2 --log-level WARNING install /path/to/letterhead.pdf`
+- View version: `uvx mac-letterhead@0.8.2 --version`
 
 ## Use Cases
 

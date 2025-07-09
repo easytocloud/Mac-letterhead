@@ -9,22 +9,13 @@ from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
                       NSRunLoop, NSDate, NSDefaultRunLoopMode)
-# Import markdown processor conditionally
+# Import markdown processor - simplified import logic
 try:
-    # Add site-packages directory to Python path
-    import site
-    import os
-    venv_dir = os.environ.get('VIRTUAL_ENV')
-    if venv_dir:
-        site_packages = os.path.join(venv_dir, 'lib', f'python{sys.version_info.major}.{sys.version_info.minor}', 'site-packages')
-        if os.path.exists(site_packages) and site_packages not in sys.path:
-            sys.path.append(site_packages)
-            print(f"Added site-packages directory to Python path: {site_packages}")
-    
     from letterhead_pdf.markdown_processor import MarkdownProcessor, MARKDOWN_AVAILABLE
 except ImportError as e:
-    print(f"Error importing markdown module: {e}")
+    print(f"Error importing markdown processor: {e}")
     MARKDOWN_AVAILABLE = False
+    MarkdownProcessor = None
 from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
                    NSModalResponseOK, NSModalResponseCancel,
                    NSApplicationActivationPolicyRegular)

@@ -7,7 +7,7 @@ name = "Mac-letterhead"
 dynamic = ["version"]
 description = "A macOS utility to merge letterhead with PDF documents using a drag-and-drop interface"
 readme = "README.md"
-requires-python = "==3.11.*"
+requires-python = ">=3.11"
 license = "MIT"
 authors = [
     { name = "Erik", email = "" }
