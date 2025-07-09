@@ -22,6 +22,15 @@ except ImportError as e:
 WEASYPRINT_AVAILABLE = False
 if importlib.util.find_spec("weasyprint") is not None:
     try:
+        # Set library path for WeasyPrint before importing (needed for uvx isolation)
+        dyld_fallback_path = os.environ.get('DYLD_FALLBACK_LIBRARY_PATH', '')
+        homebrew_lib = '/opt/homebrew/lib'
+        if homebrew_lib not in dyld_fallback_path:
+            if dyld_fallback_path:
+                os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = f"{homebrew_lib}:{dyld_fallback_path}"
+            else:
+                os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = homebrew_lib
+        
         # Try to import and test WeasyPrint functionality
         from weasyprint import HTML
         # Create a simple test to verify WeasyPrint can actually work

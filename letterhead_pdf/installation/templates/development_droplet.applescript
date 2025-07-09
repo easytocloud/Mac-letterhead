@@ -24,9 +24,9 @@ on open dropped_items
                 
                 -- Determine command based on file type
                 if file_extension is "pdf" then
-                    set cmd to "cd " & quoted form of file_dir & " && DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH " & quoted form of "{{PYTHON}}" & " -m letterhead_pdf.main merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path 
+                    set cmd to python_path & " -m letterhead_pdf.main merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
                 else
-                    set cmd to "cd " & quoted form of file_dir & " && DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH " & quoted form of "{{PYTHON}}" & " -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path 
+                    set cmd to python_path & " -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
                 end if
                 
                 -- Execute command
