@@ -10,6 +10,9 @@ on open dropped_items
                 -- Convert file path to POSIX path
                 set posix_path to POSIX path of item_path
                 
+                -- Set letterhead path (passed as parameter)
+                set letterhead_posix to "{{LETTERHEAD_PATH}}"
+                
                 -- Get file info
                 tell application "System Events"
                     set file_name to name of disk item item_path
@@ -21,9 +24,9 @@ on open dropped_items
                 
                 -- Determine command based on file type
                 if file_extension is "pdf" then
-                    set cmd to quoted form of "{{PYTHON}}" & " -m letterhead_pdf.main merge " & quoted form of "{{LETTERHEAD_PATH}}" & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path & " --output-postfix dev"
+                    set cmd to "export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH && cd " & quoted form of file_dir & " && " & quoted form of "{{PYTHON}}" & " -m letterhead_pdf.main merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path & " --dev"
                 else
-                    set cmd to quoted form of "{{PYTHON}}" & " -m letterhead_pdf.main merge-md " & quoted form of "{{LETTERHEAD_PATH}}" & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path & " --output-postfix dev"
+                    set cmd to "export DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib:$DYLD_FALLBACK_LIBRARY_PATH && cd " & quoted form of file_dir & " && " & quoted form of "{{PYTHON}}" & " -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path & " --dev"
                 end if
                 
                 -- Execute command
