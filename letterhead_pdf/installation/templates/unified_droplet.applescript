@@ -38,7 +38,15 @@ on open dropped_items
                     tell application "System Events"
                         if exists file css_path then
                             set css_exists to true
-                            set css_posix to POSIX path of css_path
+                            -- For production mode, copy CSS to temp location to avoid sandboxing issues
+                            if not is_dev_mode then
+                                -- Create temp CSS file that uvx can access
+                                set temp_css_path to "/tmp/mac-letterhead-" & (random number from 10000 to 99999) & ".css"
+                                do shell script "cp " & quoted form of (POSIX path of css_path) & " " & quoted form of temp_css_path
+                                set css_posix to temp_css_path
+                            else
+                                set css_posix to POSIX path of css_path
+                            end if
                         end if
                     end tell
                 end try
