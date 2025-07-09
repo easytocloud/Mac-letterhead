@@ -28,18 +28,20 @@
 
 ### Installation and Packaging
 
-- ✅ **Modular Installation System**: Complete architecture restructuring
+- ✅ **Complete Modular Restructuring**: Full installation system architectural overhaul (v0.9.6)
+- ✅ **Enhanced Component Separation**: Discrete modules for better troubleshooting and maintenance
 - ✅ **Production Installation**: Robust uvx-based installation for end users
-- ✅ **Development Mode**: Local test droplets with `--dev` flag
-- ✅ **Desktop Application Creation**: Automated droplet building
-- ✅ **Drag-and-drop Functionality**: Seamless user interaction
-- ✅ **Command-line Interface**: Full CLI with comprehensive options
+- ✅ **Development Mode**: Local test droplets with `--dev` flag and enhanced debugging
+- ✅ **Desktop Application Creation**: Automated droplet building with template system
+- ✅ **Drag-and-drop Functionality**: Seamless user interaction with CSS support
+- ✅ **Command-line Interface**: Full CLI with comprehensive options and CSS parameters
 - ✅ **Self-contained Packages**: Minimal dependencies with smart fallbacks
-- ✅ **Component Separation**: Better troubleshooting and maintainability
-- ✅ **Template Management**: Separated production vs development templates
-- ✅ **Resource Management**: Efficient file and resource handling
-- ✅ **Validation System**: Input validation and error handling
-- ✅ **macOS Integration**: Native macOS app bundle creation
+- ✅ **Advanced Template Management**: Separated production vs development AppleScript templates
+- ✅ **Enhanced Resource Management**: Bundled CSS, icons, and letterhead file handling
+- ✅ **Comprehensive Validation System**: Input validation and error handling with better diagnostics
+- ✅ **macOS Integration**: Native macOS app bundle creation with resource bundling
+- ✅ **CSS Support**: Default CSS bundling and custom CSS file support for Markdown processing
+- ✅ **Semantic Versioning**: Single source of truth version management in Makefile
 
 ### Testing and Documentation
 
@@ -91,9 +93,19 @@
 
 ## Current Status
 
-### Version 0.9.5 (Current - Production Ready)
+### Version 0.9.6 (Current - Production Ready with Clean CSS Architecture)
 
-The project is currently at version 0.9.5, representing a major architectural improvement:
+The project is currently at version 0.9.6, representing complete architectural maturity:
+
+**Latest Achievement - Clean CSS Architecture (v0.9.6)**:
+- ✅ **Eliminated Hardcoded CSS**: Removed all hardcoded CSS from Python code as requested
+- ✅ **Clean CSS Cascade**: Implemented proper loading order: defaults.css → custom.css → smart margins only
+- ✅ **Cross-Environment Compatibility**: Fixed pkg_resources with modern importlib.resources + fallbacks
+- ✅ **CSS Customization**: Full user styling control while preserving letterhead functionality
+- ✅ **AppleScript Integration**: Templates automatically detect and pass bundled CSS files
+- ✅ **Smart CSS Filtering**: @page rules automatically removed from custom CSS to preserve margins
+
+The project is currently at version 0.9.6, representing a major architectural improvement:
 
 - **PDF Functionality**: Complete, stable, and optimized
 - **Smart Letterhead Processing**: 

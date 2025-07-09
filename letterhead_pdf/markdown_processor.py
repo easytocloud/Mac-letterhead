@@ -742,7 +742,7 @@ class MarkdownProcessor:
         logging.info(f"Generated {len(flowables)} flowables")
         return flowables
 
-    def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str) -> str:
+    def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str, css_path: str = None) -> str:
         """Convert markdown file to PDF with proper margins based on letterhead"""
         logging.info(f"Converting markdown to PDF: {md_path} -> {output_path}")
         
@@ -769,7 +769,7 @@ class MarkdownProcessor:
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
                 if WEASYPRINT_AVAILABLE:
                     # Use WeasyPrint for high-quality PDF generation
-                    self._md_to_pdf_weasyprint(html_content, temp_pdf.name, margins, page_size)
+                    self._md_to_pdf_weasyprint(html_content, temp_pdf.name, margins, page_size, css_path)
                 else:
                     # Fallback to ReportLab
                     self._md_to_pdf_reportlab(html_content, temp_pdf.name, margins, page_size)
@@ -799,7 +799,7 @@ class MarkdownProcessor:
             logging.error(f"Error converting markdown to PDF: {str(e)}")
             raise
     
-    def _md_to_pdf_weasyprint(self, html_content, output_path, margins, page_size):
+    def _md_to_pdf_weasyprint(self, html_content, output_path, margins, page_size, css_path=None):
         """Convert HTML to PDF using WeasyPrint"""
         logging.info("Using WeasyPrint for PDF generation")
         
@@ -807,13 +807,87 @@ class MarkdownProcessor:
         from weasyprint import HTML, CSS
         from weasyprint.text.fonts import FontConfiguration
         
+        # Load default CSS from package
+        defaults_css = ""
+        try:
+            # Try modern importlib.resources first (Python 3.9+)
+            try:
+                from importlib import resources
+                with resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
+                    defaults_css = f.read()
+                logging.info("Loaded default CSS from package using importlib.resources")
+            except (ImportError, AttributeError):
+                # Fallback to importlib_resources for older Python versions
+                try:
+                    import importlib_resources
+                    with importlib_resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
+                        defaults_css = f.read()
+                    logging.info("Loaded default CSS from package using importlib_resources")
+                except ImportError:
+                    # Final fallback to file path
+                    current_dir = os.path.dirname(__file__)
+                    defaults_css_path = os.path.join(current_dir, 'resources', 'defaults.css')
+                    with open(defaults_css_path, 'r', encoding='utf-8') as f:
+                        defaults_css = f.read()
+                    logging.info("Loaded default CSS from package using file path")
+        except Exception as e:
+            logging.warning(f"Could not load default CSS: {e}")
+            defaults_css = ""
+        
+        # Load custom CSS if provided
+        custom_css = ""
+        if css_path and os.path.exists(css_path):
+            try:
+                with open(css_path, 'r', encoding='utf-8') as f:
+                    custom_css = f.read()
+                logging.info(f"Loaded custom CSS from: {css_path}")
+            except Exception as e:
+                logging.warning(f"Could not load custom CSS from {css_path}: {e}")
+        
         # Generate Pygments CSS for syntax highlighting if available
         pygments_css = ""
         if PYGMENTS_AVAILABLE:
             pygments_css = HtmlFormatter().get_style_defs('.codehilite')
             logging.info("Added Pygments CSS for syntax highlighting")
         
-        # Create a basic HTML document with the content
+        # Process custom CSS to remove @page rules that would override margins
+        processed_custom_css = custom_css
+        if custom_css:
+            # Remove any @page rules from custom CSS to preserve smart margins
+            import re
+            processed_custom_css = re.sub(r'@page\s*{[^}]*}', '', custom_css, flags=re.DOTALL | re.IGNORECASE)
+            if processed_custom_css != custom_css:
+                logging.info("Removed @page rules from custom CSS to preserve smart letterhead margins")
+        
+        # Create CSS in the correct order: defaults + custom + hardcoded page settings
+        combined_css = f"""
+        /* ==================== DEFAULT CSS FROM PACKAGE ==================== */
+        {defaults_css}
+        
+        /* ==================== CUSTOM USER CSS (if provided) ==================== */
+        {processed_custom_css}
+        
+        /* ==================== SYNTAX HIGHLIGHTING ==================== */
+        {pygments_css}
+        
+        /* ==================== HARDCODED PAGE LAYOUT (CANNOT BE OVERRIDDEN) ==================== */
+        /* Smart letterhead margins - these override any @page rules above */
+        @page {{
+            margin-top: {margins['first_page']['top']}pt !important;
+            margin-right: {margins['first_page']['right']}pt !important;
+            margin-bottom: {margins['first_page']['bottom']}pt !important;
+            margin-left: {margins['first_page']['left']}pt !important;
+            
+            @bottom-center {{
+                content: counter(page);
+                font-family: Helvetica, Arial, sans-serif;
+                font-size: 9pt;
+                color: #666666;
+            }}
+        }}
+        """
+        
+        # Create a minimal HTML document with the content
         html_template = f"""
         <!DOCTYPE html>
         <html>
@@ -821,112 +895,7 @@ class MarkdownProcessor:
             <meta charset="UTF-8">
             <title>Markdown Document</title>
             <style>
-                @page {{
-                    margin-top: {margins['first_page']['top']}pt;
-                    margin-right: {margins['first_page']['right']}pt;
-                    margin-bottom: {margins['first_page']['bottom']}pt;
-                    margin-left: {margins['first_page']['left']}pt;
-                    @bottom-center {{
-                        content: counter(page);
-                    }}
-                }}
-                
-                /* Basic styling */
-                body {{
-                    font-family: Helvetica, Arial, sans-serif;
-                    font-size: 9pt;  /* Smaller base font size */
-                    line-height: 1.3;
-                    max-width: 100%;
-                    margin: 0;
-                    padding: 0;
-                }}
-                
-                /* Headings */
-                h1 {{ font-size: 14pt; margin-top: 12pt; margin-bottom: 6pt; }}
-                h2 {{ font-size: 12pt; margin-top: 10pt; margin-bottom: 4pt; }}
-                h3 {{ font-size: 10pt; margin-top: 8pt; margin-bottom: 4pt; }}
-                
-                /* Paragraphs */
-                p {{ margin-top: 4pt; margin-bottom: 4pt; }}
-                
-                /* Code blocks with wrapping */
-                pre {{ 
-                    background-color: #f5f5f5; 
-                    border: 1px solid #ccc; 
-                    padding: 8pt; 
-                    font-family: Courier, monospace;
-                    font-size: 9pt;
-                    white-space: pre-wrap;       /* CSS3 */
-                    word-wrap: break-word;       /* IE */
-                    overflow-wrap: break-word;
-                    margin: 8pt 0;
-                }}
-                
-                /* Inline code */
-                code {{ 
-                    font-family: Courier, monospace;
-                    background-color: #f5f5f5;
-                    padding: 1pt 3pt;
-                    border-radius: 3pt;
-                }}
-                
-                /* Blockquotes */
-                blockquote {{
-                    margin-left: 30pt;
-                    margin-right: 30pt;
-                    font-style: italic;
-                    border-left: 3pt solid #ccc;
-                    padding-left: 10pt;
-                }}
-                
-                /* Tables */
-                table {{
-                    border-collapse: collapse;
-                    width: 100%;
-                    margin-top: 12pt;
-                    margin-bottom: 12pt;
-                }}
-                th, td {{
-                    border: 0.25pt solid black;
-                    padding: 6pt;
-                }}
-                th {{ background-color: #f0f0f0; }}
-                
-                /* Lists */
-                ul, ol {{
-                    margin-top: 6pt;
-                    margin-bottom: 6pt;
-                }}
-                li {{
-                    margin-bottom: 3pt;
-                }}
-                
-                /* Syntax highlighting from Pygments */
-                {pygments_css}
-                
-                /* Fix for code blocks to prevent double borders and extra spacing */
-                .codehilite {{
-                    background-color: transparent;
-                    border: none;
-                    padding: 0;
-                    margin: 0;
-                    overflow-x: auto;
-                }}
-                
-                .codehilite pre {{
-                    margin: 0;
-                    padding: 8pt;
-                    background-color: #f5f5f5;
-                    border: 1px solid #ccc;
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                    overflow-wrap: break-word;
-                }}
-                
-                /* Fix for command line code blocks */
-                .codehilite .gp {{ /* Prompt */
-                    padding-right: 4pt;
-                }}
+                {combined_css}
             </style>
         </head>
         <body>

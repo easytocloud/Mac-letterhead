@@ -46,7 +46,8 @@ class DropletBuilder:
         self,
         letterhead_path: str,
         app_name: str = "Letterhead Applier",
-        output_dir: str = None
+        output_dir: str = None,
+        css_path: str = None
     ) -> str:
         """
         Create a droplet application.
@@ -55,6 +56,7 @@ class DropletBuilder:
             letterhead_path: Path to the letterhead PDF file
             app_name: Name for the droplet application
             output_dir: Directory to save the droplet (defaults to Desktop)
+            css_path: Path to custom CSS file for Markdown styling
             
         Returns:
             str: Path to the created droplet application
@@ -68,7 +70,7 @@ class DropletBuilder:
         
         try:
             # Validate inputs
-            self._validate_inputs(letterhead_path, app_name, output_dir)
+            self._validate_inputs(letterhead_path, app_name, output_dir, css_path)
             
             # Determine output location
             output_dir = self._resolve_output_dir(output_dir)
@@ -93,7 +95,7 @@ class DropletBuilder:
                 
                 # Step 3: Set up resources
                 self.resource_manager.setup_app_resources(
-                    temp_app_path, letterhead_path
+                    temp_app_path, letterhead_path, css_path
                 )
                 
                 # Step 4: Configure macOS integration
@@ -116,7 +118,7 @@ class DropletBuilder:
             self.logger.error(error_msg)
             raise InstallerError(error_msg) from e
     
-    def _validate_inputs(self, letterhead_path: str, app_name: str, output_dir: str) -> None:
+    def _validate_inputs(self, letterhead_path: str, app_name: str, output_dir: str, css_path: str = None) -> None:
         """Validate input parameters."""
         # Validate letterhead file
         abs_letterhead_path = os.path.abspath(letterhead_path)
@@ -125,6 +127,15 @@ class DropletBuilder:
         
         if not abs_letterhead_path.lower().endswith('.pdf'):
             raise InstallerError(f"Letterhead must be a PDF file: {abs_letterhead_path}")
+        
+        # Validate CSS file if provided
+        if css_path:
+            abs_css_path = os.path.abspath(css_path)
+            if not os.path.exists(abs_css_path):
+                raise InstallerError(f"CSS file not found: {abs_css_path}")
+            
+            if not abs_css_path.lower().endswith('.css'):
+                raise InstallerError(f"CSS file must have .css extension: {abs_css_path}")
         
         # Validate app name
         if not app_name or not app_name.strip():

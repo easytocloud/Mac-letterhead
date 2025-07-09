@@ -2,16 +2,77 @@
 
 ## Current Work Focus
 
-The project has achieved production-ready status with version 0.9.5, featuring intelligent letterhead processing and modular architecture. Current focus areas include:
+The project has achieved enhanced production-ready status with version 0.9.6, featuring complete architectural restructuring and improved component separation. Current focus areas include:
 
-1. **Smart Margin Detection**: Revolutionary algorithm for optimal content layout
-2. **Modular Architecture**: Enhanced component separation and maintainability  
-3. **Development Workflow**: Robust local testing and debugging capabilities
-4. **Production Stability**: Reliable uvx-based installation across environments
+1. **Component Separation**: Complete modular restructuring for better troubleshooting
+2. **Enhanced Resource Management**: Improved CSS support and bundled resource handling  
+3. **Development Workflow**: Advanced local testing with development droplets
+4. **Semantic Versioning**: Single source of truth version management in Makefile
 
 ## Recent Changes
 
-### Version 0.9.5 Major Restructuring
+### Version 0.9.6 Final CSS Architecture Implementation
+
+**COMPLETED**: Clean CSS Architecture with Cross-Environment Compatibility
+
+#### 1. **CSS Loading System Redesign**
+   - **Problem Resolved**: Eliminated hardcoded CSS from Python code as requested
+   - **Clean Architecture**: Implemented proper CSS cascade order:
+     1. `defaults.css` (from package) - comprehensive baseline styling
+     2. `custom.css` (optional, if provided) - user customizations  
+     3. **Only hardcoded page margins** - smart letterhead margins with `!important`
+   - **Resource Loading Fix**: Replaced deprecated `pkg_resources` with modern `importlib.resources` + fallbacks
+   - **Cross-Environment Support**: Multiple fallback mechanisms for Python 3.9+ compatibility
+
+#### 2. **AppleScript CSS Integration**
+   - **Template Enhancement**: Development and production templates now properly detect bundled CSS
+   - **Automatic CSS Passing**: Droplets automatically include `--css` parameter for merge-md commands
+   - **Smart CSS Filtering**: @page rules automatically removed from custom CSS to preserve smart margins
+   - **Variable Substitution Fix**: Resolved "python_path is not defined" errors in development templates
+
+#### 3. **Validated Complete Workflow**
+   - **Development Droplet**: Successfully created with custom stationery (~/Stationery/easy.pdf + easy.css)
+   - **CSS Customization**: Color and styling changes properly applied while preserving letterhead margins
+   - **Smart Margin Preservation**: Letterhead printable areas honored despite custom CSS
+   - **Cross-Environment Testing**: Works in both development and uvx production environments
+
+### Version 0.9.6 Complete Project Restructuring
+
+**Major Architectural Overhaul Completed**: The entire installation system has been completely restructured into discrete, specialized modules for better maintainability and troubleshooting capabilities.
+
+#### 1. **Complete Installation System Restructuring**
+   - **New Modular Structure**: Created `letterhead_pdf/installation/` directory with specialized modules:
+     - `droplet_builder.py`: Core droplet creation orchestration
+     - `resource_manager.py`: Stationery files and resource bundling
+     - `applescript_generator.py`: Template processing and AppleScript generation  
+     - `macos_integration.py`: Platform-specific macOS operations
+     - `validator.py`: Input validation and error handling
+   - **Enhanced Separation**: Each component has single responsibility for better troubleshooting
+   - **Template System**: Separate production and development AppleScript templates
+   - **Resource Bundling**: Improved handling of icons, CSS, and letterhead files
+
+#### 2. **Enhanced CSS Support for Markdown Processing**
+   - **Bundled CSS**: Default `defaults.css` file included in package resources
+   - **Custom CSS Support**: 
+     - Install command: `--css` parameter for custom CSS files
+     - CLI command: `merge-md --css` parameter for custom styling
+     - Droplet bundling: CSS files included in app bundle resources
+   - **AppleScript Integration**: Droplets automatically pass bundled CSS to merge-md commands
+   - **Fallback Mechanism**: Automatic fallback to minimal CSS if custom CSS unavailable
+
+#### 3. **Improved Development Workflow**
+   - **Local Test Droplets**: Enhanced `make test-dev-droplet` for local development testing
+   - **Development vs Production**: Clear separation between development and production droplet modes
+   - **Template Flexibility**: AppleScript generator supports both embedded templates and legacy fallbacks
+   - **Better Error Handling**: Enhanced error reporting and diagnostic capabilities
+
+#### 4. **Enhanced Semantic Versioning**
+   - **Makefile Version Management**: Single source of truth for version numbers
+   - **Automatic Updates**: Version synchronization across all project files
+   - **Development Testing**: Local droplets use current development version
+   - **Production Consistency**: uvx installations use tagged production versions
+
+### Previous Version 0.9.5 Achievements
 
 1. **Complete Architecture Overhaul**
    - Created modular installation system (`letterhead_pdf/installation/`)

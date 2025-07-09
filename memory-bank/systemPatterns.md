@@ -8,31 +8,33 @@ Mac-letterhead follows a highly modular architecture with enhanced component sep
 Mac-letterhead
 ├── letterhead_pdf/             # Main package
 │   ├── __init__.py             # Package initialization and version management
-│   ├── main.py                 # Entry point and CLI handling
+│   ├── main.py                 # Entry point and CLI handling with CSS support
 │   ├── pdf_merger.py           # PDF merging functionality
 │   ├── pdf_utils.py            # PDF utility functions with smart analysis
-│   ├── markdown_processor.py   # Markdown to PDF conversion
+│   ├── markdown_processor.py   # Markdown to PDF conversion with CSS support
 │   ├── exceptions.py           # Custom exceptions
 │   ├── log_config.py           # Logging configuration
-│   ├── installation/           # Modular installation system
+│   ├── installation/           # Modular installation system (v0.9.6)
 │   │   ├── __init__.py         # Installation package initialization
-│   │   ├── droplet_builder.py  # Core droplet creation logic
-│   │   ├── resource_manager.py # File and resource handling
-│   │   ├── applescript_generator.py # Template processing
-│   │   ├── macos_integration.py # Platform-specific operations
+│   │   ├── droplet_builder.py  # Core droplet creation orchestration
+│   │   ├── resource_manager.py # Stationery and resource bundling
+│   │   ├── applescript_generator.py # Template processing and generation
+│   │   ├── macos_integration.py # Platform-specific macOS operations
 │   │   ├── validator.py        # Input validation and error handling
-│   │   └── templates/          # Execution context templates
-│   │       ├── production_droplet.applescript
-│   │       └── development_droplet.applescript
-│   └── resources/              # Application resources
+│   │   └── templates/          # AppleScript templates by execution context
+│   │       ├── production_droplet.applescript  # uvx production template
+│   │       └── development_droplet.applescript # Local development template
+│   └── resources/              # Application resources and defaults
 │       ├── icon.png            # Application icon
 │       ├── Mac-letterhead.icns # macOS application icon
-│       └── droplet_template.applescript # Legacy template
+│       ├── defaults.css        # Default CSS for Markdown processing
+│       ├── droplet_template.applescript        # Legacy production template
+│       └── droplet_template_local.applescript  # Legacy development template
 ├── tests/                      # Test suite
 │   ├── utils/                  # Test utilities
-│   └── files/                  # Test files
+│   └── files/                  # Test files and generated test data
 ├── memory-bank/                # Documentation and context
-└── Makefile                    # Build, test, and release automation
+└── Makefile                    # Build, test, and release automation (version management)
 ```
 
 ## Key Technical Decisions
@@ -297,3 +299,55 @@ class DevelopmentDropletTemplate(DropletTemplate):
 - **Template system** supports both production and development execution contexts
 - **Resource management** ensures consistent file handling across installation and processing
 - **Validation layer** provides error handling and input checking across all components
+
+## CSS Architecture System (v0.9.6)
+
+### Clean CSS Loading Strategy
+
+**Design Decision**: Eliminate hardcoded CSS from Python code, implementing a clean cascade:
+1. **defaults.css** (from package resources) - comprehensive baseline styling
+2. **custom.css** (optional user file) - user customizations
+3. **hardcoded page margins only** - smart letterhead margins with `!important`
+
+### Resource Loading Implementation
+
+```python
+# Cross-environment resource loading with fallbacks
+def load_default_css():
+    try:
+        # Modern approach (Python 3.9+)
+        from importlib import resources
+        with resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
+            return f.read()
+    except (ImportError, AttributeError):
+        # Backport fallback
+        import importlib_resources
+        with importlib_resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
+            return f.read()
+    except ImportError:
+        # File path fallback
+        current_dir = os.path.dirname(__file__)
+        with open(os.path.join(current_dir, 'resources', 'defaults.css'), 'r') as f:
+            return f.read()
+```
+
+### CSS Processing Pattern
+
+1. **Load Base Styling**: Read defaults.css from package resources
+2. **Load Custom Styling**: Read user-provided CSS file if specified
+3. **Filter Conflicting Rules**: Remove @page rules from custom CSS to preserve smart margins
+4. **Apply Cascade Order**: defaults → custom → hardcoded margins
+5. **Generate Final CSS**: Combine all CSS with smart margins taking precedence
+
+### AppleScript Integration
+
+- **CSS Detection**: Templates automatically detect bundled CSS files in app resources
+- **Parameter Passing**: Droplets automatically include `--css` parameter for merge-md commands
+- **Fallback Handling**: Graceful operation when CSS files are missing or invalid
+
+### Benefits
+
+- **Clean Architecture**: Only page margins hardcoded in Python, all styling externalized
+- **User Customization**: Full CSS customization while preserving letterhead functionality
+- **Cross-Environment**: Compatible with Python 3.9+ and older versions
+- **Smart Precedence**: Letterhead margins always preserved regardless of custom CSS

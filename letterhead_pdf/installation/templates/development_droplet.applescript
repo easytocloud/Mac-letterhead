@@ -13,6 +13,11 @@ on open dropped_items
                 -- Set letterhead path (passed as parameter)
                 set letterhead_posix to "{{LETTERHEAD_PATH}}"
                 
+                -- Get CSS path from app bundle if it exists
+                set app_path to path to me as string
+                set css_path to app_path & "Contents:Resources:style.css"
+                set css_posix to POSIX path of css_path
+                
                 -- Get file info
                 tell application "System Events"
                     set file_name to name of disk item item_path
@@ -24,9 +29,20 @@ on open dropped_items
                 
                 -- Determine command based on file type
                 if file_extension is "pdf" then
-                    set cmd to python_path & " -m letterhead_pdf.main merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                    set cmd to "{{PYTHON}} -m letterhead_pdf.main merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
                 else
-                    set cmd to python_path & " -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                    -- For Markdown files, include CSS parameter if CSS file exists
+                    try
+                        tell application "System Events"
+                            if exists file css_path then
+                                set cmd to "{{PYTHON}} -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path & " --css " & quoted form of css_posix
+                            else
+                                set cmd to "{{PYTHON}} -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                            end if
+                        end tell
+                    on error
+                        set cmd to "{{PYTHON}} -m letterhead_pdf.main merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                    end try
                 end if
                 
                 -- Execute command

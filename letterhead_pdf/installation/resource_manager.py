@@ -22,13 +22,14 @@ class ResourceManager:
         """Initialize the ResourceManager."""
         self.logger = logging.getLogger(__name__)
     
-    def setup_app_resources(self, app_path: str, letterhead_path: str) -> None:
+    def setup_app_resources(self, app_path: str, letterhead_path: str, css_path: str = None) -> None:
         """
         Set up all resources for the app bundle.
         
         Args:
             app_path: Path to the app bundle
             letterhead_path: Path to the letterhead PDF file
+            css_path: Path to custom CSS file (optional)
             
         Raises:
             InstallerError: If resource setup fails
@@ -43,6 +44,9 @@ class ResourceManager:
             
             # Copy letterhead to app resources
             self._copy_letterhead(resources_dir, letterhead_path)
+            
+            # Copy CSS file to app resources
+            self._copy_css(resources_dir, css_path)
             
             # Copy application icons
             self._copy_icons(resources_dir)
@@ -74,6 +78,117 @@ class ResourceManager:
         # Verify the copy
         if not os.path.exists(app_letterhead_path):
             raise InstallerError(f"Failed to copy letterhead to: {app_letterhead_path}")
+    
+    def _copy_css(self, resources_dir: str, css_path: str = None) -> None:
+        """Copy CSS file to app resources or use defaults."""
+        app_css_path = os.path.join(resources_dir, "style.css")
+        
+        if css_path:
+            # Use custom CSS file
+            abs_css_path = os.path.abspath(css_path)
+            
+            # Validate custom CSS file
+            if not os.path.exists(abs_css_path):
+                raise InstallerError(f"Custom CSS file not found: {abs_css_path}")
+            
+            if not abs_css_path.lower().endswith('.css'):
+                raise InstallerError(f"CSS file must have .css extension: {abs_css_path}")
+            
+            # Copy custom CSS file
+            shutil.copy2(abs_css_path, app_css_path)
+            self.logger.info(f"Copied custom CSS: {abs_css_path} -> {app_css_path}")
+        else:
+            # Use default CSS file from package resources
+            try:
+                package_resources_dir = self._get_package_resources_dir()
+                default_css_path = os.path.join(package_resources_dir, "defaults.css")
+                
+                if os.path.exists(default_css_path):
+                    shutil.copy2(default_css_path, app_css_path)
+                    self.logger.info(f"Copied default CSS: {default_css_path} -> {app_css_path}")
+                else:
+                    # If defaults.css doesn't exist, create a minimal CSS file
+                    self._create_minimal_css(app_css_path)
+                    self.logger.info(f"Created minimal CSS: {app_css_path}")
+                    
+            except Exception as e:
+                # Fall back to creating minimal CSS
+                self.logger.warning(f"Could not copy default CSS, creating minimal CSS: {e}")
+                self._create_minimal_css(app_css_path)
+        
+        # Verify the CSS copy
+        if not os.path.exists(app_css_path):
+            raise InstallerError(f"Failed to copy CSS to: {app_css_path}")
+    
+    def _create_minimal_css(self, css_path: str) -> None:
+        """Create a minimal CSS file for Markdown rendering."""
+        minimal_css = """
+/* Minimal CSS for Mac-letterhead Markdown rendering */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000000;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0.5em;
+    margin-bottom: 0.3em;
+    font-weight: bold;
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+}
+
+ul, ol {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    padding-left: 1.5em;
+}
+
+li {
+    margin-bottom: 0.2em;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1em;
+}
+
+th, td {
+    border: 1px solid #ccc;
+    padding: 0.3em 0.5em;
+    text-align: left;
+}
+
+th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+code {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+    background-color: #f5f5f5;
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+}
+
+blockquote {
+    margin: 0.5em 0;
+    padding-left: 1em;
+    border-left: 3px solid #ccc;
+    color: #666;
+}
+"""
+        
+        with open(css_path, 'w', encoding='utf-8') as f:
+            f.write(minimal_css.strip())
     
     def _copy_icons(self, resources_dir: str) -> None:
         """Copy application icons to app resources."""

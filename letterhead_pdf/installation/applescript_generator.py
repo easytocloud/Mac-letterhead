@@ -200,6 +200,10 @@ on open dropped_items
                 set letterhead_path to app_path & "Contents:Resources:letterhead.pdf"
                 set letterhead_posix to POSIX path of letterhead_path
                 
+                -- Get CSS path from app bundle
+                set css_path to app_path & "Contents:Resources:style.css"
+                set css_posix to POSIX path of css_path
+                
                 -- Get file info
                 tell application "System Events"
                     set file_name to name of disk item item_path
@@ -210,7 +214,8 @@ on open dropped_items
                 if file_extension is "pdf" then
                     set cmd to "uvx mac-letterhead@{{VERSION}} merge \\"" & letterhead_posix & "\\" \\"" & file_name & "\\" ~/Desktop \\"" & posix_path & "\\""
                 else
-                    set cmd to "uvx mac-letterhead@{{VERSION}} merge-md \\"" & letterhead_posix & "\\" \\"" & file_name & "\\" ~/Desktop \\"" & posix_path & "\\""
+                    -- For Markdown files, include CSS parameter
+                    set cmd to "uvx mac-letterhead@{{VERSION}} merge-md \\"" & letterhead_posix & "\\" \\"" & file_name & "\\" ~/Desktop \\"" & posix_path & "\\" --css \\"" & css_posix & "\\""
                 end if
                 
                 -- Execute command

@@ -206,8 +206,11 @@ def merge_md_command(args: argparse.Namespace) -> int:
             temp_pdf = os.path.join(temp_dir, "converted.pdf")
             
             try:
+                # Get CSS path if provided
+                css_path = getattr(args, 'css', None)
+                
                 # Convert markdown to PDF with proper margins
-                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path)
+                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path, css_path)
                 
                 # Merge the converted PDF with letterhead
                 letterhead.merge_pdfs(temp_pdf, output_path, strategy=args.strategy)
@@ -328,7 +331,8 @@ def install_command(args: argparse.Namespace) -> int:
         app_path = builder.create_droplet(
             letterhead_path=args.letterhead_path,
             app_name=args.name if hasattr(args, 'name') and args.name else app_name,
-            output_dir=args.output_dir if hasattr(args, 'output_dir') else None
+            output_dir=args.output_dir if hasattr(args, 'output_dir') else None,
+            css_path=args.css if hasattr(args, 'css') and args.css else None
         )
         
         logging.info(f"Install command completed successfully: {app_path}")
@@ -368,6 +372,7 @@ def main(args: Optional[list] = None) -> int:
     install_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
     install_parser.add_argument('--name', help='Custom name for the applier app (default: "Letterhead <filename>")')
     install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
+    install_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling (uses defaults.css if not provided)')
     install_parser.add_argument('--dev', action='store_true', help='Create a development droplet using local code')
     install_parser.add_argument('--python-path', help='Path to Python interpreter for development mode (default: current interpreter)')
     
@@ -392,6 +397,7 @@ def main(args: Optional[list] = None) -> int:
                               default='darken', help='Merging strategy to use (default: darken)')
     merge_md_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
     merge_md_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
+    merge_md_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling')
     
     args = parser.parse_args(args)
     
