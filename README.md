@@ -34,13 +34,13 @@ brew install pango cairo fontconfig freetype harfbuzz
 
 ### Install Mac-letterhead
 
-Starting with version 0.8.2, Markdown support is included by default with improved fallback rendering:
+Starting with version 0.9.5, Mac-letterhead includes enhanced smart margin detection and improved architecture:
 
 ```bash
-uvx mac-letterhead@0.8.2
+uvx mac-letterhead
 ```
 
-> **Note**: Version 0.8.2 includes full Markdown support with syntax highlighting, improved formatting, and proper fallback rendering.
+> **Note**: Version 0.9.5 includes intelligent letterhead positioning detection, modular architecture, and enhanced development tooling.
 
 ## Quick Start
 
@@ -49,7 +49,7 @@ uvx mac-letterhead@0.8.2
 The "install" command creates a desktop application (droplet) that you can use to apply your letterhead:
 
 ```bash
-uvx mac-letterhead@0.8.2 install /path/to/your/letterhead.pdf
+uvx mac-letterhead install /path/to/your/letterhead.pdf
 ```
 
 This creates a desktop application icon that you can drag-and-drop documents onto. The application is named based on your letterhead file.
@@ -75,11 +75,12 @@ That's it! Your document now has the letterhead applied.
 
 Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead support:
 
-- **Smart Space Detection**: Automatically analyzes letterhead PDFs to find safe areas for content
+- **Smart Letterhead Detection**: Automatically analyzes letterhead PDFs to find safe areas for content
+- **Intelligent Position Detection**: Recognizes left, right, and center-positioned letterheads for optimal margins
 - **Professional Formatting**:
   - Headers (h1-h6) with proper sizing and spacing
   - Tables with clean borders and consistent padding
-  - Code blocks with syntax highlighting (enhanced in v0.8.0)
+  - Code blocks with syntax highlighting
   - Lists, blockquotes, and footnotes
   - Links and images
 - **Layout Intelligence**:
@@ -88,42 +89,49 @@ Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead s
   - Maintains consistent formatting across pages
   - Prevents table splitting across pages
 
-#### New in v0.8.2
+#### What's New in v0.9.5
 
-- **Fixed ReportLab Dependency**:
-  - Added ReportLab as a required dependency
-  - Ensures proper fallback rendering when WeasyPrint is not available
-  - Improves compatibility with different system configurations
+- **Smart Margin Detection Algorithm**:
+  - Intelligently detects letterhead position (left, right, center)
+  - **Left-positioned letterheads**: Wider left margin, minimal right margin
+  - **Right-positioned letterheads**: Minimal left margin, wider right margin  
+  - **Center-positioned letterheads**: Symmetric margins
+  - Provides ~82% usable page width regardless of letterhead design
+- **Modular Architecture**:
+  - Reorganized codebase with better component separation
+  - Enhanced troubleshooting capabilities
+  - Cleaner installation system
+- **Development Mode**:
+  - Local test droplets for development and testing
+  - Enhanced debugging capabilities
+- **uvx Environment Compatibility**:
+  - Fixed WeasyPrint library path issues in isolated environments
+  - Improved reliability across different system configurations
 
-#### New in v0.8.1
+#### Previous Enhancements
 
-- **Markdown Support Included by Default**:
-  - No need for optional [markdown] installation
-  - All Markdown features available out-of-the-box
-  - System dependencies still required (pango, cairo, etc.)
-
-#### New in v0.8.0
-
-- **Enhanced Code Block Formatting**:
-  - Syntax highlighting with Pygments
-  - Proper code wrapping to prevent overflow
-  - Fixed spacing and indentation
-  - Support for various programming languages
-- **Improved Typography**:
-  - Optimized font sizes for better readability
-  - Consistent line spacing
-  - Better margin handling
-- **Better Letterhead Integration**:
-  - More precise margin detection
-  - Improved alignment with letterhead elements
+- **v0.8.2**: Fixed ReportLab dependency and improved fallback rendering
+- **v0.8.1**: Markdown support included by default
+- **v0.8.0**: Enhanced code formatting and improved typography
 
 ## Advanced Options
 
 ### Custom Application Name and Location
 
 ```bash
-uvx mac-letterhead@0.8.2 install /path/to/letterhead.pdf --name "Company Letterhead" --output-dir "~/Documents"
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Letterhead"
 ```
+
+### Development Mode
+
+For development and testing, you can create droplets that use your local development code:
+
+```bash
+# Create a development droplet using local code
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Development Test" --dev
+```
+
+Development droplets allow you to test changes without affecting production installations.
 
 ### Different Merging Strategies
 
@@ -132,12 +140,12 @@ You can directly merge documents with specific strategies:
 For PDF files:
 
 ```bash
-uvx mac-letterhead@0.8.2 merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
+uvx mac-letterhead merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
 ```
 
 For Markdown files:
 ```bash
-uvx mac-letterhead@0.8.2 merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
+uvx mac-letterhead merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
 ```
 
 Available strategies:
@@ -166,9 +174,35 @@ This is ideal for professional documents with customized headers/footers for var
 
 ## Logging and Troubleshooting
 
-- Check logs at: `~/Library/Logs/Mac-letterhead/letterhead.log`
-- Adjust log level: `uvx mac-letterhead@0.8.2 --log-level WARNING install /path/to/letterhead.pdf`
-- View version: `uvx mac-letterhead@0.8.2 --version`
+### Log Files
+- **Application logs**: `~/Library/Logs/Mac-letterhead/letterhead.log`
+- **Droplet logs**: `~/Library/Logs/Mac-letterhead/droplet.log`
+
+### Common Commands
+- **View version**: `uvx mac-letterhead --version`
+- **Adjust log level**: `uvx mac-letterhead --log-level WARNING install /path/to/letterhead.pdf`
+- **Development mode**: Use `--dev` flag for local testing
+
+### Common Issues
+
+#### WeasyPrint Library Issues
+If you encounter WeasyPrint library errors, the system automatically falls back to ReportLab:
+```
+WARNING: WeasyPrint could not import some external libraries. Using ReportLab fallback.
+```
+This is normal and doesn't affect functionality.
+
+#### Permission Issues
+If droplets ask for file access permissions:
+1. Check **System Preferences > Security & Privacy > Privacy > Files and Folders**
+2. Allow access for the letterhead application
+3. Test by double-clicking the droplet (shows info dialog)
+
+#### Margin Detection Issues
+The smart margin detection algorithm analyzes letterhead position automatically. If margins seem incorrect:
+1. Ensure your letterhead PDF has clear visual elements (logos, text, graphics)
+2. Check that letterhead elements are positioned in header or footer areas
+3. For troubleshooting, contact support with sample letterhead file
 
 ## Use Cases
 
@@ -182,20 +216,26 @@ This is ideal for professional documents with customized headers/footers for var
 
 ## Features
 
-- Easy installation and usage
-- Multiple letterhead templates support
-- Advanced multi-page letterhead handling for different page designs
-- Self-contained application bundles with embedded templates
-- Direct template usage with no temporary file extraction
-- Original PDF metadata preservation
-- High-quality PDF output
-- Customizable output location
-- Detailed error handling and logging
-- Multiple blend modes for different letterhead styles
-- Markdown to PDF conversion with proper margins
-- Smart letterhead space detection
-- Professional document formatting
-- Support for tables, code blocks, and footnotes
+- **Easy Installation**: Simple `uvx` command installation and usage
+- **Smart Letterhead Detection**: Intelligent position detection for optimal document layout
+- **Multiple Letterhead Templates**: Support for various letterhead designs and positions
+- **Advanced Multi-page Support**: Different letterhead designs for first page, even pages, and odd pages
+- **Development Mode**: Local testing capabilities with `--dev` flag
+- **Self-contained Applications**: Desktop droplets with embedded templates
+- **High-quality Output**: PDF processing without quality loss
+- **Original Metadata Preservation**: Maintains document properties and structure
+- **Multiple Blend Modes**: Various merging strategies for different letterhead styles
+- **Professional Markdown Support**: 
+  - Intelligent margin detection and adjustment
+  - Syntax highlighting for code blocks
+  - Professional formatting for tables, lists, and headers
+  - Support for complex document structures
+- **Robust Architecture**:
+  - Modular component design for better maintainability
+  - Enhanced error handling and logging
+  - uvx environment compatibility
+  - Automatic fallback rendering
+- **Cross-platform Compatibility**: Works across different macOS configurations
 
 ## License
 

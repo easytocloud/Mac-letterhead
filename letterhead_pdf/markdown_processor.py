@@ -173,7 +173,7 @@ class MarkdownProcessor:
         ))
 
     def analyze_page_regions(self, page):
-        """Analyze a page to detect header and footer regions and page size"""
+        """Analyze a page to detect all content regions and page size"""
         page_rect = page.rect
         
         # Determine page size
@@ -189,63 +189,106 @@ class MarkdownProcessor:
             page_size = A4
             logging.info(f"Non-standard page size detected ({width}x{height}), defaulting to A4")
         
-        # Split page into quarters vertically
+        # Split page into quarters vertically for classification
         top_quarter = page_rect.height / 4
         bottom_quarter = page_rect.height * 3 / 4
         
-        # Initialize regions
+        # Track all content regions separately
+        content_regions = []
+        
+        # Analyze text blocks
+        blocks = page.get_text("dict")["blocks"]
+        for block in blocks:
+            if "lines" in block:  # Text block
+                block_rect = fitz.Rect(block["bbox"])
+                block_center_y = (block_rect.y0 + block_rect.y1) / 2
+                
+                # Classify by vertical position
+                if block_center_y < top_quarter:
+                    region_type = "header"
+                elif block_center_y > bottom_quarter:
+                    region_type = "footer"
+                else:
+                    region_type = "middle"
+                
+                content_regions.append((region_type, block_rect))
+                logging.info(f"Text {region_type}: {block_rect}")
+        
+        # Analyze drawings/graphics
+        drawings = page.get_drawings()
+        for drawing in drawings:
+            drawing_rect = fitz.Rect(drawing["rect"])
+            drawing_center_y = (drawing_rect.y0 + drawing_rect.y1) / 2
+            
+            # Skip very small drawings (likely artifacts)
+            if drawing_rect.width < 5 or drawing_rect.height < 5:
+                continue
+            
+            # Skip very large drawings that cover most of the page (likely backgrounds)
+            page_area = page_rect.width * page_rect.height
+            drawing_area = drawing_rect.width * drawing_rect.height
+            area_percentage = (drawing_area / page_area) * 100
+            
+            if area_percentage > 80:  # Skip drawings covering more than 80% of page
+                logging.info(f"Skipping large background drawing: {drawing_rect} ({area_percentage:.1f}% of page)")
+                continue
+            
+            # Skip drawings that span nearly the full width or height (likely borders/backgrounds)
+            width_percentage = (drawing_rect.width / page_rect.width) * 100
+            height_percentage = (drawing_rect.height / page_rect.height) * 100
+            
+            if width_percentage > 90 and height_percentage > 90:
+                logging.info(f"Skipping full-page drawing: {drawing_rect}")
+                continue
+            
+            # Classify by vertical position
+            if drawing_center_y < top_quarter:
+                region_type = "header"
+            elif drawing_center_y > bottom_quarter:
+                region_type = "footer"
+            else:
+                region_type = "middle"
+            
+            content_regions.append((region_type, drawing_rect))
+            logging.info(f"Drawing {region_type}: {drawing_rect}")
+        
+        # Analyze images
+        images = page.get_images()
+        for img_index, img in enumerate(images):
+            # Get image placement info
+            image_list = page.get_image_rects(img[0])
+            for image_rect in image_list:
+                image_center_y = (image_rect.y0 + image_rect.y1) / 2
+                
+                # Classify by vertical position
+                if image_center_y < top_quarter:
+                    region_type = "header"
+                elif image_center_y > bottom_quarter:
+                    region_type = "footer"
+                else:
+                    region_type = "middle"
+                
+                content_regions.append((region_type, image_rect))
+                logging.info(f"Image {region_type}: {image_rect}")
+        
+        # For backward compatibility, also provide combined regions
         header_rect = None
         footer_rect = None
         middle_rect = None
         
-        # First analyze text blocks
-        blocks = page.get_text("dict")["blocks"]
-        for block in blocks:
-            block_rect = fitz.Rect(block["bbox"])
-            block_center = (block_rect.y0 + block_rect.y1) / 2
-            
-            if block_center < top_quarter:
-                if header_rect is None:
-                    header_rect = block_rect
-                else:
-                    header_rect = header_rect.include_rect(block_rect)
-            elif block_center > bottom_quarter:
-                if footer_rect is None:
-                    footer_rect = block_rect
-                else:
-                    footer_rect = footer_rect.include_rect(block_rect)
-            else:
-                if middle_rect is None:
-                    middle_rect = block_rect
-                else:
-                    middle_rect = middle_rect.include_rect(block_rect)
-        
-        # Then analyze drawings
-        paths = page.get_drawings()
-        for path in paths:
-            rect = fitz.Rect(path["rect"])
-            center = (rect.y0 + rect.y1) / 2
-            
-            if center < top_quarter:
-                if header_rect is None:
-                    header_rect = rect
-                else:
-                    header_rect = header_rect.include_rect(rect)
-            elif center > bottom_quarter:
-                if footer_rect is None:
-                    footer_rect = rect
-                else:
-                    footer_rect = footer_rect.include_rect(rect)
-            else:
-                if middle_rect is None:
-                    middle_rect = rect
-                else:
-                    middle_rect = middle_rect.include_rect(rect)
+        for region_type, rect in content_regions:
+            if region_type == "header":
+                header_rect = header_rect.include_rect(rect) if header_rect else rect
+            elif region_type == "footer":
+                footer_rect = footer_rect.include_rect(rect) if footer_rect else rect
+            elif region_type == "middle":
+                middle_rect = middle_rect.include_rect(rect) if middle_rect else rect
         
         return {
             'header': header_rect,
             'footer': footer_rect,
             'middle': middle_rect,
+            'content_regions': content_regions,  # All individual content regions
             'page_rect': page_rect,
             'page_size': page_size,
             'width': width,
@@ -267,23 +310,11 @@ class MarkdownProcessor:
                 regions = self.analyze_page_regions(doc[0])
                 page_rect = regions['page_rect']
                 
-                left_margin = regions['header'].x0 if regions['header'] else 0
-                margins['first_page'] = {
-                    'top': regions['header'].y1 if regions['header'] else 0,
-                    'right': page_rect.width - (page_rect.width - left_margin),
-                    'bottom': page_rect.height - (regions['footer'].y0 if regions['footer'] else page_rect.height),
-                    'left': left_margin
-                }
+                margins['first_page'] = self._calculate_smart_margins(regions, page_rect)
                 
                 if doc.page_count > 1:
                     regions = self.analyze_page_regions(doc[1])
-                    left_margin = regions['header'].x0 if regions['header'] else 0
-                    margins['other_pages'] = {
-                        'top': regions['header'].y1 if regions['header'] else 0,
-                        'right': page_rect.width - (page_rect.width - left_margin),
-                        'bottom': page_rect.height - (regions['footer'].y0 if regions['footer'] else page_rect.height),
-                        'left': left_margin
-                    }
+                    margins['other_pages'] = self._calculate_smart_margins(regions, page_rect)
                 else:
                     margins['other_pages'] = margins['first_page'].copy()
             
@@ -303,6 +334,131 @@ class MarkdownProcessor:
         finally:
             if 'doc' in locals():
                 doc.close()
+
+    def _calculate_smart_margins(self, regions: Dict, page_rect) -> Dict[str, float]:
+        """Calculate margins using comprehensive content analysis including middle blocks"""
+        content_regions = regions.get('content_regions', [])
+        
+        # Default margins (standard document margins)
+        default_margin = 72  # 1 inch in points
+        min_margin = 36      # 0.5 inch minimum
+        safe_padding = 20    # Safe distance from letterhead content
+        
+        page_width = page_rect.width
+        page_height = page_rect.height
+        
+        # Start with default printable area
+        printable_rect = fitz.Rect(
+            default_margin,  # left
+            default_margin,  # top
+            page_width - default_margin,   # right
+            page_height - default_margin   # bottom
+        )
+        
+        logging.info(f"Initial printable area: {printable_rect}")
+        
+        # Adjust for each content region
+        for region_type, content_rect in content_regions:
+            if printable_rect.intersects(content_rect):
+                logging.info(f"Content overlaps printable area: {region_type} at {content_rect}")
+                printable_rect = self._adjust_printable_area(printable_rect, content_rect, page_rect)
+        
+        # Ensure minimum printable area
+        min_width = page_width * 0.3  # At least 30% of page width
+        min_height = page_height * 0.3  # At least 30% of page height
+        
+        if printable_rect.width < min_width or printable_rect.height < min_height:
+            logging.warning(f"Printable area too small: {printable_rect.width}x{printable_rect.height}")
+            # Fall back to centered rectangle with minimum size
+            center_x = page_width / 2
+            center_y = page_height / 2
+            printable_rect = fitz.Rect(
+                center_x - min_width/2,
+                center_y - min_height/2,
+                center_x + min_width/2,
+                center_y + min_height/2
+            )
+        
+        # Convert printable rectangle to margins
+        left_margin = max(min_margin, printable_rect.x0)
+        top_margin = max(min_margin, printable_rect.y0)
+        right_margin = max(min_margin, page_width - printable_rect.x1)
+        bottom_margin = max(min_margin, page_height - printable_rect.y1)
+        
+        # Log the effective printable area
+        final_printable_width = page_width - left_margin - right_margin
+        final_printable_height = page_height - top_margin - bottom_margin
+        usable_percentage = (final_printable_width * final_printable_height) / (page_width * page_height) * 100
+        
+        logging.info(f"Final printable area: {final_printable_width:.1f}x{final_printable_height:.1f}pt ({usable_percentage:.1f}% of page)")
+        logging.info(f"Margins: top={top_margin:.1f}, right={right_margin:.1f}, bottom={bottom_margin:.1f}, left={left_margin:.1f}")
+        
+        return {
+            'top': top_margin,
+            'right': right_margin,
+            'bottom': bottom_margin,
+            'left': left_margin
+        }
+    
+    def _adjust_printable_area(self, printable_rect: fitz.Rect, content_rect: fitz.Rect, page_rect: fitz.Rect) -> fitz.Rect:
+        """Adjust printable area to avoid overlapping with content"""
+        safe_padding = 20
+        
+        # Calculate possible adjustments
+        adjustments = []
+        
+        # Option 1: Move left boundary right (avoid content on left)
+        if content_rect.x1 + safe_padding < page_rect.width * 0.8:
+            new_rect = fitz.Rect(
+                max(printable_rect.x0, content_rect.x1 + safe_padding),
+                printable_rect.y0,
+                printable_rect.x1,
+                printable_rect.y1
+            )
+            if new_rect.width > 0:
+                adjustments.append(new_rect)
+        
+        # Option 2: Move right boundary left (avoid content on right)
+        if content_rect.x0 - safe_padding > page_rect.width * 0.2:
+            new_rect = fitz.Rect(
+                printable_rect.x0,
+                printable_rect.y0,
+                min(printable_rect.x1, content_rect.x0 - safe_padding),
+                printable_rect.y1
+            )
+            if new_rect.width > 0:
+                adjustments.append(new_rect)
+        
+        # Option 3: Move top boundary down (avoid content above)
+        if content_rect.y1 + safe_padding < page_rect.height * 0.8:
+            new_rect = fitz.Rect(
+                printable_rect.x0,
+                max(printable_rect.y0, content_rect.y1 + safe_padding),
+                printable_rect.x1,
+                printable_rect.y1
+            )
+            if new_rect.height > 0:
+                adjustments.append(new_rect)
+        
+        # Option 4: Move bottom boundary up (avoid content below)
+        if content_rect.y0 - safe_padding > page_rect.height * 0.2:
+            new_rect = fitz.Rect(
+                printable_rect.x0,
+                printable_rect.y0,
+                printable_rect.x1,
+                min(printable_rect.y1, content_rect.y0 - safe_padding)
+            )
+            if new_rect.height > 0:
+                adjustments.append(new_rect)
+        
+        # Choose the adjustment that preserves the most area
+        if adjustments:
+            best_rect = max(adjustments, key=lambda r: r.width * r.height)
+            logging.info(f"Adjusted printable area from {printable_rect} to {best_rect}")
+            return best_rect
+        
+        # If no good adjustment found, return original
+        return printable_rect
 
     def extract_images(self, html_content):
         """Extract images from HTML content and return cleaned content"""

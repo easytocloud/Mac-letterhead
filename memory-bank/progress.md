@@ -14,23 +14,32 @@
 
 ### Markdown Processing
 
-- ✅ Parsing Markdown to HTML
-- ✅ WeasyPrint rendering with CSS styling
-- ✅ ReportLab fallback rendering
-- ✅ Runtime detection of available rendering engines
-- ✅ Consistent API regardless of rendering engine
-- ✅ Support for common Markdown elements (headings, lists, code blocks, etc.)
-- ✅ Basic table support
-- ✅ Dynamic Python path management for finding optional modules
+- ✅ **Smart Margin Detection**: Intelligent letterhead position analysis
+- ✅ **Adaptive Layout**: Optimal content positioning for any letterhead design
+- ✅ **WeasyPrint Integration**: High-quality PDF rendering with CSS styling
+- ✅ **ReportLab Fallback**: Reliable rendering when WeasyPrint unavailable
+- ✅ **Runtime Engine Detection**: Automatic selection of best available renderer
+- ✅ **Consistent API**: Unified interface regardless of rendering engine
+- ✅ **Comprehensive Markdown Support**: Headings, lists, code blocks, tables, etc.
+- ✅ **uvx Environment Compatibility**: Fixed library path issues in isolated environments
+- ✅ **Professional Formatting**: ~82% usable page width optimization
+- ✅ **Position-Aware Margins**: Left/right/center letterhead detection
+- ✅ **Enhanced Error Handling**: Better diagnostics and fallback mechanisms
 
 ### Installation and Packaging
 
-- ✅ Basic installation (PDF-only functionality)
-- ✅ Full installation (PDF + Markdown support)
-- ✅ Desktop application creation
-- ✅ Drag-and-drop functionality
-- ✅ Command-line interface
-- ✅ Self-contained package with minimal dependencies
+- ✅ **Modular Installation System**: Complete architecture restructuring
+- ✅ **Production Installation**: Robust uvx-based installation for end users
+- ✅ **Development Mode**: Local test droplets with `--dev` flag
+- ✅ **Desktop Application Creation**: Automated droplet building
+- ✅ **Drag-and-drop Functionality**: Seamless user interaction
+- ✅ **Command-line Interface**: Full CLI with comprehensive options
+- ✅ **Self-contained Packages**: Minimal dependencies with smart fallbacks
+- ✅ **Component Separation**: Better troubleshooting and maintainability
+- ✅ **Template Management**: Separated production vs development templates
+- ✅ **Resource Management**: Efficient file and resource handling
+- ✅ **Validation System**: Input validation and error handling
+- ✅ **macOS Integration**: Native macOS app bundle creation
 
 ### Testing and Documentation
 
@@ -45,57 +54,82 @@
 
 ## What's Left to Build
 
-### Markdown Processing Enhancements
+### Advanced Features
 
-- 🔲 Improved CSS styling for WeasyPrint
-- 🔲 Better handling of complex tables
-- 🔲 Support for custom CSS
-- 🔲 Improved image handling in Markdown
+- 🔲 **Complex Letterhead Layouts**: Support for multi-region letterheads
+- 🔲 **Custom CSS Support**: User-defined styling for Markdown processing
+- 🔲 **Preview Functionality**: Live preview before merging
+- 🔲 **Batch Processing**: Multiple document processing capabilities
 
-### Testing Improvements
+### Cross-Platform Expansion
 
-- 🔲 Comprehensive test suite for Markdown functionality
-- 🔲 Cross-platform testing
-- 🔲 Performance testing with large documents
-- 🔲 Fix compatibility issues with Python 3.12 and 3.13 (PyObjC circular import)
+- 🔲 **Windows Support**: Desktop applications for Windows
+- 🔲 **Linux Support**: Desktop applications for Linux
+- 🔲 **Web Interface**: Browser-based document processing
+- 🔲 **API Service**: RESTful API for integration
 
-### Documentation
+### Performance & Scalability
 
-- 🔲 Detailed installation instructions for different platforms
-- 🔲 Troubleshooting guide for WeasyPrint installation
-- 🔲 API documentation
-- 🔲 Examples for common use cases
+- 🔲 **Large Document Optimization**: Improved handling of large files
+- 🔲 **Memory Management**: Better resource utilization
+- 🔲 **Parallel Processing**: Multi-threaded document processing
+- 🔲 **Caching**: Smart caching for frequently used letterheads
+
+### Advanced Testing
+
+- 🔲 **Comprehensive Test Suite**: Full coverage of all functionality
+- 🔲 **Performance Testing**: Benchmarking and optimization
+- 🔲 **Cross-platform Testing**: Validation across operating systems
+- 🔲 **User Acceptance Testing**: Real-world usage scenarios
 
 ### Future Enhancements
 
-- 🔲 Cross-platform desktop application
-- 🔲 Additional merging strategies
-- 🔲 Preview functionality
-- 🔲 Batch processing
+- 🔲 **Machine Learning**: Intelligent letterhead analysis
+- 🔲 **Cloud Integration**: Cloud storage and sharing features
+- 🔲 **Collaboration Tools**: Multi-user document workflows
+- 🔲 **Advanced Analytics**: Usage metrics and optimization insights
 
 ## Current Status
 
-### Version 0.8.0 (In Progress)
+### Version 0.9.5 (Current - Production Ready)
 
-The project is currently at version 0.8.0, with the following status:
+The project is currently at version 0.9.5, representing a major architectural improvement:
 
-- **PDF Functionality**: Complete and stable
-- **Markdown Functionality**: Implemented with tiered approach
-  - WeasyPrint: Primary renderer (requires optional dependencies)
-  - ReportLab: Fallback renderer (included in core dependencies)
-  - Python path management: Dynamically adds site-packages to sys.path
-- **Installation**: Tiered approach implemented
-  - Basic: PDF-only functionality
-  - Full: PDF + Markdown support
-- **Testing**: 
-  - Basic tests implemented and passing
-  - Full tests implemented with Python 3.11 and passing
-  - Issues with Python 3.12 and 3.13 due to PyObjC circular import
-- **Documentation**: Basic documentation available, detailed documentation in progress
+- **PDF Functionality**: Complete, stable, and optimized
+- **Smart Letterhead Processing**: 
+  - Intelligent position detection (left/right/center letterheads)
+  - Adaptive margin calculation providing ~82% usable page width
+  - Fixed critical bugs affecting right-positioned letterheads
+- **Modular Architecture**: 
+  - Complete installation system restructuring
+  - Enhanced component separation for better maintainability
+  - Improved troubleshooting capabilities
+- **Development & Production Modes**:
+  - Production: Robust uvx-based installation
+  - Development: Local test droplets with `--dev` flag
+  - Enhanced debugging and testing tools
+- **Cross-Environment Compatibility**:
+  - Fixed uvx environment isolation issues
+  - Improved WeasyPrint library path handling
+  - Better fallback mechanisms
+- **Documentation**: Comprehensive user guide with troubleshooting
+- **Testing**: Full test suite with semantic versioning via Makefile
+
+### Major Achievements in 0.9.x
+
+1. **Smart Margin Detection Algorithm**: Revolutionary improvement for letterhead processing
+2. **Architecture Restructuring**: Complete modular redesign for better maintainability
+3. **Development Workflow**: Enhanced local testing and debugging capabilities
+4. **Production Stability**: Robust installation and execution across different environments
+5. **Documentation Excellence**: Comprehensive guides for users and developers
 
 ### Current Focus
 
-The current focus is on finalizing the Markdown processing functionality, ensuring a smooth installation experience for both basic and full installations, and fixing compatibility issues with Python 3.12 and 3.13.
+The project has achieved production-ready status with intelligent letterhead processing. Current focus areas include:
+- **Performance optimization** for large documents
+- **Cross-platform expansion** beyond macOS
+- **Advanced features** like batch processing and preview functionality
+- **User experience enhancements** based on real-world usage feedback
 
 ## Known Issues
 
@@ -161,22 +195,29 @@ The current focus is on finalizing the Markdown processing functionality, ensuri
 - Enhanced command-line interface
 - Improved error handling
 
-### Current Approach (Version 0.8.0)
+### Major Restructuring (Version 0.9.x)
 
-- Tiered installation approach
-- Dual rendering engines for Markdown
-- Improved testing strategy
-- Focus on user experience and documentation
-- Dynamic Python path management
-- Simple test Markdown file for reliable testing
+- **Modular Architecture**: Complete reorganization of installation system
+- **Smart Margin Detection**: Intelligent letterhead position analysis
+- **Development Mode**: Local testing capabilities with `--dev` flag
+- **uvx Compatibility**: Fixed environment isolation issues
+- **Enhanced Documentation**: Comprehensive user guide and troubleshooting
+
+### Current Approach (Version 0.9.5)
+
+- **Smart Letterhead Processing**: Intelligent detection of left/right/center positioned letterheads
+- **Modular Component Design**: Separated installation logic into discrete modules
+- **Enhanced Development Workflow**: Local test droplets for development and debugging
+- **Production-Ready Installation**: Robust uvx-based installation for end users
+- **Improved Error Handling**: Better diagnostics and fallback mechanisms
 
 ### Future Direction
 
-- Enhance Markdown rendering capabilities
-- Improve cross-platform support
-- Add batch processing functionality
-- Consider web interface or service
-- Fix compatibility issues with newer Python versions
+- **Enhanced Cross-platform Support**: Expand beyond macOS
+- **Batch Processing**: Multiple document processing capabilities
+- **Advanced Margin Detection**: Support for complex letterhead layouts
+- **Performance Optimization**: Faster processing for large documents
+- **Integration Features**: API and service-oriented architectures
 
 ## Milestones and Achievements
 
@@ -203,7 +244,7 @@ The current focus is on finalizing the Markdown processing functionality, ensuri
 - WeasyPrint integration
 - Enhanced command-line options
 
-### Version 0.8.0 (Current)
+### Version 0.8.0 (Foundation)
 
 - Tiered installation approach
 - Dual rendering engines
@@ -211,3 +252,33 @@ The current focus is on finalizing the Markdown processing functionality, ensuri
 - Focus on documentation and user experience
 - Dynamic Python path management
 - Fixed Markdown module import issues
+
+### Version 0.9.0-0.9.5 (Architecture & Intelligence)
+
+- **Complete Architecture Restructuring**:
+  - Modular installation system (`letterhead_pdf/installation/`)
+  - Separated production vs development templates
+  - Enhanced component isolation for better troubleshooting
+  
+- **Smart Margin Detection Algorithm**:
+  - Intelligent letterhead position detection (left/right/center)
+  - Adaptive margin calculation for optimal content layout
+  - ~82% usable page width regardless of letterhead design
+  - Fixed critical margin calculation bugs affecting right-positioned letterheads
+
+- **Development & Testing Enhancements**:
+  - Development mode droplets with `--dev` flag
+  - Local code testing capabilities
+  - Enhanced debugging and troubleshooting tools
+  - Improved Makefile with semantic versioning
+
+- **uvx Environment Compatibility**:
+  - Fixed WeasyPrint library path issues in isolated environments
+  - Improved reliability across different system configurations
+  - Better fallback handling for missing dependencies
+
+- **Enhanced User Experience**:
+  - Comprehensive documentation updates
+  - Better error messages and troubleshooting guides
+  - Streamlined installation process
+  - Professional document layout for any letterhead design

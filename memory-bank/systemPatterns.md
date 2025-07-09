@@ -2,49 +2,73 @@
 
 ## System Architecture
 
-Mac-letterhead follows a modular architecture with clear separation of concerns:
+Mac-letterhead follows a highly modular architecture with enhanced component separation:
 
 ```
 Mac-letterhead
 ├── letterhead_pdf/             # Main package
-│   ├── __init__.py             # Package initialization
+│   ├── __init__.py             # Package initialization and version management
 │   ├── main.py                 # Entry point and CLI handling
 │   ├── pdf_merger.py           # PDF merging functionality
-│   ├── pdf_utils.py            # PDF utility functions
+│   ├── pdf_utils.py            # PDF utility functions with smart analysis
 │   ├── markdown_processor.py   # Markdown to PDF conversion
-│   ├── installer.py            # Desktop app installation
 │   ├── exceptions.py           # Custom exceptions
 │   ├── log_config.py           # Logging configuration
+│   ├── installation/           # Modular installation system
+│   │   ├── __init__.py         # Installation package initialization
+│   │   ├── droplet_builder.py  # Core droplet creation logic
+│   │   ├── resource_manager.py # File and resource handling
+│   │   ├── applescript_generator.py # Template processing
+│   │   ├── macos_integration.py # Platform-specific operations
+│   │   ├── validator.py        # Input validation and error handling
+│   │   └── templates/          # Execution context templates
+│   │       ├── production_droplet.applescript
+│   │       └── development_droplet.applescript
 │   └── resources/              # Application resources
 │       ├── icon.png            # Application icon
-│       └── Mac-letterhead.icns # macOS application icon
+│       ├── Mac-letterhead.icns # macOS application icon
+│       └── droplet_template.applescript # Legacy template
 ├── tests/                      # Test suite
 │   ├── utils/                  # Test utilities
 │   └── files/                  # Test files
-└── Makefile                    # Build and test automation
+├── memory-bank/                # Documentation and context
+└── Makefile                    # Build, test, and release automation
 ```
 
 ## Key Technical Decisions
 
-### 1. PDF Processing
+### 1. Smart Letterhead Analysis
 
-- **PyMuPDF (fitz)**: Used for PDF manipulation due to its comprehensive feature set and performance
-- **Custom Merging Strategies**: Implemented various blending modes (darken, multiply, overlay) to handle different letterhead designs
-- **Page Analysis**: Automatic detection of letterhead regions to avoid content overlap
+- **PyMuPDF (fitz)**: Used for PDF manipulation and intelligent letterhead analysis
+- **Position Detection Algorithm**: Geometric analysis using page center thresholds to detect left/right/center letterhead positioning
+- **Adaptive Margin Calculation**: Different margin strategies based on letterhead position:
+  - Left-positioned: 72pt left margin, 36pt right margin
+  - Right-positioned: 36pt left margin, 72pt right margin  
+  - Center-positioned: 54pt symmetric margins
+- **Usable Area Optimization**: Provides ~82% usable page width regardless of letterhead design
 
-### 2. Markdown Processing
+### 2. Modular Installation Architecture
 
-- **Tiered Approach**:
+- **Component Separation**: Discrete modules for different installation responsibilities
+- **Enhanced Debugging**: Each component can be tested and troubleshot independently
+- **Execution Context Support**: Separate templates for production vs development modes
+- **Validation Layer**: Input validation and error handling separated from core logic
+
+### 3. Markdown Processing
+
+- **Smart Environment Detection**: Runtime detection and adaptation to uvx isolated environments
+- **Library Path Management**: Internal configuration of WeasyPrint library paths
+- **Tiered Rendering**:
   - **Primary**: WeasyPrint for high-quality PDF generation
   - **Fallback**: ReportLab for environments where WeasyPrint cannot be installed
-- **Feature Detection**: Runtime detection of available libraries to determine rendering approach
 - **Consistent API**: Same interface regardless of the underlying rendering engine
 
-### 3. Installation and Packaging
+### 4. Development & Production Modes
 
-- **Self-contained Package**: Minimal external dependencies
-- **Desktop Integration**: Creates a macOS application for drag-and-drop functionality
-- **Command-line Interface**: Full functionality available through CLI for automation
+- **Development Mode**: `--dev` flag creates local test droplets using development code
+- **Production Mode**: Uses uvx-installed packages for stable deployment
+- **Template Separation**: Different AppleScript templates for different execution contexts
+- **Enhanced Diagnostics**: Better logging and debugging capabilities in development mode
 
 ## Design Patterns
 
@@ -84,7 +108,29 @@ def create_processor(input_file):
         raise UnsupportedFileTypeError()
 ```
 
-### 3. Adapter Pattern
+### 3. Module Pattern
+
+Used for organizing the installation system into discrete, testable components:
+
+```python
+# Conceptual representation
+class DropletBuilder:
+    def build(self, letterhead_path, name, dev_mode=False):
+        # Core droplet creation logic
+        pass
+
+class ResourceManager:
+    def copy_resources(self, source, destination):
+        # File and resource handling
+        pass
+
+class AppleScriptGenerator:
+    def generate(self, template_path, context):
+        # Template processing and customization
+        pass
+```
+
+### 4. Adapter Pattern
 
 Used to provide a consistent interface for different Markdown rendering engines:
 
@@ -96,7 +142,7 @@ class MarkdownRenderer:
 
 class WeasyPrintRenderer(MarkdownRenderer):
     def render(self, markdown_content, output_path):
-        # WeasyPrint implementation
+        # WeasyPrint implementation with library path management
         pass
 
 class ReportLabRenderer(MarkdownRenderer):
@@ -105,7 +151,7 @@ class ReportLabRenderer(MarkdownRenderer):
         pass
 ```
 
-### 4. Command Pattern
+### 5. Command Pattern
 
 Used for CLI command handling:
 
@@ -125,44 +171,129 @@ class MergeCommand(Command):
     def execute(self):
         # Implementation for merge command
         pass
+
+class InstallCommand(Command):
+    def __init__(self, letterhead, name, dev_mode=False):
+        self.letterhead = letterhead
+        self.name = name
+        self.dev_mode = dev_mode
+    
+    def execute(self):
+        # Implementation for install command with dev mode support
+        pass
+```
+
+### 6. Template Method Pattern
+
+Used for different execution contexts in droplet creation:
+
+```python
+# Conceptual representation
+class DropletTemplate:
+    def create_droplet(self):
+        self.validate_inputs()
+        self.prepare_resources()
+        self.generate_script()
+        self.create_application()
+    
+    def generate_script(self):
+        # Abstract method implemented by subclasses
+        pass
+
+class ProductionDropletTemplate(DropletTemplate):
+    def generate_script(self):
+        # Use uvx-installed packages
+        pass
+
+class DevelopmentDropletTemplate(DropletTemplate):
+    def generate_script(self):
+        # Use local development code
+        pass
 ```
 
 ## Critical Implementation Paths
 
-### 1. PDF Merging Process
+### 1. Smart PDF Merging Process
 
-1. Load letterhead PDF and content PDF
-2. Analyze letterhead to detect regions (header, footer, etc.)
-3. For each page in content PDF:
+1. **Load and Analyze**: Load letterhead PDF and analyze letterhead positioning
+2. **Position Detection**: 
+   - Calculate page center and letterhead element positions
+   - Determine letterhead type (left/right/center positioned)
+   - Calculate optimal margins based on position
+3. **Content Processing**: Load content PDF and apply appropriate margins
+4. **Page Merging**: For each page in content PDF:
    - Determine which letterhead page to use (first or subsequent)
-   - Apply selected merging strategy
+   - Apply selected merging strategy with position-aware margins
    - Add to output document
-4. Save merged document
+5. **Output Generation**: Save merged document with preserved metadata
 
-### 2. Markdown to PDF Conversion
+### 2. Intelligent Markdown to PDF Conversion
 
-1. Parse Markdown to HTML
-2. Determine available rendering engine (WeasyPrint or ReportLab)
-3. If WeasyPrint:
-   - Apply CSS styling
-   - Render HTML to PDF
-4. If ReportLab:
-   - Convert HTML elements to ReportLab flowables
-   - Build PDF document
-5. Apply letterhead to generated PDF
+1. **Environment Detection**: Detect uvx isolation and configure library paths
+2. **Letterhead Analysis**: Analyze letterhead PDF for smart margin calculation
+3. **Rendering Engine Selection**: 
+   - Attempt WeasyPrint with proper library path configuration
+   - Fall back to ReportLab if WeasyPrint unavailable
+4. **Content Rendering**:
+   - Parse Markdown to HTML
+   - Apply position-aware CSS styling with calculated margins
+   - Render HTML to PDF with optimal content area
+5. **Letterhead Application**: Apply letterhead to generated PDF
 
-### 3. Desktop Application Installation
+### 3. Modular Desktop Application Installation
 
-1. Create application directory structure
-2. Copy letterhead template to application resources
-3. Create executable script
-4. Register file associations for drag-and-drop functionality
-5. Create application icon and metadata
+1. **Input Validation**: Validate letterhead file and installation parameters
+2. **Resource Management**: 
+   - Copy letterhead template to application resources
+   - Manage application icons and metadata
+3. **Template Processing**:
+   - Select appropriate template (production vs development)
+   - Generate AppleScript with context-specific configuration
+4. **Application Creation**:
+   - Create macOS application bundle structure
+   - Configure drag-and-drop functionality
+   - Set up logging and error handling
+5. **Integration**: Register application and create desktop shortcuts
+
+### 4. Development Mode Workflow
+
+1. **Mode Detection**: Recognize `--dev` flag and configure development context
+2. **Local Code Integration**: Configure droplet to use local development code
+3. **Enhanced Debugging**: Enable detailed logging and diagnostic capabilities
+4. **Testing Support**: Create isolated test environment for safe development
+5. **Validation**: Verify functionality before production deployment
 
 ## Component Relationships
 
+### Core Processing Components
 - **main.py**: Coordinates overall flow and dispatches to appropriate processors
-- **pdf_merger.py**: Handles PDF-to-PDF merging operations
-- **markdown_processor.py**: Converts Markdown to PDF before merging
-- **pdf_utils.py**: Provides utility functions used by both merging processes
-- **installer.py**: Creates desktop application for drag-and-drop functionality
+- **pdf_merger.py**: Handles PDF-to-PDF merging operations with smart positioning
+- **markdown_processor.py**: Converts Markdown to PDF with intelligent margin detection
+- **pdf_utils.py**: Provides letterhead analysis and smart margin calculation utilities
+
+### Installation System Components
+- **droplet_builder.py**: Orchestrates the entire droplet creation process
+- **resource_manager.py**: Handles file operations, copying, and resource management
+- **applescript_generator.py**: Processes templates and generates execution scripts
+- **macos_integration.py**: Handles platform-specific operations and app bundle creation
+- **validator.py**: Input validation, error handling, and prerequisite checking
+
+### Template System
+- **production_droplet.applescript**: Template for uvx-based production installations
+- **development_droplet.applescript**: Template for local development testing
+- **droplet_template.applescript**: Legacy template for backward compatibility
+
+### Interaction Flow
+1. **main.py** → **installation/droplet_builder.py** (for install commands)
+2. **droplet_builder.py** → **validator.py** (input validation)
+3. **droplet_builder.py** → **resource_manager.py** (resource handling)
+4. **droplet_builder.py** → **applescript_generator.py** (script generation)
+5. **droplet_builder.py** → **macos_integration.py** (app bundle creation)
+6. **Generated droplets** → **pdf_merger.py** or **markdown_processor.py** (document processing)
+7. **pdf_utils.py** provides smart analysis for both merger and processor components
+
+### Key Dependencies
+- **Smart margin detection** (pdf_utils.py) is used by both PDF and Markdown processors
+- **Template system** supports both production and development execution contexts
+- **Resource management** ensures consistent file handling across installation and processing
+- **Validation layer** provides error handling and input checking across all components

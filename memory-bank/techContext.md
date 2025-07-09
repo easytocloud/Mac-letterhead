@@ -4,18 +4,27 @@
 
 ### Core Technologies
 
-- **Python 3.11+**: Primary programming language
-- **PyMuPDF (fitz)**: PDF manipulation library
-- **Markdown**: Python Markdown parser
-- **WeasyPrint**: HTML/CSS to PDF converter (primary)
-- **ReportLab**: PDF generation library (fallback)
+- **Python 3.11+**: Primary programming language with enhanced uvx support
+- **PyMuPDF (fitz)**: PDF manipulation and intelligent letterhead analysis
+- **Markdown**: Python Markdown parser with smart margin integration
+- **WeasyPrint**: HTML/CSS to PDF converter (primary) with library path management
+- **ReportLab**: PDF generation library (fallback) with consistent API
 - **PyObjC**: Python to Objective-C bridge for macOS integration
 
 ### Supporting Technologies
 
 - **HTML5lib**: HTML parsing for Markdown conversion
 - **Pillow**: Image processing
-- **uv**: Modern Python packaging and dependency management
+- **uv**: Modern Python packaging, dependency management, and isolated execution
+- **AppleScript**: macOS automation for droplet creation and execution
+- **CSS3**: Advanced styling for professional document formatting
+
+### Development Technologies
+
+- **Modular Architecture**: Component-based design for better maintainability
+- **Template System**: Context-aware script generation for different execution modes
+- **Smart Analysis**: Geometric algorithms for letterhead position detection
+- **Environment Detection**: Runtime adaptation to different execution contexts
 
 ## Development Setup
 
@@ -31,36 +40,46 @@
 
 ### Development Tools
 
-- **Make**: Build automation
-- **uv**: Package management and virtual environments
-- **Git**: Version control
+- **Make**: Build automation with semantic versioning
+- **uv**: Package management, virtual environments, and isolated execution
+- **Git**: Version control with automated tagging
+- **AppleScript Editor**: Template development and testing
+- **Makefile**: Enhanced with development mode support and version management
 
 ### Testing Environment
 
-- Multiple Python versions (3.11, 3.12, 3.13)
-- Separate test environments for basic and full functionality
+- **Multiple Python Versions**: 3.11, 3.12, 3.13 support
+- **Dual Testing Modes**: Separate environments for basic and full functionality
+- **Development Mode Testing**: Local code testing with `--dev` flag
+- **Production Testing**: uvx-based installation validation
+- **Cross-Environment Validation**: Testing across isolated and system environments
 
 ## Technical Constraints
 
 ### Platform Constraints
 
-- **Primary Platform**: macOS (for desktop application)
+- **Primary Platform**: macOS (for desktop application and AppleScript integration)
 - **Secondary Platforms**: Any platform supporting Python 3.11+ (for CLI functionality)
+- **Architecture Support**: Intel and Apple Silicon Macs
 
 ### Dependency Constraints
 
-- **Self-contained**: Minimize external dependencies
-- **Optional Dependencies**: WeasyPrint and its dependencies are optional
-- **Compatibility**: Support for Python 3.11+ only
+- **Self-contained**: Minimize external dependencies with smart fallbacks
+- **uvx Compatibility**: Full support for isolated uvx environments
+- **Optional Dependencies**: WeasyPrint and system libraries are optional
+- **Library Path Management**: Internal configuration for WeasyPrint in isolated environments
+- **Compatibility**: Support for Python 3.11+ with enhanced environment detection
 
 ### Performance Constraints
 
-- **Memory Usage**: Efficient handling of large PDF files
-- **Processing Speed**: Quick merging for typical document sizes
+- **Memory Usage**: Efficient handling of large PDF files with smart analysis
+- **Processing Speed**: Quick merging with intelligent letterhead detection
+- **Algorithmic Efficiency**: ~82% usable page width regardless of letterhead complexity
+- **Resource Management**: Optimized file operations and template processing
 
 ## Dependencies
 
-### Core Dependencies
+### Core Dependencies (v0.9.5)
 
 ```
 html5lib==1.1
@@ -73,12 +92,12 @@ pyobjc-framework-quartz==11.0
 reportlab==4.3.1
 six==1.16.0
 webencodings==0.5.1
-```
-
-### Optional Dependencies (Markdown Support)
-
-```
 weasyprint==65.0
+```
+
+### WeasyPrint Dependencies (Included)
+
+```
 cffi>=1.15.0
 cssselect2>=0.7.0
 fonttools>=4.38.0
@@ -90,53 +109,86 @@ tinycss2>=1.2.0
 ### System Dependencies (for WeasyPrint)
 
 - **Pango**: Text layout and rendering
-- **Cairo**: 2D graphics library
+- **Cairo**: 2D graphics library  
 - **GDK-PixBuf**: Image loading library
 - **Harfbuzz**: Text shaping engine
+- **Installation**: `brew install pango cairo fontconfig freetype harfbuzz`
+
+### Development Dependencies
+
+- **uv**: Package management and virtual environments
+- **make**: Build automation and testing
+- **AppleScript**: macOS integration and droplet creation
 
 ## Installation Methods
 
-### Basic Installation (PDF Only)
+### Standard Installation (All Features)
 
 ```bash
 uvx mac-letterhead
 ```
 
-### Full Installation (PDF + Markdown)
+### System Dependencies Installation
 
 ```bash
-uvx mac-letterhead[markdown]@0.8.0
+brew install pango cairo fontconfig freetype harfbuzz
+```
+
+### Development Installation
+
+```bash
+git clone <repository-url>
+cd Mac-letterhead
+uv venv
+uv pip install -e "."
+```
+
+### Droplet Creation
+
+```bash
+# Production droplet
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Letterhead"
+
+# Development droplet  
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Dev Test" --dev
 ```
 
 ## Tool Usage Patterns
 
-### Makefile
+### Enhanced Makefile (v0.9.5)
 
-The project uses a Makefile for common development tasks:
+The project uses an advanced Makefile for development and release management:
 
-- **test-basic**: Test basic functionality (PDF only)
-- **test-full**: Test full functionality (PDF + Markdown)
-- **test-all**: Run all tests
-- **clean**: Clean build artifacts
-- **update-version**: Update version in all necessary files
-- **publish**: Publish to PyPI
+- **test**: Run comprehensive tests with margin analysis
+- **test-dev**: Test development mode droplet creation
+- **test-all**: Full test suite including edge cases
+- **clean**: Clean build artifacts and test files
+- **install-dev**: Create development mode droplet for testing
+- **bump-patch/minor/major**: Semantic version management
+- **tag-release**: Git tagging with version validation
+- **publish**: PyPI publication with automated checks
 
 ### Testing Strategy
 
-- Separate test environments for basic and full functionality
-- Testing across multiple Python versions
-- Automated test file generation
+- **Smart Margin Testing**: Real letterhead analysis with before/after comparisons
+- **Development Mode Testing**: Local code testing with `--dev` flag
+- **Production Testing**: uvx installation validation
+- **Cross-Environment Testing**: Isolated and system environment validation
+- **Component Testing**: Individual module testing for better debugging
 
 ### Version Management
 
-- Single source of truth for version in Makefile
-- Automated version propagation to all necessary files
-- Semantic versioning
+- **Semantic Versioning**: Automated patch, minor, and major version bumps
+- **Single Source of Truth**: Version in Makefile propagated to all files
+- **Git Integration**: Automated tagging and release notes
+- **Validation**: Pre-release checks and testing
 
 ### Continuous Integration
 
-- GitHub Actions for automated testing and publishing
-- Version tagging triggers PyPI release
+- **GitHub Actions**: Automated testing and publishing pipeline
+- **Multi-environment Testing**: Validation across different Python and macOS versions
+- **Release Automation**: Tag-triggered PyPI publication
+- **Quality Gates**: Testing and validation before release
 
 ## Development Workflow
 
@@ -145,32 +197,82 @@ The project uses a Makefile for common development tasks:
    git clone <repository-url>
    cd Mac-letterhead
    uv venv
-   uv pip install -e ".[markdown]"
+   uv pip install -e "."
    ```
 
-2. **Development**: Make changes and run tests
+2. **Development**: Make changes and run comprehensive tests
    ```bash
-   # Run basic tests
-   make test-basic
+   # Run full test suite with margin analysis
+   make test
    
-   # Run full tests
-   make test-full
+   # Test development mode droplet creation
+   make test-dev
    ```
 
-3. **Version Update**: Update version before release
+3. **Local Testing**: Create and test development droplets
    ```bash
-   # Edit VERSION in Makefile
-   make update-version
+   # Create development mode droplet for testing
+   make install-dev
+   
+   # Test with real letterhead files
+   # Drag and drop documents onto created droplet
    ```
 
-4. **Release**: Publish to PyPI
+4. **Version Management**: Update version with semantic versioning
    ```bash
+   # Patch version (bug fixes)
+   make bump-patch
+   
+   # Minor version (new features)
+   make bump-minor
+   
+   # Major version (breaking changes)
+   make bump-major
+   ```
+
+5. **Release**: Tag and publish to PyPI
+   ```bash
+   # Create git tag and push
+   make tag-release
+   
+   # Publish to PyPI (triggered by tag)
    make publish
    ```
 
+### Enhanced Development Features
+
+- **Component Testing**: Test individual installation modules
+- **Smart Analysis Testing**: Validate margin detection algorithms
+- **Cross-mode Testing**: Verify both development and production modes
+- **Real-world Validation**: Test with actual letterhead designs
+- **Environment Compatibility**: Validate uvx and system environments
+
 ## Technical Debt and Considerations
 
-- **WeasyPrint Dependencies**: Complex installation requirements for WeasyPrint
-- **Platform Specificity**: Desktop application currently macOS-only
-- **Testing Coverage**: Ensure comprehensive testing across all supported platforms
-- **Documentation**: Keep documentation updated with new features and changes
+### Resolved in v0.9.x
+
+- **✅ WeasyPrint Environment Issues**: Fixed library path management in uvx isolated environments
+- **✅ Margin Detection Problems**: Resolved critical bugs in letterhead position analysis
+- **✅ Monolithic Architecture**: Replaced with modular, testable component design
+- **✅ Development Workflow**: Enhanced local testing and debugging capabilities
+
+### Current Considerations
+
+- **Cross-Platform Expansion**: Desktop application currently macOS-only
+- **Performance Optimization**: Opportunity for large document processing improvements
+- **Advanced Features**: Complex letterhead layouts and batch processing
+- **User Experience**: Feedback collection and workflow optimization
+
+### Future Technical Challenges
+
+- **Windows/Linux Support**: Adapting droplet functionality for other platforms
+- **Web Integration**: Browser-based processing capabilities
+- **API Development**: RESTful services for integration
+- **Machine Learning**: Advanced letterhead analysis and optimization
+
+### Maintenance Areas
+
+- **Documentation**: Comprehensive guides and troubleshooting resources
+- **Testing Coverage**: Continued expansion of test scenarios and edge cases
+- **Performance Monitoring**: Benchmarking and optimization opportunities
+- **User Feedback Integration**: Real-world usage insights and improvements
