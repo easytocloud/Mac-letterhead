@@ -95,7 +95,8 @@ class DropletBuilder:
                 
                 # Step 3: Set up resources
                 self.resource_manager.setup_app_resources(
-                    temp_app_path, letterhead_path, css_path
+                    temp_app_path, letterhead_path, css_path, 
+                    self.development_mode, self.python_path
                 )
                 
                 # Step 4: Configure macOS integration

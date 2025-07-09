@@ -22,7 +22,7 @@ class ResourceManager:
         """Initialize the ResourceManager."""
         self.logger = logging.getLogger(__name__)
     
-    def setup_app_resources(self, app_path: str, letterhead_path: str, css_path: str = None) -> None:
+    def setup_app_resources(self, app_path: str, letterhead_path: str, css_path: str = None, development_mode: bool = False, python_path: str = None) -> None:
         """
         Set up all resources for the app bundle.
         
@@ -30,11 +30,13 @@ class ResourceManager:
             app_path: Path to the app bundle
             letterhead_path: Path to the letterhead PDF file
             css_path: Path to custom CSS file (optional)
+            development_mode: If True, create dev_mode marker file
+            python_path: Path to Python interpreter (for development mode)
             
         Raises:
             InstallerError: If resource setup fails
         """
-        self.logger.info(f"Setting up resources for app: {app_path}")
+        self.logger.info(f"Setting up resources for app: {app_path} (dev_mode={development_mode})")
         
         try:
             # Ensure app bundle structure exists
@@ -50,6 +52,10 @@ class ResourceManager:
             
             # Copy application icons
             self._copy_icons(resources_dir)
+            
+            # Create dev_mode marker file if in development mode
+            if development_mode:
+                self._create_dev_mode_marker(resources_dir, python_path)
             
             self.logger.info("App resources setup completed")
             
@@ -302,6 +308,24 @@ blockquote {
         except Exception as e:
             self.logger.error(f"Error validating letterhead: {e}")
             return False
+    
+    def _create_dev_mode_marker(self, resources_dir: str, python_path: str = None) -> None:
+        """Create a development mode marker file with python path."""
+        dev_mode_path = os.path.join(resources_dir, "dev_mode")
+        
+        # Use provided python_path or detect current python interpreter
+        if python_path is None:
+            import sys
+            python_path = sys.executable
+        
+        try:
+            with open(dev_mode_path, 'w', encoding='utf-8') as f:
+                f.write(python_path)
+            
+            self.logger.info(f"Created dev_mode marker: {dev_mode_path} (python: {python_path})")
+            
+        except Exception as e:
+            self.logger.warning(f"Could not create dev_mode marker: {e}")
     
     def get_letterhead_from_app(self, app_path: str) -> Optional[str]:
         """
