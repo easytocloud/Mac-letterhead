@@ -836,13 +836,39 @@ class MarkdownProcessor:
         
         # Load custom CSS if provided
         custom_css = ""
-        if css_path and os.path.exists(css_path):
-            try:
-                with open(css_path, 'r', encoding='utf-8') as f:
-                    custom_css = f.read()
-                logging.info(f"Loaded custom CSS from: {css_path}")
-            except Exception as e:
-                logging.warning(f"Could not load custom CSS from {css_path}: {e}")
+        debug_info = []
+        
+        if css_path:
+            debug_info.append(f"CSS path provided: {css_path}")
+            css_exists = os.path.exists(css_path)
+            debug_info.append(f"CSS path exists: {css_exists}")
+            
+            if css_exists:
+                try:
+                    with open(css_path, 'r', encoding='utf-8') as f:
+                        custom_css = f.read()
+                    debug_info.append(f"✅ CSS loaded successfully, length: {len(custom_css)} chars")
+                    debug_info.append(f"CSS preview: {custom_css[:100]}...")
+                except Exception as e:
+                    debug_info.append(f"❌ CSS load failed: {str(e)}")
+            else:
+                debug_info.append(f"❌ CSS file not found: {css_path}")
+        else:
+            debug_info.append("No CSS path provided")
+        
+        # Write debug info to a temp file that we can check
+        try:
+            debug_file = "/tmp/mac-letterhead-css-debug.txt"
+            with open(debug_file, 'w') as f:
+                f.write(f"CSS Debug Info - {os.getpid()}\n")
+                f.write(f"Timestamp: {__import__('datetime').datetime.now()}\n")
+                f.write("\n".join(debug_info))
+                f.write(f"\nFinal CSS length: {len(custom_css)}")
+        except:
+            pass  # Don't let debug logging break the main process
+        
+        # Also try regular logging
+        logging.info(f"CSS processing: {'; '.join(debug_info)}")
         
         # Generate Pygments CSS for syntax highlighting if available
         pygments_css = ""

@@ -38,17 +38,30 @@ on open dropped_items
                     tell application "System Events"
                         if exists file css_path then
                             set css_exists to true
+                        end if
+                    end tell
+                    
+                    -- If CSS file exists, convert path outside of System Events block
+                    if css_exists then
+                        try
+                            set css_posix_source to POSIX path of css_path
+                            
+                            -- Debug: log the path conversion
+                            do shell script "echo 'CSS Path Debug: HFS=" & css_path & ", POSIX=" & css_posix_source & "' >> /tmp/mac-letterhead-applescript-debug.txt"
+                            
                             -- For production mode, copy CSS to temp location to avoid sandboxing issues
                             if not is_dev_mode then
                                 -- Create temp CSS file that uvx can access
                                 set temp_css_path to "/tmp/mac-letterhead-" & (random number from 10000 to 99999) & ".css"
-                                do shell script "cp " & quoted form of (POSIX path of css_path) & " " & quoted form of temp_css_path
+                                do shell script "cp " & quoted form of css_posix_source & " " & quoted form of temp_css_path
                                 set css_posix to temp_css_path
                             else
-                                set css_posix to POSIX path of css_path
+                                set css_posix to css_posix_source
                             end if
-                        end if
-                    end tell
+                        on error path_error
+                            do shell script "echo 'CSS Path Conversion Error: " & path_error & "' >> /tmp/mac-letterhead-applescript-debug.txt"
+                        end try
+                    end if
                 end try
                 
                 -- Get file info
@@ -84,6 +97,9 @@ on open dropped_items
                         end if
                     end if
                 end if
+                
+                -- Debug: Log the final command for troubleshooting
+                do shell script "echo 'AppleScript Debug: CSS exists=" & (css_exists as string) & ", CSS path=" & css_posix & ", Final command: " & cmd & "' >> /tmp/mac-letterhead-applescript-debug.txt"
                 
                 -- Execute command
                 do shell script cmd

@@ -18,7 +18,7 @@ clean-local-droplets:
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.10.5
+VERSION := 0.10.7
 
 # Directory setup
 TEST_DIR := tests
