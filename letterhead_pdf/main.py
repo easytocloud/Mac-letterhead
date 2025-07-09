@@ -22,7 +22,7 @@ from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
 
 from letterhead_pdf import __version__
 from letterhead_pdf.pdf_merger import PDFMerger
-from letterhead_pdf.installer import create_applescript_droplet
+from letterhead_pdf.installation import DropletBuilder
 from letterhead_pdf.exceptions import InstallerError, PDFMergeError, PDFCreationError, PDFMetadataError
 
 # Import logging configuration
@@ -319,13 +319,16 @@ def install_command(args: argparse.Namespace) -> int:
             app_name += " (Dev)"
             logging.info("Creating development droplet")
         
-        # Create the AppleScript droplet
-        app_path = create_applescript_droplet(
-            letterhead_path=args.letterhead_path,
-            app_name=app_name if hasattr(args, 'name') and args.name else app_name,
-            output_dir=args.output_dir if hasattr(args, 'output_dir') else None,
-            local=is_dev,
+        # Create the droplet builder and build the droplet
+        builder = DropletBuilder(
+            development_mode=is_dev,
             python_path=python_path
+        )
+        
+        app_path = builder.create_droplet(
+            letterhead_path=args.letterhead_path,
+            app_name=args.name if hasattr(args, 'name') and args.name else app_name,
+            output_dir=args.output_dir if hasattr(args, 'output_dir') else None
         )
         
         logging.info(f"Install command completed successfully: {app_path}")
