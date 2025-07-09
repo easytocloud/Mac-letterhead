@@ -33,6 +33,7 @@ on open dropped_items
                 -- Check for custom CSS file in app bundle
                 set css_path to app_path & "Contents:Resources:style.css"
                 set css_exists to false
+                set css_posix to ""
                 try
                     tell application "System Events"
                         if exists file css_path then
