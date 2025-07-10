@@ -128,5 +128,34 @@ on run
         end tell
     end try
     
-    display dialog "Mac-letterhead Droplet v{{VERSION}}" & return & "Mode: " & mode_text & return & return & "Drag and drop PDF or Markdown files to apply letterhead." buttons {"OK"} default button "OK" with icon note
+    -- Show dialog with two buttons
+    set dialog_result to display dialog "Mac-letterhead Droplet v{{VERSION}}" & return & "Mode: " & mode_text & return & return & "Drag and drop PDF or Markdown files to apply letterhead." buttons {"Show Letterhead", "OK"} default button "OK" with icon note
+    
+    -- Handle button response
+    if button returned of dialog_result is "Show Letterhead" then
+        -- Get letterhead path from app bundle
+        set letterhead_path to app_path & "Contents:Resources:letterhead.pdf"
+        
+        -- Check if letterhead exists and open it
+        try
+            tell application "System Events"
+                if exists file letterhead_path then
+                    set letterhead_exists to true
+                else
+                    set letterhead_exists to false
+                end if
+            end tell
+            
+            if letterhead_exists then
+                -- Convert to POSIX path outside of System Events block
+                set letterhead_posix to POSIX path of letterhead_path
+                do shell script "open " & quoted form of letterhead_posix
+            else
+                -- Critical error - app bundle is corrupted
+                display alert "Missing Letterhead File" message "The letterhead file is missing from the app bundle. This droplet may be corrupted and should be reinstalled." as critical
+            end if
+        on error error_message
+            display alert "Error Opening Letterhead" message "Could not open letterhead file: " & error_message as critical
+        end try
+    end if
 end run

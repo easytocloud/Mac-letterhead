@@ -36,7 +36,7 @@ class AppDelegate(NSObject):
         logging.info("Application will terminate")
 
 class LetterheadPDF:
-    def __init__(self, letterhead_path: str, destination: str = "~/Desktop", suffix: str = " wm.pdf"):
+    def __init__(self, letterhead_path: str, destination: str = "~/Desktop", suffix: str = " lh.pdf"):
         self.letterhead_path = os.path.expanduser(letterhead_path)
         self.destination = os.path.expanduser(destination)
         self.suffix = suffix
@@ -172,7 +172,7 @@ def merge_md_command(args: argparse.Namespace) -> int:
             print("2. Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@0.8.0")
         
         # Initialize with custom suffix if provided
-        suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " wm.pdf"
+        suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " lh.pdf"
         
         # Create LetterheadPDF instance with custom suffix and destination
         destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
@@ -236,7 +236,7 @@ def print_command(args: argparse.Namespace) -> int:
         logging.info(f"Starting print command with args: {args}")
         
         # Initialize with custom suffix if provided
-        suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " wm.pdf"
+        suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " lh.pdf"
         
         # Create LetterheadPDF instance with custom suffix and destination
         destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
@@ -384,7 +384,7 @@ def main(args: Optional[list] = None) -> int:
     merge_parser.add_argument('input_path', help='Input PDF file path')
     merge_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
                             default='darken', help='Merging strategy to use (default: darken)')
-    merge_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
+    merge_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "lh"')
     merge_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     
     # Add merge-md command
@@ -395,7 +395,7 @@ def main(args: Optional[list] = None) -> int:
     merge_md_parser.add_argument('input_path', help='Input Markdown file path')
     merge_md_parser.add_argument('--strategy', choices=['multiply', 'reverse', 'overlay', 'transparency', 'darken', 'all'],
                               default='darken', help='Merging strategy to use (default: darken)')
-    merge_md_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "wm"')
+    merge_md_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "lh"')
     merge_md_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     merge_md_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling')
     

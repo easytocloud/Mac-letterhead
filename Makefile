@@ -1,7 +1,7 @@
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.10.8
+VERSION := 0.10.9
 
 # Directory setup
 TEST_DIR := tests

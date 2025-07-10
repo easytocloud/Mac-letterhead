@@ -71,6 +71,15 @@ You can use either PDF or Markdown files:
 
 That's it! Your document now has the letterhead applied.
 
+### 3. Preview Your Letterhead
+
+Double-click the letterhead droplet to see information about the application. You can:
+
+- **Click "OK"** to dismiss the information dialog
+- **Click "Show Letterhead"** to preview the letterhead template in your default PDF application
+
+This preview feature lets you verify exactly what letterhead design will be applied to your documents.
+
 ### Markdown Features
 
 Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead support:

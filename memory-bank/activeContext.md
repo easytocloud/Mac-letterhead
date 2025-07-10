@@ -59,6 +59,29 @@ The project has achieved enhanced production-ready status with version 0.9.6, fe
    - **Enhanced Help System**: Clear categorization with emojis and workflow guidance
    - **Impact**: Much cleaner, more intuitive development workflow
 
+#### 6. **Output Filename Suffix Update**
+   - **Problem Resolved**: Output files used "wm" (watermark) suffix, which was incorrect terminology
+   - **Terminology Correction**: "Letterhead" is the proper term for company correspondence stationery
+   - **Changes Made**:
+     - Default suffix: ` wm.pdf` → ` lh.pdf`
+     - Help text: `"wm"` → `"lh"` in all command descriptions
+     - Applied to: merge, merge-md, and LetterheadPDF class defaults
+   - **Impact**: More accurate terminology that reflects the actual business use case
+
+#### 7. **Enhanced Droplet User Interface**
+   - **Problem Addressed**: Droplet provided limited user interaction beyond drag-and-drop
+   - **Enhancement Added**: "Show Letterhead" button in droplet information dialog
+   - **Implementation Details**:
+     - **Two-Button Dialog**: "Show Letterhead" and "OK" (default) when double-clicking droplet
+     - **Letterhead Preview**: Opens bundled letterhead PDF in user's default PDF application
+     - **Error Handling**: Shows critical alert if letterhead file is missing (indicates corrupted installation)
+     - **User Experience**: Users can preview exactly what letterhead will be applied to documents
+   - **Technical Approach**:
+     - Modified AppleScript template to handle button responses
+     - Uses macOS `open` command to respect user's default PDF app preference
+     - Robust file existence checking with meaningful error messages
+   - **Impact**: Significantly improved user experience and quality assurance workflow
+
 ### Version 0.9.6 Final CSS Architecture Implementation
 
 **COMPLETED**: Clean CSS Architecture with Cross-Environment Compatibility
