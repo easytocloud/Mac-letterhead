@@ -27,27 +27,41 @@
 - **CSS Support**: `--css` parameter for custom Markdown styling
 - **Flexible Output**: Configurable droplet names and output directories
 
-## 📦 Package Structure (RESTRUCTURED)
+## 📦 Package Structure (CLEANED UP)
 
 ```
-letterhead_pdf/
-├── core/                    # Core functionality
-│   ├── pdf_merger.py       # PDF merging operations
+Mac-letterhead/
+├── letterhead_pdf/           # Main package (CLEAN)
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── main.py              # CLI interface
+│   ├── pdf_merger.py        # PDF merging operations
+│   ├── pdf_utils.py         # PDF utilities
 │   ├── markdown_processor.py # Markdown to PDF conversion
-│   └── pdf_utils.py        # PDF utilities
-├── installation/           # Installation system
-│   ├── droplet_builder.py  # Main orchestrator
-│   ├── applescript_generator.py # Script generation
-│   ├── resource_manager.py # Resource handling
-│   ├── macos_integration.py # macOS app bundle creation
-│   ├── validator.py        # Droplet validation
-│   └── templates/
-│       └── unified_droplet.applescript # Single template
-├── resources/              # Static resources
-│   ├── defaults.css        # Default Markdown styling
-│   ├── Mac-letterhead.icns # Application icon
-│   └── icon.png           # Alternative icon
-└── main.py                # CLI interface
+│   ├── exceptions.py        # Custom exceptions
+│   ├── log_config.py        # Logging configuration
+│   ├── installation/        # Modular installation system
+│   │   ├── __init__.py
+│   │   ├── droplet_builder.py    # Main orchestrator
+│   │   ├── applescript_generator.py # Script generation
+│   │   ├── resource_manager.py   # Resource handling
+│   │   ├── macos_integration.py  # macOS app bundle creation
+│   │   ├── validator.py          # Droplet validation
+│   │   └── templates/
+│   │       └── unified_droplet.applescript # Single template
+│   └── resources/           # Essential resources only
+│       ├── __init__.py
+│       ├── defaults.css     # Default Markdown styling
+│       ├── Mac-letterhead.icns # Application icon
+│       └── icon.png         # Alternative icon
+├── tests/                   # All tests organized here
+│   ├── test_pdf_utils.py    # PDF utility tests
+│   ├── files/               # Test files
+│   └── utils/               # Test utilities
+├── tools/                   # Development utilities
+│   └── analyze_letterhead.py # Letterhead analysis tool
+├── memory-bank/             # Project documentation
+└── [project files: README.md, pyproject.toml, etc.]
 ```
 
 ## 🔧 Current Development State

@@ -11,6 +11,54 @@ The project has achieved enhanced production-ready status with version 0.9.6, fe
 
 ## Recent Changes
 
+### Project Structure Cleanup (July 2025)
+
+**COMPLETED**: Major project cleanup to remove legacy files and improve organization
+
+#### 1. **Legacy File Removal**
+   - **Problem Resolved**: Eliminated confusing legacy files from earlier development approaches
+   - **Files Removed**:
+     - `letterhead_pdf/installer.py` (empty legacy installer, replaced by modular installation system)
+     - `letterhead_pdf/resources/droplet_template.applescript` (legacy AppleScript template)
+     - `letterhead_pdf/resources/droplet_template_local.applescript` (legacy AppleScript template)
+     - `test_basic.applescript` (development artifact)
+   - **Impact**: Cleaner codebase with no confusion about active vs deprecated systems
+
+#### 2. **File Organization Improvements**
+   - **Development Tools**: Moved `analyze_letterhead.py` → `tools/analyze_letterhead.py`
+   - **Test Organization**: Moved `letterhead_pdf/test_pdf_utils.py` → `tests/test_pdf_utils.py`
+   - **Clear Separation**: Now have proper separation between:
+     - Distributable package code (`letterhead_pdf/`)
+     - Development tools (`tools/`)
+     - Test files (`tests/`)
+     - Documentation (`memory-bank/`)
+
+#### 3. **Improved Project Structure**
+   - **Package Structure**: Clean `letterhead_pdf/` directory with only essential source code
+   - **Resources Directory**: Contains only active resources (CSS, icons, unified AppleScript template)
+   - **No Mixed Concerns**: Tests and development tools properly separated from package code
+   - **Better Maintainability**: Clear understanding of what belongs where
+
+#### 4. **Verification**
+   - **Functionality Preserved**: All current functionality maintained after cleanup
+   - **No Broken References**: Verified no references to removed legacy files
+   - **Template System**: Only unified AppleScript template remains (current system)
+   - **Development Tools**: `analyze_letterhead.py` properly located in tools directory
+
+#### 5. **Makefile Restructuring**
+   - **Problem Resolved**: Inconsistent target naming and legacy references
+   - **Legacy Targets Removed**:
+     - `local-droplet` (deprecated, referenced removed installer)
+     - `install-local` (used pip instead of uv)
+     - `clean-local-droplets` (inconsistent naming)
+   - **Consistent Naming Scheme**: Implemented verb-noun pattern with logical grouping:
+     - **Development**: `dev-install`, `dev-droplet`
+     - **Testing**: `test-setup`, `test-basic`, `test-full`, `test-weasyprint`, `test-all`
+     - **Cleaning**: `clean-build`, `clean-droplets`, `clean-all`
+     - **Release**: `release-version`, `release-publish`
+   - **Enhanced Help System**: Clear categorization with emojis and workflow guidance
+   - **Impact**: Much cleaner, more intuitive development workflow
+
 ### Version 0.9.6 Final CSS Architecture Implementation
 
 **COMPLETED**: Clean CSS Architecture with Cross-Environment Compatibility

@@ -133,6 +133,26 @@ uvx mac-letterhead install /path/to/letterhead.pdf --name "Development Test" --d
 
 Development droplets allow you to test changes without affecting production installations.
 
+### Development Tools
+
+Mac-letterhead includes development utilities in the `tools/` directory:
+
+#### Letterhead Analysis Tool
+
+Analyze letterhead PDFs to visualize printable areas and content regions:
+
+```bash
+python tools/analyze_letterhead.py letterhead.pdf analysis_output.pdf
+```
+
+This tool creates a visual analysis showing:
+- Detected content regions (headers, footers, graphics)
+- Calculated printable space
+- Usable page area percentage
+- Content positioning recommendations
+
+The analysis helps understand how the smart margin detection algorithm interprets your letterhead design.
+
 ### Different Merging Strategies
 
 You can directly merge documents with specific strategies:
