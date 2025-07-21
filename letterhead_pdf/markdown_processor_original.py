@@ -75,8 +75,7 @@ class MarkdownProcessor:
         """Initialize the Markdown processor with default settings"""
         # Check if markdown is available
         if not MARKDOWN_AVAILABLE:
-            from letterhead_pdf.exceptions import MarkdownProcessingError
-            raise MarkdownProcessingError("Markdown module not available. Install with: uvx mac-letterhead[markdown]@0.8.0")
+            raise ImportError("Markdown module not available. Install with: uvx mac-letterhead[markdown]@0.8.0")
             
         # Initialize Markdown with extensions
         extensions = [
@@ -330,10 +329,8 @@ class MarkdownProcessor:
             return margins
             
         except Exception as e:
-            from letterhead_pdf.exceptions import MarkdownProcessingError
-            error_msg = f"Error analyzing letterhead margins: {str(e)}"
-            logging.error(error_msg)
-            raise MarkdownProcessingError(error_msg) from e
+            logging.error(f"Error analyzing letterhead margins: {str(e)}")
+            raise
         finally:
             if 'doc' in locals():
                 doc.close()
@@ -799,10 +796,8 @@ class MarkdownProcessor:
             return output_path
             
         except Exception as e:
-            from letterhead_pdf.exceptions import MarkdownProcessingError
-            error_msg = f"Error converting markdown to PDF: {str(e)}"
-            logging.error(error_msg)
-            raise MarkdownProcessingError(error_msg) from e
+            logging.error(f"Error converting markdown to PDF: {str(e)}")
+            raise
     
     def _md_to_pdf_weasyprint(self, html_content, output_path, margins, page_size, css_path=None):
         """Convert HTML to PDF using WeasyPrint"""

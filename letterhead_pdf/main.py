@@ -26,7 +26,7 @@ from letterhead_pdf.installation import DropletBuilder
 from letterhead_pdf.exceptions import InstallerError, PDFMergeError, PDFCreationError, PDFMetadataError
 
 # Import logging configuration
-from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging
+from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging, get_logger
 
 class AppDelegate(NSObject):
     def applicationDidFinishLaunching_(self, notification):
@@ -36,15 +36,25 @@ class AppDelegate(NSObject):
         logging.info("Application will terminate")
 
 class LetterheadPDF:
-    def __init__(self, letterhead_path: str, destination: str = "~/Desktop", suffix: str = " lh.pdf"):
+    """Main class for letterhead PDF processing operations."""
+    
+    def __init__(self, letterhead_path: str, destination: str = "~/Desktop", suffix: str = " lh.pdf") -> None:
+        """Initialize LetterheadPDF instance.
+        
+        Args:
+            letterhead_path: Path to the letterhead template PDF
+            destination: Default destination directory for output files
+            suffix: Default suffix for output filenames
+        """
         self.letterhead_path = os.path.expanduser(letterhead_path)
         self.destination = os.path.expanduser(destination)
         self.suffix = suffix
-        logging.info(f"Initializing LetterheadPDF with template: {self.letterhead_path}")
+        self.logger = get_logger(__name__)
+        self.logger.info(f"Initializing LetterheadPDF with template: {self.letterhead_path}")
 
     def save_dialog(self, directory: str, filename: str) -> str:
         """Show save dialog and return selected path"""
-        logging.info(f"Opening save dialog with initial directory: {directory}")
+        self.logger.info(f"Opening save dialog with initial directory: {directory}")
         
         try:
             # Initialize application if needed
@@ -58,7 +68,7 @@ class LetterheadPDF:
             
             if not app.isRunning():
                 app.finishLaunching()
-                logging.info("Application initialized")
+                self.logger.info("Application initialized")
             
             # Process events to ensure UI is ready
             run_loop = NSRunLoop.currentRunLoop()
@@ -77,23 +87,23 @@ class LetterheadPDF:
             # Process events again
             run_loop.runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(0.1))
             
-            logging.info("Running save dialog")
+            self.logger.info("Running save dialog")
             ret_value = panel.runModal()
-            logging.info(f"Save dialog return value: {ret_value}")
+            self.logger.info(f"Save dialog return value: {ret_value}")
             
             if ret_value == NSModalResponseOK:
                 selected_path = panel.filename()
                 if not selected_path:
                     # If no path but OK was clicked, use default location
                     selected_path = os.path.join(directory, filename)
-                logging.info(f"Save dialog result: {selected_path}")
+                self.logger.info(f"Save dialog result: {selected_path}")
                 return selected_path
             else:
-                logging.info("Save dialog cancelled")
+                self.logger.info("Save dialog cancelled")
                 return ''
                 
         except Exception as e:
-            logging.error(f"Error in save dialog: {str(e)}", exc_info=True)
+            self.logger.error(f"Error in save dialog: {str(e)}", exc_info=True)
             raise PDFMergeError(f"Save dialog error: {str(e)}")
 
     # The PDF utility methods have been moved to pdf_utils.py
@@ -109,7 +119,7 @@ class LetterheadPDF:
                      in separate files to compare results.
         """
         try:
-            logging.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
+            self.logger.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
             
             # Create the PDF merger with our letterhead
             merger = PDFMerger(self.letterhead_path)
@@ -121,7 +131,7 @@ class LetterheadPDF:
                 
                 for s in strategies:
                     strategy_path = f"{base_name}_{s}{ext}"
-                    logging.info(f"Trying strategy '{s}': {strategy_path}")
+                    self.logger.info(f"Trying strategy '{s}': {strategy_path}")
                     merger.merge(input_path, strategy_path, strategy=s)
                     print(f"Created merged PDF with '{s}' strategy: {strategy_path}")
                 
@@ -133,16 +143,16 @@ class LetterheadPDF:
                 # Use the specified strategy
                 merger.merge(input_path, output_path, strategy=strategy)
             
-            logging.info("PDF merge completed successfully")
+            self.logger.info("PDF merge completed successfully")
 
         except PDFMergeError as e:
             # Specific handling for PDF merge errors
-            logging.error(f"PDF merge error: {str(e)}")
+            self.logger.error(f"PDF merge error: {str(e)}")
             raise
         except Exception as e:
             # General exception handling for other unexpected errors
             error_msg = f"Error merging PDFs: {str(e)}"
-            logging.error(error_msg, exc_info=True)
+            self.logger.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg)
 def merge_md_command(args: argparse.Namespace) -> int:
     """Handle the merge-md command for Markdown files"""
@@ -279,10 +289,12 @@ def print_command(args: argparse.Namespace) -> int:
         logging.error(f"PDF metadata error: {str(e)}")
         print(f"Error reading PDF metadata: {str(e)}")
         return 1
-    except UIError as e:
-        logging.error(f"UI error: {str(e)}")
-        print(f"User interface error: {str(e)}")
-        return 1
+    except Exception as ui_e:
+        # Handle any UI-related errors that might occur
+        if "UI" in str(ui_e) or "interface" in str(ui_e):
+            logging.error(f"UI error: {str(ui_e)}")
+            print(f"User interface error: {str(ui_e)}")
+            return 1
     except FileNotFoundError as e:
         logging.error(f"File not found: {str(e)}")
         print(f"Error: {str(e)}")

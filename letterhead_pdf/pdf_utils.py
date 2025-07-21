@@ -5,11 +5,8 @@ import logging
 from typing import Optional, Dict, Any
 from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import NSURL
+from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, PDFMetadataError
 
-# Define PDFMergeError here to avoid circular imports
-class PDFMergeError(Exception):
-    """Custom exception for PDF merge errors"""
-    pass
 
 def create_pdf_document(path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
     """Create PDF document from path"""
@@ -24,12 +21,12 @@ def create_pdf_document(path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
     if not url:
         error_msg = f"Failed to create URL for path: {path}"
         logging.error(error_msg)
-        raise PDFMergeError(error_msg)
+        raise PDFCreationError(error_msg)
     doc = CoreGraphics.CGPDFDocumentCreateWithURL(url)
     if not doc:
         error_msg = f"Failed to create PDF document from: {path}"
         logging.error(error_msg)
-        raise PDFMergeError(error_msg)
+        raise PDFCreationError(error_msg)
     return doc
 
 def create_output_context(path: str, metadata: Dict[str, Any]) -> Optional[CoreGraphics.CGContextRef]:
@@ -45,12 +42,12 @@ def create_output_context(path: str, metadata: Dict[str, Any]) -> Optional[CoreG
     if not url:
         error_msg = f"Failed to create output URL for path: {path}"
         logging.error(error_msg)
-        raise PDFMergeError(error_msg)
+        raise PDFCreationError(error_msg)
     context = CoreGraphics.CGPDFContextCreateWithURL(url, None, metadata)
     if not context:
         error_msg = f"Failed to create PDF context for: {path}"
         logging.error(error_msg)
-        raise PDFMergeError(error_msg)
+        raise PDFCreationError(error_msg)
     return context
 
 def get_doc_info(file_path: str) -> Dict[str, Any]:
@@ -61,7 +58,7 @@ def get_doc_info(file_path: str) -> Dict[str, Any]:
     if not pdf_doc:
         error_msg = f"Failed to read PDF metadata from: {file_path}"
         logging.error(error_msg)
-        raise PDFMergeError(error_msg)
+        raise PDFMetadataError(error_msg)
     
     metadata = pdf_doc.documentAttributes()
     if "Keywords" in metadata:

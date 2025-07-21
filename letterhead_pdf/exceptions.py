@@ -1,17 +1,37 @@
 #!/usr/bin/env python3
+"""
+Custom exceptions for Mac-letterhead application.
 
-class PDFMergeError(Exception):
-    """Custom exception for PDF merge errors"""
+This module defines all custom exceptions used throughout the application
+to provide clear error categorization and handling.
+"""
+
+
+class LetterheadError(Exception):
+    """Base exception class for all Mac-letterhead related errors"""
     pass
 
-class PDFCreationError(Exception):
-    """Custom exception for PDF creation errors"""
+
+class PDFMergeError(LetterheadError):
+    """Exception raised when PDF merging operations fail"""
     pass
 
-class PDFMetadataError(Exception):
-    """Custom exception for PDF metadata errors"""
+
+class PDFCreationError(LetterheadError):
+    """Exception raised when PDF creation operations fail"""
     pass
 
-class InstallerError(Exception):
-    """Custom exception for installer errors"""
+
+class PDFMetadataError(LetterheadError):
+    """Exception raised when PDF metadata operations fail"""
+    pass
+
+
+class InstallerError(LetterheadError):
+    """Exception raised when droplet installation operations fail"""
+    pass
+
+
+class MarkdownProcessingError(LetterheadError):
+    """Exception raised when Markdown processing operations fail"""
     pass
