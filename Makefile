@@ -1,7 +1,7 @@
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.10.11
+VERSION := 0.11.0
 
 # Directory setup
 TOOLS_DIR := tools
