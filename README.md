@@ -9,284 +9,173 @@
   <img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/icon.png" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
 </a>
 
-A macOS utility for merging letterhead templates with PDF and Markdown documents. Apply company letterheads, watermarks, or stationery to your documents with a simple drag-and-drop interface.
+A professional macOS utility that applies letterhead templates to PDF and Markdown documents. Mac-letterhead creates drag-and-drop applications that automatically merge your company letterhead with documents while preserving formatting and ensuring professional presentation.
 
-## Why Mac-letterhead?
+## What Mac-letterhead Does
 
-- **Drag & Drop Simplicity**: Convert your letterhead PDF into a macOS app that applies your letterhead with a simple drag-and-drop
-- **Professional Results**: Merge PDFs without quality loss, preserving all formatting and content
-- **Smart Markdown Support**: Convert Markdown files to beautifully formatted PDFs, automatically detecting and respecting letterhead margins
-- **Multi-page Letterhead Support**: Different designs for first page, even pages, and odd pages
-- **Multiple Merging Strategies**: Various blending modes to suit different letterhead designs
-- **No Subscription Fees**: Free, open-source solution for businesses of all sizes
+Mac-letterhead transforms your letterhead PDF into a powerful document processing tool:
+
+### For PDF Documents
+- **Direct Overlay**: Your letterhead is applied as an overlay to existing PDFs without reformatting the original document
+- **Multiple Blend Modes**: Choose from various merging strategies (darken, multiply, overlay, transparency) to suit different letterhead designs
+- **Quality Preservation**: All original formatting, fonts, and layout are maintained during the merge process
+
+### For Markdown Documents  
+- **Intelligent Layout**: Analyzes your letterhead PDF to identify headers, footers, logos, and text elements
+- **Smart Margin Detection**: Automatically calculates the optimal printable area within your letterhead design
+- **Professional Rendering**: Converts Markdown to beautifully formatted PDF with proper typography, tables, code blocks, and styling
+- **Adaptive Positioning**: Handles left, right, and center-positioned letterheads with appropriate margin adjustments
+
+### Multi-Page Letterhead Support
+- **Single Page**: Applied consistently to all document pages
+- **Two Pages**: First page template for page 1, second template for subsequent pages  
+- **Three Pages**: Distinct templates for first page, even pages, and odd pages
 
 ## Requirements
 
-- **Python**: 3.10 or higher (tested on Python 3.10, 3.11, 3.12)
 - **macOS**: Required for droplet applications and PDF processing
-- **uv package manager**: Install with `pip install uv` if you don't have it
+- **Python**: 3.10 or higher
+- **uv package manager**: Install with `pip install uv` if needed
 
 ## Installation
 
-Mac-letterhead requires the Python uv package manager (install with `pip install uv` if you don't have it).
+Install Mac-letterhead and create your first letterhead application:
+
+```bash
+# Quick start - create a letterhead droplet on your desktop
+uvx mac-letterhead install /path/to/your/letterhead.pdf
+```
+
+This creates a macOS application that you can drag documents onto to apply your letterhead.
 
 ### System Dependencies
 
-First, install the required system dependencies (one-time setup):
+For optimal Markdown rendering, install the required libraries:
 
 ```bash
 brew install pango cairo fontconfig freetype harfbuzz
 ```
 
-### Install Mac-letterhead
+These libraries enable high-quality PDF generation with advanced typography support.
 
-Starting with version 0.9.5, Mac-letterhead includes enhanced smart margin detection and improved architecture:
+## Usage
 
+### Creating Letterhead Applications
+
+#### Basic Application Creation
 ```bash
-uvx mac-letterhead
+# Create a letterhead droplet with default name
+uvx mac-letterhead install /path/to/company-letterhead.pdf
 ```
 
-> **Note**: Version 0.9.5 includes intelligent letterhead positioning detection, modular architecture, and enhanced development tooling.
-
-## Quick Start
-
-### 1. Create a Desktop Droplet Application
-
-The "install" command creates a desktop application (droplet) that you can use to apply your letterhead:
-
+#### Custom Application Name
 ```bash
-uvx mac-letterhead install /path/to/your/letterhead.pdf
+# Specify a custom name for your letterhead application  
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Correspondence"
 ```
 
-This creates a desktop application icon that you can drag-and-drop documents onto. The application is named based on your letterhead file.
+#### Advanced Markdown Styling
+```bash
+# Create a letterhead application with custom CSS styling
+uvx mac-letterhead install /path/to/letterhead.pdf --name "Technical Reports" --css /path/to/custom-styles.css
+```
 
-### 2. Apply Letterhead to Documents
+The `--css` option allows you to customize the appearance of rendered Markdown documents:
+- **Typography**: Custom fonts, sizes, colors, and spacing
+- **Layout**: Table styling, code block formatting, list appearance
+- **Branding**: Consistent styling that complements your letterhead design
+- **Responsiveness**: Ensures content fits properly within the detected printable area
 
-You can use either PDF or Markdown files:
+### Using Letterhead Applications
 
-#### For PDF Documents
-1. Export your document as a PDF
-2. Drag and drop the PDF onto your letterhead application
-3. Save the merged document
+Once created, your letterhead application appears on your desktop:
 
-#### For Markdown Documents
-1. Write your document in Markdown (.md)
-2. Drag and drop the Markdown file onto your letterhead application
-3. The file will be converted to PDF with proper margins and merged with the letterhead
-4. Save the merged document
+1. **For PDF Files**: Drag any PDF onto the application icon - the letterhead is applied as an overlay
+2. **For Markdown Files**: Drag .md files onto the application - they're converted to PDF with your letterhead and proper formatting
+3. **Preview Letterhead**: Double-click the application to view information and preview the letterhead template
 
-That's it! Your document now has the letterhead applied.
+### Direct Command-Line Usage
 
-### 3. Preview Your Letterhead
+#### PDF Merging
+```bash
+# Apply letterhead to a PDF document
+uvx mac-letterhead merge /path/to/letterhead.pdf "Document Title" ~/Desktop /path/to/document.pdf
 
-Double-click the letterhead droplet to see information about the application. You can:
+# Use a specific blending strategy
+uvx mac-letterhead merge /path/to/letterhead.pdf "Report" ~/Desktop /path/to/report.pdf --strategy overlay
+```
 
-- **Click "OK"** to dismiss the information dialog
-- **Click "Show Letterhead"** to preview the letterhead template in your default PDF application
+#### Markdown Processing  
+```bash
+# Convert Markdown with letterhead
+uvx mac-letterhead merge-md /path/to/letterhead.pdf "Technical Guide" ~/Desktop /path/to/guide.md
 
-This preview feature lets you verify exactly what letterhead design will be applied to your documents.
+# With custom CSS styling
+uvx mac-letterhead merge-md /path/to/letterhead.pdf "Proposal" ~/Desktop /path/to/proposal.md --css /path/to/styles.css
+```
+
+### Blending Strategies
+
+Choose the optimal strategy for your letterhead design:
+
+- **`darken`** (Default): Ideal for light letterheads with dark text/logos - provides excellent readability
+- **`multiply`**: Creates watermark-like effects, good for subtle branding
+- **`overlay`**: Balances visibility of both document content and letterhead elements  
+- **`transparency`**: Smooth blending with semi-transparent effects
+- **`reverse`**: Places letterhead elements on top of document content
+
+## Advanced Features
+
+### Custom CSS Styling
+
+Create sophisticated document styling by providing custom CSS:
+
+```css
+/* custom-styles.css */
+h1 { color: #2c5aa0; border-bottom: 2px solid #2c5aa0; }
+table { border: 1px solid #ddd; background: #f9f9f9; }
+code { background: #f4f4f4; padding: 2px 4px; }
+```
+
+The CSS is automatically integrated with Mac-letterhead's smart margin system to ensure content fits properly within your letterhead design.
 
 ### Markdown Features
 
-Mac-letterhead provides intelligent Markdown-to-PDF conversion with letterhead support:
+Mac-letterhead provides professional Markdown rendering with:
 
-- **Smart Letterhead Detection**: Automatically analyzes letterhead PDFs to find safe areas for content
-- **Intelligent Position Detection**: Recognizes left, right, and center-positioned letterheads for optimal margins
-- **Professional Formatting**:
-  - Headers (h1-h6) with proper sizing and spacing
-  - Tables with clean borders and consistent padding
-  - Code blocks with syntax highlighting
-  - Lists, blockquotes, and footnotes
-  - Links and images
-- **Layout Intelligence**:
-  - Detects both text and graphics in letterhead
-  - Adjusts margins to avoid overlapping with logos and footer text
-  - Maintains consistent formatting across pages
-  - Prevents table splitting across pages
-
-#### What's New in v0.9.5
-
-- **Smart Margin Detection Algorithm**:
-  - Intelligently detects letterhead position (left, right, center)
-  - **Left-positioned letterheads**: Wider left margin, minimal right margin
-  - **Right-positioned letterheads**: Minimal left margin, wider right margin  
-  - **Center-positioned letterheads**: Symmetric margins
-  - Provides ~82% usable page width regardless of letterhead design
-- **Modular Architecture**:
-  - Reorganized codebase with better component separation
-  - Enhanced troubleshooting capabilities
-  - Cleaner installation system
-- **Development Mode**:
-  - Local test droplets for development and testing
-  - Enhanced debugging capabilities
-- **uvx Environment Compatibility**:
-  - Fixed WeasyPrint library path issues in isolated environments
-  - Improved reliability across different system configurations
-
-#### Previous Enhancements
-
-- **v0.8.2**: Fixed ReportLab dependency and improved fallback rendering
-- **v0.8.1**: Markdown support included by default
-- **v0.8.0**: Enhanced code formatting and improved typography
-
-## Advanced Options
-
-### Custom Application Name and Location
-
-```bash
-uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Letterhead"
-```
-
-### Development Mode
-
-For development and testing, you can create droplets that use your local development code:
-
-```bash
-# Create a development droplet using local code
-uvx mac-letterhead install /path/to/letterhead.pdf --name "Development Test" --dev
-```
-
-Development droplets allow you to test changes without affecting production installations.
-
-### Development Tools
-
-Mac-letterhead includes development utilities in the `tools/` directory:
-
-#### Letterhead Analysis Tool
-
-Analyze letterhead PDFs to visualize printable areas and content regions:
-
-```bash
-python tools/analyze_letterhead.py letterhead.pdf analysis_output.pdf
-```
-
-This tool creates a visual analysis showing:
-- Detected content regions (headers, footers, graphics)
-- Calculated printable space
-- Usable page area percentage
-- Content positioning recommendations
-
-The analysis helps understand how the smart margin detection algorithm interprets your letterhead design.
-
-#### Testing with Different Python Versions
-
-The project supports and is tested with multiple Python versions. To test functionality across versions:
-
-```bash
-# Test all Python versions (3.10, 3.11, 3.12)
-make test-all
-
-# Test specific Python version
-make test-py3.10-basic
-make test-py3.11-full
-make test-py3.12-weasyprint
-```
-
-Test files are processed from `test-input/` and outputs are saved to `test-output/` with version-specific filenames.
-
-### Different Merging Strategies
-
-You can directly merge documents with specific strategies:
-
-For PDF files:
-
-```bash
-uvx mac-letterhead merge /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.pdf --strategy overlay
-```
-
-For Markdown files:
-```bash
-uvx mac-letterhead merge-md /path/to/letterhead.pdf "Document" ~/Desktop /path/to/document.md --strategy overlay
-```
-
-Available strategies:
-
-- `darken`: **(Default)** Works well for light letterheads with dark text/logos
-- `multiply`: Good for adding watermark-like elements
-- `overlay`: Better visibility of both document and letterhead
-- `transparency`: Smooth blending between elements
-- `reverse`: Places letterhead on top of content
-- `all`: Compare all strategies at once
-
-### Multi-Page Letterhead Support
-
-Mac-letterhead intelligently handles multi-page letterhead templates:
-
-- **Single-page letterhead**: Applied to all document pages
-- **Two-page letterhead**:
-  - First page → First document page
-  - Second page → All other document pages
-- **Three-page letterhead**:
-  - First page → First document page
-  - Second page → Even-numbered pages
-  - Third page → Odd-numbered pages
-
-This is ideal for professional documents with customized headers/footers for various page positions.
-
-## Logging and Troubleshooting
-
-### Log Files
-- **Application logs**: `~/Library/Logs/Mac-letterhead/letterhead.log`
-- **Droplet logs**: `~/Library/Logs/Mac-letterhead/droplet.log`
-
-### Common Commands
-- **View version**: `uvx mac-letterhead --version`
-- **Adjust log level**: `uvx mac-letterhead --log-level WARNING install /path/to/letterhead.pdf`
-- **Development mode**: Use `--dev` flag for local testing
-
-### Common Issues
-
-#### WeasyPrint Library Issues
-If you encounter WeasyPrint library errors, the system automatically falls back to ReportLab:
-```
-WARNING: WeasyPrint could not import some external libraries. Using ReportLab fallback.
-```
-This is normal and doesn't affect functionality.
-
-#### Permission Issues
-If droplets ask for file access permissions:
-1. Check **System Preferences > Security & Privacy > Privacy > Files and Folders**
-2. Allow access for the letterhead application
-3. Test by double-clicking the droplet (shows info dialog)
-
-#### Margin Detection Issues
-The smart margin detection algorithm analyzes letterhead position automatically. If margins seem incorrect:
-1. Ensure your letterhead PDF has clear visual elements (logos, text, graphics)
-2. Check that letterhead elements are positioned in header or footer areas
-3. For troubleshooting, contact support with sample letterhead file
+- **Typography**: Proper heading hierarchy, paragraph spacing, and font sizing
+- **Tables**: Clean borders, consistent padding, and professional appearance  
+- **Code Blocks**: Syntax highlighting for multiple programming languages
+- **Lists & Quotes**: Proper indentation and formatting for nested content
+- **Images & Links**: Full support for embedded images and hyperlinks
+- **Math**: LaTeX-style mathematical expressions (when supported)
 
 ## Use Cases
 
-- **Corporate Communications**: Apply company letterhead to business documents
-- **Legal Documents**: Add watermarks or legal disclaimers to contracts
-- **Invoices & Statements**: Brand financial documents with your company logo and information
-- **Proposals & Reports**: Create professional-looking documents from Markdown or PDF
-- **Academic Papers**: Add university/institution letterhead to research papers
-- **Documentation**: Convert Markdown documentation to letterhead-branded PDFs
-- **Meeting Minutes**: Write in Markdown and automatically apply corporate styling
+- **Corporate Communications**: Apply company branding to business correspondence
+- **Legal Documents**: Add firm letterhead and disclaimers to contracts and legal papers
+- **Financial Documents**: Brand invoices, statements, and financial reports
+- **Technical Documentation**: Convert Markdown documentation to branded PDFs
+- **Academic Papers**: Add institutional letterhead to research papers and reports
+- **Proposals & Reports**: Create professional client deliverables from Markdown sources
 
-## Features
+## Troubleshooting
 
-- **Easy Installation**: Simple `uvx` command installation and usage
-- **Smart Letterhead Detection**: Intelligent position detection for optimal document layout
-- **Multiple Letterhead Templates**: Support for various letterhead designs and positions
-- **Advanced Multi-page Support**: Different letterhead designs for first page, even pages, and odd pages
-- **Development Mode**: Local testing capabilities with `--dev` flag
-- **Self-contained Applications**: Desktop droplets with embedded templates
-- **High-quality Output**: PDF processing without quality loss
-- **Original Metadata Preservation**: Maintains document properties and structure
-- **Multiple Blend Modes**: Various merging strategies for different letterhead styles
-- **Professional Markdown Support**: 
-  - Intelligent margin detection and adjustment
-  - Syntax highlighting for code blocks
-  - Professional formatting for tables, lists, and headers
-  - Support for complex document structures
-- **Robust Architecture**:
-  - Modular component design for better maintainability
-  - Enhanced error handling and logging
-  - uvx environment compatibility
-  - Automatic fallback rendering
-- **Cross-platform Compatibility**: Works across different macOS configurations
+### Common Issues
+
+**Library Dependencies**: If you see WeasyPrint warnings, the system automatically falls back to ReportLab - functionality is not affected.
+
+**File Permissions**: If applications request file access, approve the permissions in System Preferences > Security & Privacy > Privacy > Files and Folders.
+
+**Margin Detection**: The system automatically analyzes letterhead positioning. If margins appear incorrect, ensure your letterhead PDF contains clear visual elements (logos, text, graphics) in header/footer areas.
+
+### Log Files
+- Application logs: `~/Library/Logs/Mac-letterhead/letterhead.log`
+- Droplet logs: `~/Library/Logs/Mac-letterhead/droplet.log`
+
+## Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing procedures, and pull request guidelines.
 
 ## License
 
