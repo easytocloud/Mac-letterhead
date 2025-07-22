@@ -93,7 +93,7 @@ The project has achieved enhanced production-ready status with version 0.9.6, fe
      2. `custom.css` (optional, if provided) - user customizations  
      3. **Only hardcoded page margins** - smart letterhead margins with `!important`
    - **Resource Loading Fix**: Replaced deprecated `pkg_resources` with modern `importlib.resources` + fallbacks
-   - **Cross-Environment Support**: Multiple fallback mechanisms for Python 3.9+ compatibility
+   - **Cross-Environment Support**: Multiple fallback mechanisms for Python 3.10+ compatibility
 
 #### 2. **AppleScript CSS Integration**
    - **Template Enhancement**: Development and production templates now properly detect bundled CSS

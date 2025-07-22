@@ -1,0 +1,2 @@
+reportlab>=4.1.0
+Pillow==11.1.0  # Match version from main package

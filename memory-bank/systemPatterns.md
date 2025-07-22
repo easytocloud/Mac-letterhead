@@ -315,7 +315,7 @@ class DevelopmentDropletTemplate(DropletTemplate):
 # Cross-environment resource loading with fallbacks
 def load_default_css():
     try:
-        # Modern approach (Python 3.9+)
+        # Modern approach (Python 3.9+, required 3.10+)
         from importlib import resources
         with resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
             return f.read()
@@ -349,5 +349,5 @@ def load_default_css():
 
 - **Clean Architecture**: Only page margins hardcoded in Python, all styling externalized
 - **User Customization**: Full CSS customization while preserving letterhead functionality
-- **Cross-Environment**: Compatible with Python 3.9+ and older versions
+- **Cross-Environment**: Compatible with Python 3.10+ (tested on 3.10, 3.11, 3.12)
 - **Smart Precedence**: Letterhead margins always preserved regardless of custom CSS

@@ -4,7 +4,7 @@
 
 ### Core Technologies
 
-- **Python 3.11+**: Primary programming language with enhanced uvx support
+- **Python 3.10+**: Primary programming language with enhanced uvx support (tested on 3.10, 3.11, 3.12)
 - **PyMuPDF (fitz)**: PDF manipulation and intelligent letterhead analysis
 - **Markdown**: Python Markdown parser with smart margin integration
 - **WeasyPrint**: HTML/CSS to PDF converter (primary) with library path management

@@ -20,6 +20,12 @@ A macOS utility for merging letterhead templates with PDF and Markdown documents
 - **Multiple Merging Strategies**: Various blending modes to suit different letterhead designs
 - **No Subscription Fees**: Free, open-source solution for businesses of all sizes
 
+## Requirements
+
+- **Python**: 3.10 or higher (tested on Python 3.10, 3.11, 3.12)
+- **macOS**: Required for droplet applications and PDF processing
+- **uv package manager**: Install with `pip install uv` if you don't have it
+
 ## Installation
 
 Mac-letterhead requires the Python uv package manager (install with `pip install uv` if you don't have it).
@@ -161,6 +167,22 @@ This tool creates a visual analysis showing:
 - Content positioning recommendations
 
 The analysis helps understand how the smart margin detection algorithm interprets your letterhead design.
+
+#### Testing with Different Python Versions
+
+The project supports and is tested with multiple Python versions. To test functionality across versions:
+
+```bash
+# Test all Python versions (3.10, 3.11, 3.12)
+make test-all
+
+# Test specific Python version
+make test-py3.10-basic
+make test-py3.11-full
+make test-py3.12-weasyprint
+```
+
+Test files are processed from `test-input/` and outputs are saved to `test-output/` with version-specific filenames.
 
 ### Different Merging Strategies
 

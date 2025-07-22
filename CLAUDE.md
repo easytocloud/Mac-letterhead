@@ -15,12 +15,12 @@ make dev-install        # Install package for local development using uv
 make dev-droplet        # Create development droplet using local code
 make test-setup         # Set up test files and environment
 
-# Testing (uses Python 3.11 by default)
+# Testing (uses Python 3.10 by default)
 make test-basic         # Run basic tests (PDF only)
 make test-full          # Run full tests (PDF + Markdown with ReportLab)
 make test-weasyprint    # Run WeasyPrint tests (requires system dependencies)
 make test-all           # Run all tests
-make test-py3.11-basic  # Test specific Python version
+make test-py3.10-basic  # Test specific Python version
 
 # Cleaning
 make clean-all          # Clean everything (build artifacts, test files, droplets)
@@ -51,12 +51,15 @@ uvx mac-letterhead merge-md letterhead.pdf "Output" ~/Desktop document.md
 ### Testing Individual Components
 ```bash
 # Run specific test for Python version
-make test-py3.11-basic
-make test-py3.11-full
-make test-py3.11-weasyprint
+make test-py3.10-basic  # Python 3.10 support
+make test-py3.11-full   # Python 3.11 support
+make test-py3.12-weasyprint # Python 3.12 support
 
-# Test files are generated in tests/files/
-# Version outputs in tests/version-*.txt
+# Test all versions at once
+make test-all
+
+# Test files are processed from test-input/ 
+# Version-specific outputs in test-output/ (e.g., css-test-markdown-py3.10-basic.pdf)
 ```
 
 ## Architecture Overview
@@ -118,8 +121,8 @@ make test-py3.11-weasyprint
 - HTML5lib for HTML parsing
 
 **Python Support**
-- Requires Python ≥3.11
-- Currently tested with Python 3.11
+- Requires Python ≥3.10
+- Currently tested with Python 3.10, 3.11, 3.12
 
 ### File Structure Patterns
 
