@@ -51,9 +51,10 @@ Then configure multiple servers with various options:
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "easytocloud"
+        "--name", "easytocloud",
+        "--output-dir", "~/Documents/generated-pdfs"
       ],
-      "description": "EasyToCloud letterhead PDF generator (uses ~/.letterhead/easytocloud.pdf and .css)"
+      "description": "EasyToCloud letterhead PDF generator with custom output directory"
     },
     "isc": {
       "command": "uvx",
@@ -69,9 +70,10 @@ Then configure multiple servers with various options:
       "args": [
         "mac-letterhead[mcp]", "mcp",
         "--name", "personal",
-        "--letterhead", "~/Dropbox/letterheads/erik-personal.pdf"
+        "--letterhead", "~/Dropbox/letterheads/erik-personal.pdf",
+        "--output-prefix", "Personal"
       ],
-      "description": "Personal letterhead from Dropbox, auto-CSS from ~/.letterhead/personal.css"
+      "description": "Personal letterhead with custom prefix for output filenames"
     },
     "client-acme": {
       "command": "uvx",
@@ -131,6 +133,8 @@ Then configure multiple servers with various options:
 - `--name`: Server name (auto-resolves `~/.letterhead/<name>.pdf` and `~/.letterhead/<name>.css`)
 - `--letterhead`: (Optional) Override letterhead PDF path
 - `--css`: (Optional) Override CSS file path
+- `--output-dir`: (Optional) Default output directory (default: ~/Desktop)
+- `--output-prefix`: (Optional) Prefix for auto-generated filenames
 
 ## Available Tools
 
@@ -140,8 +144,9 @@ Creates a letterheaded PDF from Markdown content.
 **Parameters:**
 - `markdown_content` (required): Markdown text to convert
 - `letterhead_template` (optional): Template name or path (uses default if configured)
-- `output_path` (optional): Where to save the PDF (temp file if not specified)
-- `title` (optional): Document title for metadata
+- `output_path` (optional): Output directory or full path (uses configured default if not specified)
+- `output_filename` (optional): Specific filename (auto-generated with timestamp if not provided)
+- `title` (optional): Document title for metadata and filename generation
 - `css_path` (optional): Custom CSS file path (uses default if configured)
 - `strategy` (optional): Merge strategy (`darken`, `multiply`, `overlay`, etc.)
 
@@ -151,7 +156,8 @@ Merges an existing PDF with a letterhead template.
 **Parameters:**
 - `input_pdf_path` (required): Path to the input PDF
 - `letterhead_template` (optional): Template name or path (uses default if configured)
-- `output_path` (optional): Where to save the merged PDF
+- `output_path` (optional): Output directory or full path (uses configured default if not specified)
+- `output_filename` (optional): Specific filename (auto-generated with timestamp if not provided)
 - `strategy` (optional): Merge strategy
 
 ### `analyze_letterhead`
@@ -202,12 +208,6 @@ mkdir -p ~/.letterhead
 ├── isc.css             # Optional custom CSS
 ├── personal.pdf        # Letterhead template
 └── personal.css        # Optional custom CSS
-```
-
-### Legacy Template Directory
-Templates can also be placed in:
-```
-~/Documents/letterhead-templates/
 ```
 
 Templates can be referenced by name (without .pdf extension) or full path.

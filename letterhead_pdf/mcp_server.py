@@ -31,15 +31,17 @@ logger = get_logger(__name__)
 # Initialize the MCP server - will be updated with actual name after parsing args
 server = None
 
-# Get letterhead, CSS, and name from command line arguments
+# Get letterhead, CSS, name, and output settings from command line arguments
 DEFAULT_LETTERHEAD = None
 DEFAULT_CSS = None
 SERVER_NAME = "mcp-letterhead"
+DEFAULT_OUTPUT_DIR = os.path.expanduser("~/Desktop")
+DEFAULT_OUTPUT_PREFIX = ""
 LETTERHEAD_DIR = os.path.expanduser("~/.letterhead")
 
 def setup_server_config(server_args=None):
     """Setup server configuration from provided arguments"""
-    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME, server
+    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME, DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PREFIX, server
     
     if server_args:
         # Use provided arguments
@@ -52,6 +54,12 @@ def setup_server_config(server_args=None):
         if server_args.get('name'):
             SERVER_NAME = server_args['name']
             logger.info(f"Using server name: {SERVER_NAME}")
+        if server_args.get('output_dir'):
+            DEFAULT_OUTPUT_DIR = os.path.expanduser(server_args['output_dir'])
+            logger.info(f"Using default output directory: {DEFAULT_OUTPUT_DIR}")
+        if server_args.get('output_prefix'):
+            DEFAULT_OUTPUT_PREFIX = server_args['output_prefix']
+            logger.info(f"Using default output prefix: {DEFAULT_OUTPUT_PREFIX}")
     else:
         # Parse from sys.argv for backwards compatibility
         args = sys.argv[1:]
@@ -116,7 +124,11 @@ def register_handlers():
                         },
                         "output_path": {
                             "type": "string",
-                            "description": "Output path for the generated PDF (optional, defaults to temp file)"
+                            "description": "Output path for the generated PDF (optional, defaults to configured output directory)"
+                        },
+                        "output_filename": {
+                            "type": "string",
+                            "description": "Output filename (optional, auto-generated if not provided)"
                         },
                         "title": {
                             "type": "string",
@@ -151,7 +163,11 @@ def register_handlers():
                         },
                         "output_path": {
                             "type": "string", 
-                            "description": "Output path for the merged PDF (optional, defaults to temp file)"
+                            "description": "Output path for the merged PDF (optional, defaults to configured output directory)"
+                        },
+                        "output_filename": {
+                            "type": "string",
+                            "description": "Output filename (optional, auto-generated if not provided)"
                         },
                         "strategy": {
                             "type": "string",
@@ -210,23 +226,23 @@ def register_handlers():
 # Setup server configuration
 setup_server_config()
 
-# Default letterhead templates directory
-DEFAULT_TEMPLATES_DIR = os.path.expanduser("~/Documents/letterhead-templates")
+# Legacy templates directory - kept for backwards compatibility only
+LEGACY_TEMPLATES_DIR = os.path.expanduser("~/Documents/letterhead-templates")
 
 def ensure_templates_dir():
-    """Ensure the templates directory exists"""
-    os.makedirs(DEFAULT_TEMPLATES_DIR, exist_ok=True)
-    return DEFAULT_TEMPLATES_DIR
+    """Ensure the letterhead directory exists"""
+    os.makedirs(LETTERHEAD_DIR, exist_ok=True)
+    return LETTERHEAD_DIR
 
 def find_letterhead_templates() -> List[Dict[str, str]]:
-    """Find available letterhead templates"""
+    """Find available letterhead templates in ~/.letterhead"""
     templates = []
-    templates_dir = ensure_templates_dir()
+    letterhead_dir = ensure_templates_dir()
     
-    if os.path.exists(templates_dir):
-        for file in os.listdir(templates_dir):
+    if os.path.exists(letterhead_dir):
+        for file in os.listdir(letterhead_dir):
             if file.lower().endswith('.pdf'):
-                full_path = os.path.join(templates_dir, file)
+                full_path = os.path.join(letterhead_dir, file)
                 templates.append({
                     "name": os.path.splitext(file)[0],
                     "path": full_path,
@@ -234,6 +250,55 @@ def find_letterhead_templates() -> List[Dict[str, str]]:
                 })
     
     return templates
+
+def generate_output_path(output_path: Optional[str] = None, output_filename: Optional[str] = None, 
+                        title: Optional[str] = None, letterhead_name: Optional[str] = None) -> str:
+    """Generate output path based on provided parameters and defaults"""
+    
+    # If full path provided, use it directly
+    if output_path and os.path.isabs(output_path):
+        return os.path.expanduser(output_path)
+    
+    # Determine output directory
+    if output_path:
+        # output_path is treated as directory if not absolute
+        output_dir = os.path.expanduser(output_path)
+    else:
+        # Use default output directory
+        output_dir = DEFAULT_OUTPUT_DIR
+        
+    # Ensure output directory exists
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Determine filename
+    if output_filename:
+        filename = output_filename
+        if not filename.lower().endswith('.pdf'):
+            filename += '.pdf'
+    else:
+        # Auto-generate filename
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        # Build filename components
+        components = []
+        if DEFAULT_OUTPUT_PREFIX:
+            components.append(DEFAULT_OUTPUT_PREFIX)
+        if title:
+            # Sanitize title for filename
+            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).strip()
+            safe_title = safe_title.replace(' ', '_')
+            components.append(safe_title)
+        if letterhead_name:
+            components.append(f"letterhead_{letterhead_name}")
+        
+        if not components:
+            components.append("document")
+            
+        components.append(timestamp)
+        filename = "_".join(components) + ".pdf"
+    
+    return os.path.join(output_dir, filename)
 
 def resolve_letterhead_path(letterhead_input: Optional[str] = None) -> str:
     """Resolve letterhead path from name, full path, or use default"""
@@ -251,17 +316,17 @@ def resolve_letterhead_path(letterhead_input: Optional[str] = None) -> str:
     if os.path.isabs(letterhead_input) and os.path.exists(letterhead_input):
         return letterhead_input
     
-    # If it's a template name, look for it in the templates directory
-    templates_dir = ensure_templates_dir()
+    # If it's a template name, look for it in the letterhead directory
+    letterhead_dir = ensure_templates_dir()
     
     # Try exact match first
-    template_path = os.path.join(templates_dir, f"{letterhead_input}.pdf")
+    template_path = os.path.join(letterhead_dir, f"{letterhead_input}.pdf")
     if os.path.exists(template_path):
         return template_path
     
     # Try with the input as filename (with extension)
     if letterhead_input.lower().endswith('.pdf'):
-        template_path = os.path.join(templates_dir, letterhead_input)
+        template_path = os.path.join(letterhead_dir, letterhead_input)
         if os.path.exists(template_path):
             return template_path
     
@@ -271,7 +336,7 @@ def resolve_letterhead_path(letterhead_input: Optional[str] = None) -> str:
     raise FileNotFoundError(
         f"Letterhead template '{letterhead_input}' not found. "
         f"Available templates: {', '.join(template_names) if template_names else 'None'}\n"
-        f"Templates directory: {templates_dir}"
+        f"Letterhead directory: {letterhead_dir}"
     )
 
 
@@ -279,6 +344,7 @@ async def create_letterhead_pdf(
     markdown_content: str, 
     letterhead_template: Optional[str] = None,
     output_path: Optional[str] = None,
+    output_filename: Optional[str] = None,
     title: Optional[str] = None,
     css_path: Optional[str] = None,
     strategy: str = "darken"
@@ -300,11 +366,9 @@ async def create_letterhead_pdf(
             md_file.write(markdown_content)
             md_file_path = md_file.name
         
-        # Create output path if not provided
-        if not output_path:
-            output_path = tempfile.mktemp(suffix='.pdf')
-        else:
-            output_path = os.path.expanduser(output_path)
+        # Generate output path
+        letterhead_name = letterhead_template or SERVER_NAME
+        output_path = generate_output_path(output_path, output_filename, title, letterhead_name)
         
         try:
             # Create the letterheaded PDF
@@ -353,6 +417,7 @@ async def merge_letterhead_pdf(
     input_pdf_path: str,
     letterhead_template: Optional[str] = None, 
     output_path: Optional[str] = None,
+    output_filename: Optional[str] = None,
     strategy: str = "darken"
 ) -> List[types.TextContent]:
     """Merge an existing PDF with a letterhead template"""
@@ -369,11 +434,10 @@ async def merge_letterhead_pdf(
         # Resolve letterhead template path
         letterhead_path = resolve_letterhead_path(letterhead_template)
         
-        # Create output path if not provided
-        if not output_path:
-            output_path = tempfile.mktemp(suffix='.pdf')
-        else:
-            output_path = os.path.expanduser(output_path)
+        # Generate output path
+        letterhead_name = letterhead_template or SERVER_NAME
+        input_basename = os.path.splitext(os.path.basename(input_pdf_path))[0]
+        output_path = generate_output_path(output_path, output_filename, input_basename, letterhead_name)
         
         # Merge PDFs
         letterhead_pdf = LetterheadPDF(letterhead_path)
@@ -491,10 +555,12 @@ async def main():
 def run_mcp_server(server_args=None):
     """Run MCP server with provided arguments"""
     # Reset global state to ensure clean configuration
-    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME, server
+    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME, DEFAULT_OUTPUT_DIR, DEFAULT_OUTPUT_PREFIX, server
     DEFAULT_LETTERHEAD = None
     DEFAULT_CSS = None
     SERVER_NAME = "mcp-letterhead"
+    DEFAULT_OUTPUT_DIR = os.path.expanduser("~/Desktop")
+    DEFAULT_OUTPUT_PREFIX = ""
     server = None
     
     # Configure with new arguments
