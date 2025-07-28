@@ -1,0 +1,49 @@
+{
+  "mcpServers": {
+    "easytocloud": {
+      "command": "uvx",
+      "args": [
+        "mac-letterhead[mcp]", "mcp-letterhead",
+        "--name", "easytocloud"
+      ],
+      "description": "EasyToCloud letterhead (convention-based: ~/.letterhead/easytocloud.pdf + .css)"
+    },
+    "isc": {
+      "command": "uvx",
+      "args": [
+        "mac-letterhead[mcp]", "mcp-letterhead", 
+        "--name", "isc",
+        "--css", "~/Documents/corporate-styles/isc-branding.css"
+      ],
+      "description": "ISC letterhead with corporate CSS from Documents folder"
+    },
+    "personal": {
+      "command": "uvx",
+      "args": [
+        "mac-letterhead[mcp]", "mcp-letterhead",
+        "--name", "personal",
+        "--letterhead", "~/Dropbox/letterheads/erik-personal.pdf"
+      ],
+      "description": "Personal letterhead from Dropbox, CSS auto-resolved from ~/.letterhead/"
+    },
+    "client-acme": {
+      "command": "uvx",
+      "args": [
+        "mac-letterhead[mcp]", "mcp-letterhead",
+        "--name", "client-acme",
+        "--letterhead", "~/Documents/clients/acme/letterhead.pdf",
+        "--css", "~/Documents/clients/acme/brand-guidelines.css"
+      ],
+      "description": "ACME Corp client with full custom paths for letterhead and CSS"
+    },
+    "shared-network": {
+      "command": "uvx",
+      "args": [
+        "mac-letterhead[mcp]", "mcp-letterhead",
+        "--name", "shared-network",
+        "--css", "/Volumes/SharedDrive/brand-assets/company.css"
+      ],
+      "description": "Uses ~/.letterhead/shared-network.pdf with CSS from network drive"
+    }
+  }
+}

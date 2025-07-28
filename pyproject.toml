@@ -37,9 +37,13 @@ dependencies = [
 # Keep empty optional dependencies section for backward compatibility
 [project.optional-dependencies]
 markdown = []
+mcp = [
+    "mcp>=1.0.0",
+]
 
 [project.scripts]
 mac-letterhead = "letterhead_pdf.main:main"
+mcp-letterhead = "letterhead_pdf.mcp_server:main"
 
 [tool.hatch.version]
 path = "letterhead_pdf/__init__.py"
