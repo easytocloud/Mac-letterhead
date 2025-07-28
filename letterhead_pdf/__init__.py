@@ -1,3 +1,3 @@
 """Letterhead PDF merger for macOS with AppleScript droplet interface"""
 
-__version__ = "0.12.4"
+__version__ = "0.12.5"
