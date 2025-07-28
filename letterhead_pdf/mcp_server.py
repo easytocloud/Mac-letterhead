@@ -84,7 +84,128 @@ def setup_server_config(server_args=None):
             logger.info(f"No CSS file found at: {css_path} (optional)")
 
     # Initialize the MCP server with the parsed name
+    global server
     server = Server(SERVER_NAME)
+    
+    # Re-register handlers with the new server instance
+    register_handlers()
+
+def register_handlers():
+    """Register MCP server handlers"""
+    global server
+    if not server:
+        return
+    
+    @server.list_tools()
+    async def handle_list_tools() -> List[types.Tool]:
+        """List available tools"""
+        return [
+            types.Tool(
+                name="create_letterhead_pdf",
+                description="Create a letterheaded PDF from Markdown content",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "markdown_content": {
+                            "type": "string",
+                            "description": "Markdown content to convert to PDF"
+                        },
+                        "letterhead_template": {
+                            "type": "string", 
+                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
+                        },
+                        "output_path": {
+                            "type": "string",
+                            "description": "Output path for the generated PDF (optional, defaults to temp file)"
+                        },
+                        "title": {
+                            "type": "string",
+                            "description": "Document title for metadata (optional)"
+                        },
+                        "css_path": {
+                            "type": "string",
+                            "description": "Path to custom CSS file for styling (optional)"
+                        },
+                        "strategy": {
+                            "type": "string",
+                            "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
+                            "description": "PDF merge strategy (optional, defaults to 'darken')"
+                        }
+                    },
+                    "required": ["markdown_content"]
+                }
+            ),
+            types.Tool(
+                name="merge_letterhead_pdf", 
+                description="Merge an existing PDF with a letterhead template",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "input_pdf_path": {
+                            "type": "string",
+                            "description": "Path to the input PDF file"
+                        },
+                        "letterhead_template": {
+                            "type": "string",
+                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
+                        },
+                        "output_path": {
+                            "type": "string", 
+                            "description": "Output path for the merged PDF (optional, defaults to temp file)"
+                        },
+                        "strategy": {
+                            "type": "string",
+                            "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
+                            "description": "PDF merge strategy (optional, defaults to 'darken')"
+                        }
+                    },
+                    "required": ["input_pdf_path"]
+                }
+            ),
+            types.Tool(
+                name="analyze_letterhead",
+                description="Analyze a letterhead template to determine margins and printable areas",
+                inputSchema={
+                    "type": "object", 
+                    "properties": {
+                        "letterhead_template": {
+                            "type": "string",
+                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
+                        }
+                    },
+                    "required": []
+                }
+            ),
+            types.Tool(
+                name="list_letterhead_templates",
+                description="List all available letterhead templates in the templates directory",
+                inputSchema={
+                    "type": "object",
+                    "properties": {}
+                }
+            )
+        ]
+
+    @server.call_tool()
+    async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextContent]:
+        """Handle tool calls"""
+        try:
+            if name == "create_letterhead_pdf":
+                return await create_letterhead_pdf(**arguments)
+            elif name == "merge_letterhead_pdf":
+                return await merge_letterhead_pdf(**arguments)
+            elif name == "analyze_letterhead":
+                return await analyze_letterhead(**arguments)
+            elif name == "list_letterhead_templates":
+                return await list_letterhead_templates(**arguments)
+            else:
+                raise ValueError(f"Unknown tool: {name}")
+        except Exception as e:
+            logger.error(f"Error in tool {name}: {str(e)}", exc_info=True)
+            return [types.TextContent(
+                type="text",
+                text=f"Error: {str(e)}"
+            )]
 
 # Setup server configuration
 setup_server_config()
@@ -153,116 +274,6 @@ def resolve_letterhead_path(letterhead_input: Optional[str] = None) -> str:
         f"Templates directory: {templates_dir}"
     )
 
-@server.list_tools()
-async def handle_list_tools() -> List[types.Tool]:
-    """List available tools"""
-    return [
-        types.Tool(
-            name="create_letterhead_pdf",
-            description="Create a letterheaded PDF from Markdown content",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "markdown_content": {
-                        "type": "string",
-                        "description": "Markdown content to convert to PDF"
-                    },
-                    "letterhead_template": {
-                        "type": "string", 
-                        "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
-                    },
-                    "output_path": {
-                        "type": "string",
-                        "description": "Output path for the generated PDF (optional, defaults to temp file)"
-                    },
-                    "title": {
-                        "type": "string",
-                        "description": "Document title for metadata (optional)"
-                    },
-                    "css_path": {
-                        "type": "string",
-                        "description": "Path to custom CSS file for styling (optional)"
-                    },
-                    "strategy": {
-                        "type": "string",
-                        "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
-                        "description": "PDF merge strategy (optional, defaults to 'darken')"
-                    }
-                },
-                "required": ["markdown_content"]
-            }
-        ),
-        types.Tool(
-            name="merge_letterhead_pdf", 
-            description="Merge an existing PDF with a letterhead template",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "input_pdf_path": {
-                        "type": "string",
-                        "description": "Path to the input PDF file"
-                    },
-                    "letterhead_template": {
-                        "type": "string",
-                        "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
-                    },
-                    "output_path": {
-                        "type": "string", 
-                        "description": "Output path for the merged PDF (optional, defaults to temp file)"
-                    },
-                    "strategy": {
-                        "type": "string",
-                        "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
-                        "description": "PDF merge strategy (optional, defaults to 'darken')"
-                    }
-                },
-                "required": ["input_pdf_path"]
-            }
-        ),
-        types.Tool(
-            name="analyze_letterhead",
-            description="Analyze a letterhead template to determine margins and printable areas",
-            inputSchema={
-                "type": "object", 
-                "properties": {
-                    "letterhead_template": {
-                        "type": "string",
-                        "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
-                    }
-                },
-                "required": []
-            }
-        ),
-        types.Tool(
-            name="list_letterhead_templates",
-            description="List all available letterhead templates in the templates directory",
-            inputSchema={
-                "type": "object",
-                "properties": {}
-            }
-        )
-    ]
-
-@server.call_tool()
-async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextContent]:
-    """Handle tool calls"""
-    try:
-        if name == "create_letterhead_pdf":
-            return await create_letterhead_pdf(**arguments)
-        elif name == "merge_letterhead_pdf":
-            return await merge_letterhead_pdf(**arguments)
-        elif name == "analyze_letterhead":
-            return await analyze_letterhead(**arguments)
-        elif name == "list_letterhead_templates":
-            return await list_letterhead_templates(**arguments)
-        else:
-            raise ValueError(f"Unknown tool: {name}")
-    except Exception as e:
-        logger.error(f"Error in tool {name}: {str(e)}", exc_info=True)
-        return [types.TextContent(
-            type="text",
-            text=f"Error: {str(e)}"
-        )]
 
 async def create_letterhead_pdf(
     markdown_content: str, 
@@ -479,7 +490,14 @@ async def main():
 
 def run_mcp_server(server_args=None):
     """Run MCP server with provided arguments"""
-    # Reconfigure with new arguments
+    # Reset global state to ensure clean configuration
+    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME, server
+    DEFAULT_LETTERHEAD = None
+    DEFAULT_CSS = None
+    SERVER_NAME = "mcp-letterhead"
+    server = None
+    
+    # Configure with new arguments
     setup_server_config(server_args)
     
     # Run the server
