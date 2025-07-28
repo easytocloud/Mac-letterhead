@@ -283,3 +283,17 @@ h2 { font-size: 14pt; color: #666; }
 - macOS (uses Quartz/CoreGraphics for PDF processing)  
 - Python ≥3.10
 - MCP client (like Claude Code)
+
+## Logging and Troubleshooting
+
+The MCP server logs to `~/Library/Logs/Mac-letterhead/letterhead.log` to avoid interfering with the JSON-RPC protocol. All console output and dependency warnings are suppressed to ensure clean MCP communication.
+
+To monitor server activity:
+```bash
+tail -f ~/Library/Logs/Mac-letterhead/letterhead.log
+```
+
+Common issues:
+- **Missing letterhead templates**: Ensure PDF files are in `~/.letterhead/`
+- **Permission errors**: Check file permissions on output directory
+- **WeasyPrint warnings**: These are suppressed automatically in MCP mode

@@ -115,17 +115,17 @@ Mac-letterhead/
 
 ### For End Users
 ```bash
-# Install production droplet
-uvx mac-letterhead install ~/stationery.pdf --name "My Letterhead"
+# Install production droplet using ~/.letterhead/stationery.pdf
+uvx mac-letterhead install --name "My Letterhead" --letterhead ~/stationery.pdf
 
 # With custom CSS
-uvx mac-letterhead install ~/stationery.pdf --css ~/style.css --name "Styled Letterhead"
+uvx mac-letterhead install --name "Styled Letterhead" --letterhead ~/stationery.pdf --css ~/style.css
 ```
 
 ### For Developers
 ```bash
 # Create development droplet
-uv run python -m letterhead_pdf.main install ~/stationery.pdf --dev --name "Test Droplet"
+uv run python -m letterhead_pdf.main install --name "Test Droplet" --letterhead ~/stationery.pdf --dev
 
 # Run tests
 make test-dev-droplet

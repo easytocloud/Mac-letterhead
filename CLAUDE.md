@@ -41,11 +41,37 @@ brew install pango cairo fontconfig freetype harfbuzz
 ### Running the Application
 ```bash
 # Install and use
-uvx mac-letterhead install /path/to/letterhead.pdf
+uvx mac-letterhead install --name "Company"
 
 # Direct merge operations
 uvx mac-letterhead merge letterhead.pdf "Output" ~/Desktop document.pdf
 uvx mac-letterhead merge-md letterhead.pdf "Output" ~/Desktop document.md
+
+# MCP server for AI integration
+uvx mac-letterhead mcp --style easytocloud        # Style-specific server
+uvx mac-letterhead mcp                             # Generic server, style specified per tool call
+uvx mac-letterhead mcp --style personal --output-dir ~/Documents/personal-docs
+```
+
+### Install Command Behavior
+
+The `install` command creates droplet applications using a name-based convention:
+
+- `--name` is mandatory and sets both the app name and style
+- Automatically resolves `~/.letterhead/<name>.pdf` and `~/.letterhead/<name>.css`
+- `--letterhead` and `--css` flags can override the resolved paths
+- Applications are created on Desktop by default
+
+**Examples:**
+```bash
+# Uses ~/.letterhead/company.pdf and ~/.letterhead/company.css
+uvx mac-letterhead install --name "company"
+
+# Override letterhead but keep name-based CSS
+uvx mac-letterhead install --name "report" --letterhead /path/to/custom.pdf
+
+# Development droplet using local code
+uvx mac-letterhead install --name "test" --dev
 ```
 
 ### Testing Individual Components
@@ -68,7 +94,8 @@ make test-all
 
 **Main Application (`letterhead_pdf/main.py`)**
 - CLI interface with argparse
-- Command handlers: `install`, `merge`, `merge-md`
+- Command handlers: `install`, `merge`, `merge-md`, `mcp`
+- MCP server integration for AI tool usage
 - macOS save dialog integration using AppKit/Foundation
 - Logging configuration and error handling
 
@@ -83,6 +110,13 @@ make test-all
 - `ResourceManager`: Handles icon and resource embedding
 - `MacOSIntegration`: macOS-specific integration (app bundle creation)
 - `DropletValidator`: Validates created droplets
+
+**MCP Server Integration (`letterhead_pdf/mcp_server.py`)**
+- Model Context Protocol server for AI tool integration
+- Dynamic tool schema adaptation based on server configuration
+- Convention-based file resolution from `~/.letterhead/` directory
+- Support for both generic multi-style and dedicated single-style servers
+- Tools: `create_letterhead_pdf`, `merge_letterhead_pdf`, `analyze_letterhead`, `list_letterhead_templates`
 
 ### Key Features
 
@@ -108,6 +142,13 @@ make test-all
 - `transparency`: Uses transparency layers
 - `reverse`: Letterhead on top with transparency
 
+**MCP Server Capabilities**
+- **Dual Configuration Modes**: Generic multi-style server or dedicated single-style servers
+- **Dynamic Tool Schemas**: Tools adapt parameter requirements based on server configuration
+- **Convention-Based Resolution**: Auto-resolves `~/.letterhead/<style>.pdf` and `~/.letterhead/<style>.css`
+- **AI Integration**: Enables natural language PDF generation through Claude and other AI tools
+- **Flexible Output Control**: Configurable output directories and filename prefixes
+
 ### Dependencies and Compatibility
 
 **Core Dependencies**
@@ -119,6 +160,7 @@ make test-all
 **Optional Dependencies**
 - Markdown + Pygments for syntax highlighting
 - HTML5lib for HTML parsing
+- MCP (Model Context Protocol) for AI tool integration
 
 **Python Support**
 - Requires Python ≥3.10
@@ -129,9 +171,11 @@ make test-all
 **Package Structure**
 - Main entry point: `letterhead_pdf/main.py` 
 - Core logic: `pdf_merger.py`, `markdown_processor.py`, `pdf_utils.py`
+- MCP server: `letterhead_pdf/mcp_server.py` (AI tool integration)
 - Installation system: `letterhead_pdf/installation/` (modular components)
 - Resources: `letterhead_pdf/resources/` (defaults.css, icons)
 - Tests: `tests/` with generated test files and utilities
+- Documentation: `README_MCP.md`, `sample_mcp_config.json`, `setup_letterheads.sh`
 
 **Configuration**
 - Version management: Single source in `letterhead_pdf/__init__.py`
@@ -164,3 +208,75 @@ make test-all
 - Uses Quartz/CoreGraphics for PDF operations (native macOS PDF handling)
 - AppKit for save dialogs and UI interactions
 - Foundation for file operations and system integration
+
+## MCP Server Integration
+
+### Configuration Setup
+Mac-letterhead includes an MCP (Model Context Protocol) server that enables AI tools like Claude to create letterheaded PDFs directly through natural language commands.
+
+**Directory Structure** (Convention-based):
+```bash
+~/.letterhead/
+├── easytocloud.pdf     # Letterhead template
+├── easytocloud.css     # Optional styling
+├── personal.pdf        # Another letterhead
+└── personal.css        # Its styling
+```
+
+### Server Configuration Modes
+
+**Generic Multi-Style Server** (Recommended for flexibility):
+```json
+{
+  "mcpServers": {
+    "letterhead": {
+      "command": "uvx",
+      "args": ["mac-letterhead[mcp]", "mcp"],
+      "description": "Generic letterhead PDF generator"
+    }
+  }
+}
+```
+- Usage: *"Using letterhead server, create an easytocloud style PDF about..."*
+- Tools require `style` parameter (mandatory)
+- Can handle any style in `~/.letterhead/`
+
+**Style-Specific Servers** (Optimized for dedicated use):
+```json
+{
+  "mcpServers": {
+    "easytocloud": {
+      "command": "uvx", 
+      "args": ["mac-letterhead[mcp]", "mcp", "--style", "easytocloud"],
+      "description": "EasyToCloud letterhead generator"
+    }
+  }
+}
+```
+- Usage: *"Create an easytocloud letterheaded PDF about..."*
+- Server pre-configured with style
+- Tools don't require style parameter
+
+### Available MCP Tools
+
+1. **`create_letterhead_pdf`**: Convert Markdown to letterheaded PDF
+2. **`merge_letterhead_pdf`**: Apply letterhead to existing PDF  
+3. **`analyze_letterhead`**: Analyze letterhead margins and layout
+4. **`list_letterhead_templates`**: List available letterhead files
+
+### Dynamic Tool Behavior
+The MCP server automatically adapts tool schemas based on configuration:
+- **Generic server**: Tools require `style` parameter
+- **Style-specific server**: Tools use pre-configured style, `style` parameter not available
+
+### Setup Commands
+```bash
+# Set up letterhead directory and sample files
+./setup_letterheads.sh
+
+# Test server configuration  
+uvx mac-letterhead mcp --style test-style
+uvx mac-letterhead mcp  # Generic mode
+```
+
+For complete MCP configuration details, see `README_MCP.md`.

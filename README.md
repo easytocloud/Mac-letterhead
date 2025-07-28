@@ -42,11 +42,25 @@ Mac-letterhead transforms your letterhead PDF into a powerful document processin
 Install Mac-letterhead and create your first letterhead application:
 
 ```bash
-# Quick start - create a letterhead droplet on your desktop
-uvx mac-letterhead install /path/to/your/letterhead.pdf
+# Quick start - create a letterhead droplet on your desktop  
+uvx mac-letterhead install --name "Company"
+
+# For AI integration, install with MCP support
+uvx install "mac-letterhead[mcp]"
 ```
 
-This creates a macOS application that you can drag documents onto to apply your letterhead.
+### Prerequisites
+
+Mac-letterhead expects your letterhead files to be organized in `~/.letterhead/`:
+
+```bash
+~/.letterhead/
+├── company.pdf        # Your letterhead template
+├── company.css        # Optional custom styling
+└── personal.pdf       # Additional letterhead templates
+```
+
+This creates a macOS application that you can drag documents onto to apply your letterhead. The MCP option adds support for AI tool integration.
 
 ### System Dependencies
 
@@ -64,20 +78,20 @@ These libraries enable high-quality PDF generation with advanced typography supp
 
 #### Basic Application Creation
 ```bash
-# Create a letterhead droplet with default name
-uvx mac-letterhead install /path/to/company-letterhead.pdf
+# Create a letterhead droplet using ~/.letterhead/company.pdf
+uvx mac-letterhead install --name "company"
 ```
 
-#### Custom Application Name
+#### Custom Letterhead Override
 ```bash
-# Specify a custom name for your letterhead application  
-uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Correspondence"
+# Use a different letterhead file but keep the app name
+uvx mac-letterhead install --name "Company Correspondence" --letterhead /path/to/custom-letterhead.pdf
 ```
 
 #### Advanced Markdown Styling
 ```bash
 # Create a letterhead application with custom CSS styling
-uvx mac-letterhead install /path/to/letterhead.pdf --name "Technical Reports" --css /path/to/custom-styles.css
+uvx mac-letterhead install --name "Technical Reports" --css /path/to/custom-styles.css
 ```
 
 The `--css` option allows you to customize the appearance of rendered Markdown documents:
@@ -85,6 +99,23 @@ The `--css` option allows you to customize the appearance of rendered Markdown d
 - **Layout**: Table styling, code block formatting, list appearance
 - **Branding**: Consistent styling that complements your letterhead design
 - **Responsiveness**: Ensures content fits properly within the detected printable area
+
+#### Install Command Reference
+
+The install command follows this pattern:
+
+```bash
+uvx mac-letterhead install --name "AppName" [--letterhead path] [--css path] [--output-dir dir]
+```
+
+**Required:**
+- `--name`: Sets both the application name and the style. Automatically looks for `~/.letterhead/<name>.pdf` and `~/.letterhead/<name>.css`
+
+**Optional:**
+- `--letterhead`: Override the default letterhead PDF path  
+- `--css`: Override the default CSS file path
+- `--output-dir`: Specify where to create the app (default: Desktop)
+- `--dev`: Create a development version using local code
 
 ### Using Letterhead Applications
 
@@ -113,6 +144,29 @@ uvx mac-letterhead merge-md /path/to/letterhead.pdf "Technical Guide" ~/Desktop 
 # With custom CSS styling
 uvx mac-letterhead merge-md /path/to/letterhead.pdf "Proposal" ~/Desktop /path/to/proposal.md --css /path/to/styles.css
 ```
+
+#### AI Integration with MCP Server
+Mac-letterhead includes an MCP (Model Context Protocol) server that enables AI tools like Claude to create letterheaded PDFs through natural language commands:
+
+```bash
+# Start a generic multi-style server
+uvx mac-letterhead mcp
+
+# Start a dedicated single-style server  
+uvx mac-letterhead mcp --style easytocloud --output-dir ~/Documents/generated-pdfs
+```
+
+**Usage Examples with Claude:**
+- *"Using the letterhead server, create an easytocloud style PDF about our new cloud services"*
+- *"Generate a personal letterheaded document for my consulting proposal"*
+
+The MCP server automatically:
+- Converts Markdown content to professionally formatted PDFs
+- Applies appropriate letterhead templates and CSS styling
+- Manages output directories and file naming
+- Supports both style-specific and generic multi-style configurations
+
+For complete MCP setup and configuration details, see [README_MCP.md](README_MCP.md).
 
 ### Blending Strategies
 
@@ -155,9 +209,10 @@ Mac-letterhead provides professional Markdown rendering with:
 - **Corporate Communications**: Apply company branding to business correspondence
 - **Legal Documents**: Add firm letterhead and disclaimers to contracts and legal papers
 - **Financial Documents**: Brand invoices, statements, and financial reports
-- **Technical Documentation**: Convert Markdown documentation to branded PDFs
+- **Technical Documentation**: Convert Markdown documentation to branded PDFs  
 - **Academic Papers**: Add institutional letterhead to research papers and reports
 - **Proposals & Reports**: Create professional client deliverables from Markdown sources
+- **AI-Generated Content**: Use Claude or other AI tools to create branded documents through natural language
 
 ## Troubleshooting
 

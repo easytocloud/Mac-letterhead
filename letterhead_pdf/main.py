@@ -316,15 +316,49 @@ def install_command(args: argparse.Namespace) -> int:
     """Handle the install command"""
     try:
         logging.info(f"Starting install command with args: {args}")
-        if not os.path.exists(args.letterhead_path):
-            error_msg = f"Letterhead PDF not found: {args.letterhead_path}"
+        
+        # Define letterhead directory
+        letterhead_dir = os.path.expanduser("~/.letterhead")
+        
+        # Resolve letterhead PDF path
+        if args.letterhead:
+            # Use provided letterhead path
+            letterhead_path = os.path.expanduser(args.letterhead)
+        else:
+            # Resolve from name
+            letterhead_path = os.path.join(letterhead_dir, f"{args.name}.pdf")
+        
+        # Check if letterhead PDF exists
+        if not os.path.exists(letterhead_path):
+            error_msg = f"Letterhead PDF not found: {letterhead_path}"
+            if not args.letterhead:
+                error_msg += f"\nExpected file based on --name '{args.name}': {letterhead_path}"
+                error_msg += f"\nEither create this file or use --letterhead to specify a different path"
             logging.error(error_msg)
             print(error_msg)
             return 1
         
-        # Get the letterhead filename without extension for app name
-        letterhead_name = os.path.splitext(os.path.basename(args.letterhead_path))[0]
-        app_name = f"Letterhead {letterhead_name}"
+        # Resolve CSS path (optional)
+        css_path = None
+        if args.css:
+            # Use provided CSS path
+            css_path = os.path.expanduser(args.css)
+            if not os.path.exists(css_path):
+                error_msg = f"CSS file not found: {css_path}"
+                logging.error(error_msg)
+                print(error_msg)
+                return 1
+        else:
+            # Try to resolve from name (optional)
+            default_css_path = os.path.join(letterhead_dir, f"{args.name}.css")
+            if os.path.exists(default_css_path):
+                css_path = default_css_path
+                logging.info(f"Found CSS file: {css_path}")
+            else:
+                logging.info(f"No CSS file found at {default_css_path} (optional)")
+        
+        # Set app name based on provided name
+        app_name = args.name
         
         # Check for development mode
         is_dev = hasattr(args, 'dev') and args.dev
@@ -341,10 +375,10 @@ def install_command(args: argparse.Namespace) -> int:
         )
         
         app_path = builder.create_droplet(
-            letterhead_path=args.letterhead_path,
-            app_name=args.name if hasattr(args, 'name') and args.name else app_name,
+            letterhead_path=letterhead_path,
+            app_name=app_name,
             output_dir=args.output_dir if hasattr(args, 'output_dir') else None,
-            css_path=args.css if hasattr(args, 'css') and args.css else None
+            css_path=css_path
         )
         
         logging.info(f"Install command completed successfully: {app_path}")
@@ -409,10 +443,10 @@ def main(args: Optional[list] = None) -> int:
     
     # Install command
     install_parser = subparsers.add_parser('install', help='Create a letterhead droplet application')
-    install_parser.add_argument('letterhead_path', help='Path to letterhead PDF template')
-    install_parser.add_argument('--name', help='Custom name for the applier app (default: "Letterhead <filename>")')
+    install_parser.add_argument('--name', required=True, help='Name for the droplet app and style (resolves ~/.letterhead/<name>.pdf and ~/.letterhead/<name>.css)')
+    install_parser.add_argument('--letterhead', help='Override letterhead PDF path (default: ~/.letterhead/<name>.pdf)')
+    install_parser.add_argument('--css', help='Override CSS file path (default: ~/.letterhead/<name>.css)')
     install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
-    install_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling (uses defaults.css if not provided)')
     install_parser.add_argument('--dev', action='store_true', help='Create a development droplet using local code')
     install_parser.add_argument('--python-path', help='Path to Python interpreter for development mode (default: current interpreter)')
     

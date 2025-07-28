@@ -1,7 +1,7 @@
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.12.4
+VERSION := 0.12.5
 
 # Directory setup
 TOOLS_DIR := tools
@@ -38,7 +38,7 @@ dev-install:
 
 dev-droplet: test-setup
 	@echo "Creating development test droplet..."
-	uv run python -m letterhead_pdf.main install $(TEST_LETTERHEAD) --dev --name "Test Dev Droplet" --output-dir $(HOME)/Desktop
+	uv run python -m letterhead_pdf.main install --name "Test Dev Droplet" --letterhead $(TEST_LETTERHEAD) --dev --output-dir $(HOME)/Desktop
 	@echo "Development droplet created on Desktop"
 
 # =============================================================================

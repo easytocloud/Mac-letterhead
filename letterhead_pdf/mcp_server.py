@@ -24,9 +24,36 @@ from letterhead_pdf.pdf_merger import PDFMerger
 from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, MarkdownProcessingError
 from letterhead_pdf.log_config import configure_logging, get_logger
 
-# Configure logging
-configure_logging(level=logging.INFO)
+# Disable console logging for MCP server to avoid interfering with JSON-RPC protocol
+def configure_mcp_logging():
+    """Configure logging for MCP server with file-only output"""
+    # Remove all existing handlers that might write to stdout/stderr
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers[:]:
+        root_logger.removeHandler(handler)
+    
+    # Add only file handler
+    try:
+        from letterhead_pdf.log_config import LOG_FILE
+        file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+        file_handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('%(asctime)s - MCP - %(name)s - %(levelname)s - %(message)s')
+        file_handler.setFormatter(formatter)
+        root_logger.addHandler(file_handler)
+        root_logger.setLevel(logging.INFO)
+    except Exception:
+        # If file logging fails, disable all logging to avoid stdout/stderr interference
+        root_logger.setLevel(logging.CRITICAL + 1)
+
+# Configure MCP-specific logging after all imports
+configure_mcp_logging()
 logger = get_logger(__name__)
+
+# Suppress warnings that might interfere with MCP JSON-RPC protocol
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Initialize the MCP server - will be updated with actual name after parsing args
 server = None
@@ -103,12 +130,26 @@ def register_handlers():
         # Determine if style parameter should be required based on server configuration
         has_server_style = SERVER_NAME != "mcp-letterhead"
         
-        # Base properties for create_letterhead_pdf
+        # Base properties for create_letterhead_pdf - ordered with mandatory parameters first
         create_pdf_properties = {
             "markdown_content": {
                 "type": "string",
                 "description": "Markdown content to convert to PDF"
-            },
+            }
+        }
+        
+        # Add style parameter as second parameter if no server style is configured (mandatory)
+        if not has_server_style:
+            create_pdf_properties["style"] = {
+                "type": "string",
+                "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
+            }
+        else:
+            # For style-specific servers, letterhead_template is optional so add after optional params
+            pass
+        
+        # Add optional parameters
+        create_pdf_properties.update({
             "output_path": {
                 "type": "string",
                 "description": "Output path for the generated PDF (optional, defaults to configured output directory)"
@@ -130,15 +171,10 @@ def register_handlers():
                 "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
                 "description": "PDF merge strategy (optional, defaults to 'darken')"
             }
-        }
+        })
         
-        # Add style parameter if no server style is configured
-        if not has_server_style:
-            create_pdf_properties["style"] = {
-                "type": "string",
-                "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
-            }
-        else:
+        # For style-specific servers, add letterhead_template as optional parameter at the end
+        if has_server_style:
             create_pdf_properties["letterhead_template"] = {
                 "type": "string", 
                 "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
@@ -165,34 +201,43 @@ def register_handlers():
                 inputSchema={
                     "type": "object",
                     "properties": {
-                        "input_pdf_path": {
-                            "type": "string",
-                            "description": "Path to the input PDF file"
+                        **{
+                            # Mandatory parameters first
+                            "input_pdf_path": {
+                                "type": "string",
+                                "description": "Path to the input PDF file"
+                            }
                         },
                         **({
+                            # Style parameter as second mandatory parameter for generic servers
                             "style": {
                                 "type": "string",
                                 "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
                             }
-                        } if not has_server_style else {
+                        } if not has_server_style else {}),
+                        **{
+                            # Optional parameters
+                            "output_path": {
+                                "type": "string", 
+                                "description": "Output path for the merged PDF (optional, defaults to configured output directory)"
+                            },
+                            "output_filename": {
+                                "type": "string",
+                                "description": "Output filename (optional, auto-generated if not provided)"
+                            },
+                            "strategy": {
+                                "type": "string",
+                                "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
+                                "description": "PDF merge strategy (optional, defaults to 'darken')"
+                            }
+                        },
+                        **({
+                            # For style-specific servers, letterhead_template is optional so add at the end
                             "letterhead_template": {
                                 "type": "string",
                                 "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
                             }
-                        }),
-                        "output_path": {
-                            "type": "string", 
-                            "description": "Output path for the merged PDF (optional, defaults to configured output directory)"
-                        },
-                        "output_filename": {
-                            "type": "string",
-                            "description": "Output filename (optional, auto-generated if not provided)"
-                        },
-                        "strategy": {
-                            "type": "string",
-                            "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
-                            "description": "PDF merge strategy (optional, defaults to 'darken')"
-                        }
+                        } if has_server_style else {})
                     },
                     "required": ["input_pdf_path"] + (["style"] if not has_server_style else [])
                 }

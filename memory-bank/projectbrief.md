@@ -16,9 +16,9 @@ Mac-letterhead is a Python module that provides a drag-and-drop interface for me
 
 1. **Install Mode**:
    ```
-   uvx mac-letterhead install /path/to/letterhead.pdf
+   uvx mac-letterhead install --name "Company"
    ```
-   Creates a desktop application for drag-and-drop document processing
+   Creates a desktop application for drag-and-drop document processing using ~/.letterhead/Company.pdf
 
 2. **Direct Merge Mode**:
    - For PDF files:

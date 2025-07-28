@@ -147,10 +147,10 @@ uv pip install -e "."
 
 ```bash
 # Production droplet
-uvx mac-letterhead install /path/to/letterhead.pdf --name "Company Letterhead"
+uvx mac-letterhead install --name "Company Letterhead"
 
 # Development droplet  
-uvx mac-letterhead install /path/to/letterhead.pdf --name "Dev Test" --dev
+uvx mac-letterhead install --name "Dev Test" --dev
 ```
 
 ## Tool Usage Patterns

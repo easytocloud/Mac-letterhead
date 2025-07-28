@@ -26,6 +26,7 @@ Mac-letterhead/
 │   ├── pdf_merger.py       # Core PDF merging functionality  
 │   ├── markdown_processor.py # Markdown to PDF conversion
 │   ├── pdf_utils.py        # Low-level PDF operations
+│   ├── mcp_server.py       # MCP server for AI tool integration
 │   ├── installation/       # Droplet creation system
 │   └── resources/          # Default CSS, icons, and assets
 ├── tools/                  # Development utilities
@@ -100,6 +101,7 @@ These are required for WeasyPrint functionality and high-quality PDF generation.
 - **`letterhead_pdf/pdf_merger.py`**: Core PDF blending and merging logic
 - **`letterhead_pdf/markdown_processor.py`**: Markdown to PDF conversion with smart margins
 - **`letterhead_pdf/pdf_utils.py`**: Low-level PDF operations using macOS Quartz
+- **`letterhead_pdf/mcp_server.py`**: MCP server for AI tool integration, dynamic tool schemas
 - **`letterhead_pdf/installation/`**: Droplet creation, AppleScript generation, macOS integration
 
 ### Development Guidelines
@@ -137,6 +139,29 @@ tail -f ~/Library/Logs/Mac-letterhead/letterhead.log
 # Use the analysis tool to understand letterhead structure
 python tools/analyze_letterhead.py letterhead.pdf analysis.pdf
 ```
+
+#### Testing MCP Server
+```bash
+# Set up letterhead directory for testing
+mkdir -p ~/.letterhead
+cp test-input/sample.pdf ~/.letterhead/test.pdf
+
+# Test generic MCP server (style specified per tool call)
+uvx mac-letterhead mcp &
+# Server runs in background - use Claude or MCP client to test
+
+# Test style-specific MCP server  
+uvx mac-letterhead mcp --style test --output-dir ~/Desktop/mcp-test &
+
+# Kill server when done testing
+pkill -f "mac-letterhead mcp"
+```
+
+**MCP Development Notes**:
+- Tools dynamically adapt schemas based on server configuration
+- Generic servers require `style` parameter in tool calls
+- Style-specific servers pre-configure letterhead and CSS resolution
+- Test both configuration modes when making changes to MCP functionality
 
 ## Pull Request Process
 
