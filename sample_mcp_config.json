@@ -1,49 +1,56 @@
 {
   "mcpServers": {
+    "letterhead": {
+      "command": "uvx",
+      "args": [
+        "mac-letterhead[mcp]", "mcp"
+      ],
+      "description": "Generic letterhead PDF generator - style specified per tool call"
+    },
     "easytocloud": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "easytocloud"
+        "--style", "easytocloud"
       ],
-      "description": "EasyToCloud letterhead (convention-based: ~/.letterhead/easytocloud.pdf + .css)"
+      "description": "EasyToCloud letterhead (auto-resolves: ~/.letterhead/easytocloud.pdf + .css)"
     },
     "isc": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp", 
-        "--name", "isc",
-        "--css", "~/Documents/corporate-styles/isc-branding.css"
+        "--style", "isc",
+        "--output-dir", "~/Documents/pdfs"
       ],
-      "description": "ISC letterhead with corporate CSS from Documents folder"
+      "description": "ISC letterhead with custom output directory"
     },
     "personal": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "personal",
-        "--letterhead", "~/Dropbox/letterheads/erik-personal.pdf"
+        "--style", "personal",
+        "--output-prefix", "Personal"
       ],
-      "description": "Personal letterhead from Dropbox, CSS auto-resolved from ~/.letterhead/"
+      "description": "Personal letterhead with custom filename prefix"
     },
     "client-acme": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "client-acme",
-        "--letterhead", "~/Documents/clients/acme/letterhead.pdf",
-        "--css", "~/Documents/clients/acme/brand-guidelines.css"
+        "--style", "client-acme",
+        "--output-dir", "~/Documents/clients/acme/generated"
       ],
-      "description": "ACME Corp client with full custom paths for letterhead and CSS"
+      "description": "ACME Corp client letterhead with custom output directory"
     },
-    "shared-network": {
+    "business-proposals": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "shared-network",
-        "--css", "/Volumes/SharedDrive/brand-assets/company.css"
+        "--style", "business-proposals",
+        "--output-dir", "~/Documents/Proposals",
+        "--output-prefix", "Proposal"
       ],
-      "description": "Uses ~/.letterhead/shared-network.pdf with CSS from network drive"
+      "description": "Business proposal letterhead with organized output"
     }
   }
 }

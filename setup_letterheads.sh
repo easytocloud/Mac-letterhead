@@ -120,9 +120,9 @@ echo "   Example: ~/.letterhead/easytocloud.css"
 echo "   (You can use ~/.letterhead/sample.css as a starting point)"
 echo ""
 echo "3. Configure your MCP client with servers like:"
-echo '   "easytocloud": {"command": "uvx", "args": ["mac-letterhead[mcp]", "mcp", "--name", "easytocloud"]}'
+echo '   "easytocloud": {"command": "uvx", "args": ["mac-letterhead[mcp]", "mcp", "--style", "easytocloud"]}'
 echo ""
-echo "4. Then ask Claude: 'Create an easytocloud letterheaded PDF with...'"
+echo "4. Then ask Claude: 'Create an easytocloud style PDF about...'"
 echo ""
 echo "Directory structure:"
 ls -la ~/.letterhead/ 2>/dev/null || echo "   (empty - add your letterhead files here)"

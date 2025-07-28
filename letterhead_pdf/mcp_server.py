@@ -45,15 +45,9 @@ def setup_server_config(server_args=None):
     
     if server_args:
         # Use provided arguments
-        if server_args.get('letterhead'):
-            DEFAULT_LETTERHEAD = os.path.expanduser(server_args['letterhead'])
-            logger.info(f"Using explicit letterhead: {DEFAULT_LETTERHEAD}")
-        if server_args.get('css'):
-            DEFAULT_CSS = os.path.expanduser(server_args['css'])
-            logger.info(f"Using explicit CSS: {DEFAULT_CSS}")
-        if server_args.get('name'):
-            SERVER_NAME = server_args['name']
-            logger.info(f"Using server name: {SERVER_NAME}")
+        if server_args.get('style'):
+            SERVER_NAME = server_args['style']
+            logger.info(f"Using style name: {SERVER_NAME}")
         if server_args.get('output_dir'):
             DEFAULT_OUTPUT_DIR = os.path.expanduser(server_args['output_dir'])
             logger.info(f"Using default output directory: {DEFAULT_OUTPUT_DIR}")
@@ -64,26 +58,25 @@ def setup_server_config(server_args=None):
         # Parse from sys.argv for backwards compatibility
         args = sys.argv[1:]
         for i, arg in enumerate(args):
-            if arg == "--letterhead" and i + 1 < len(args):
-                DEFAULT_LETTERHEAD = os.path.expanduser(args[i + 1])
-                logger.info(f"Using explicit letterhead: {DEFAULT_LETTERHEAD}")
-            elif arg == "--css" and i + 1 < len(args):
-                DEFAULT_CSS = os.path.expanduser(args[i + 1])
-                logger.info(f"Using explicit CSS: {DEFAULT_CSS}")
-            elif arg == "--name" and i + 1 < len(args):
+            if arg == "--style" and i + 1 < len(args):
                 SERVER_NAME = args[i + 1]
-                logger.info(f"Using server name: {SERVER_NAME}")
+                logger.info(f"Using style name: {SERVER_NAME}")
+            elif arg == "--output-dir" and i + 1 < len(args):
+                DEFAULT_OUTPUT_DIR = os.path.expanduser(args[i + 1])
+                logger.info(f"Using default output directory: {DEFAULT_OUTPUT_DIR}")
+            elif arg == "--output-prefix" and i + 1 < len(args):
+                DEFAULT_OUTPUT_PREFIX = args[i + 1]
+                logger.info(f"Using default output prefix: {DEFAULT_OUTPUT_PREFIX}")
 
-    # Resolve default files based on server name
-    if not DEFAULT_LETTERHEAD and SERVER_NAME != "mcp-letterhead":
+    # Resolve default files based on style name
+    if SERVER_NAME != "mcp-letterhead":
         letterhead_path = os.path.join(LETTERHEAD_DIR, f"{SERVER_NAME}.pdf")
         if os.path.exists(letterhead_path):
             DEFAULT_LETTERHEAD = letterhead_path
             logger.info(f"Auto-resolved letterhead: {DEFAULT_LETTERHEAD}")
         else:
             logger.warning(f"Letterhead not found at: {letterhead_path}")
-    
-    if not DEFAULT_CSS and SERVER_NAME != "mcp-letterhead":
+        
         css_path = os.path.join(LETTERHEAD_DIR, f"{SERVER_NAME}.css")
         if os.path.exists(css_path):
             DEFAULT_CSS = css_path
@@ -107,49 +100,68 @@ def register_handlers():
     @server.list_tools()
     async def handle_list_tools() -> List[types.Tool]:
         """List available tools"""
+        # Determine if style parameter should be required based on server configuration
+        has_server_style = SERVER_NAME != "mcp-letterhead"
+        
+        # Base properties for create_letterhead_pdf
+        create_pdf_properties = {
+            "markdown_content": {
+                "type": "string",
+                "description": "Markdown content to convert to PDF"
+            },
+            "output_path": {
+                "type": "string",
+                "description": "Output path for the generated PDF (optional, defaults to configured output directory)"
+            },
+            "output_filename": {
+                "type": "string",
+                "description": "Output filename (optional, auto-generated if not provided)"
+            },
+            "title": {
+                "type": "string",
+                "description": "Document title for metadata (optional)"
+            },
+            "css_path": {
+                "type": "string",
+                "description": "Path to custom CSS file for styling (optional, uses style CSS if available)"
+            },
+            "strategy": {
+                "type": "string",
+                "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
+                "description": "PDF merge strategy (optional, defaults to 'darken')"
+            }
+        }
+        
+        # Add style parameter if no server style is configured
+        if not has_server_style:
+            create_pdf_properties["style"] = {
+                "type": "string",
+                "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
+            }
+        else:
+            create_pdf_properties["letterhead_template"] = {
+                "type": "string", 
+                "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
+            }
+        
+        # Determine required fields
+        create_pdf_required = ["markdown_content"]
+        if not has_server_style:
+            create_pdf_required.append("style")
+        
         return [
             types.Tool(
                 name="create_letterhead_pdf",
-                description="Create a letterheaded PDF from Markdown content",
+                description=f"Create a letterheaded PDF from Markdown content{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
                 inputSchema={
                     "type": "object",
-                    "properties": {
-                        "markdown_content": {
-                            "type": "string",
-                            "description": "Markdown content to convert to PDF"
-                        },
-                        "letterhead_template": {
-                            "type": "string", 
-                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
-                        },
-                        "output_path": {
-                            "type": "string",
-                            "description": "Output path for the generated PDF (optional, defaults to configured output directory)"
-                        },
-                        "output_filename": {
-                            "type": "string",
-                            "description": "Output filename (optional, auto-generated if not provided)"
-                        },
-                        "title": {
-                            "type": "string",
-                            "description": "Document title for metadata (optional)"
-                        },
-                        "css_path": {
-                            "type": "string",
-                            "description": "Path to custom CSS file for styling (optional)"
-                        },
-                        "strategy": {
-                            "type": "string",
-                            "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
-                            "description": "PDF merge strategy (optional, defaults to 'darken')"
-                        }
-                    },
-                    "required": ["markdown_content"]
+                    "properties": create_pdf_properties,
+                    "required": create_pdf_required
                 }
             ),
             types.Tool(
                 name="merge_letterhead_pdf", 
-                description="Merge an existing PDF with a letterhead template",
+                description=f"Merge an existing PDF with a letterhead template{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -157,10 +169,17 @@ def register_handlers():
                             "type": "string",
                             "description": "Path to the input PDF file"
                         },
-                        "letterhead_template": {
-                            "type": "string",
-                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
-                        },
+                        **({
+                            "style": {
+                                "type": "string",
+                                "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
+                            }
+                        } if not has_server_style else {
+                            "letterhead_template": {
+                                "type": "string",
+                                "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
+                            }
+                        }),
                         "output_path": {
                             "type": "string", 
                             "description": "Output path for the merged PDF (optional, defaults to configured output directory)"
@@ -175,21 +194,26 @@ def register_handlers():
                             "description": "PDF merge strategy (optional, defaults to 'darken')"
                         }
                     },
-                    "required": ["input_pdf_path"]
+                    "required": ["input_pdf_path"] + (["style"] if not has_server_style else [])
                 }
             ),
             types.Tool(
                 name="analyze_letterhead",
-                description="Analyze a letterhead template to determine margins and printable areas",
+                description=f"Analyze a letterhead template to determine margins and printable areas{' for the configured ' + SERVER_NAME + ' style' if has_server_style else ' for specified style'}",
                 inputSchema={
                     "type": "object", 
-                    "properties": {
+                    "properties": ({
+                        "style": {
+                            "type": "string",
+                            "description": "Style name (resolves ~/.letterhead/<style>.pdf) to analyze"
+                        }
+                    } if not has_server_style else {
                         "letterhead_template": {
                             "type": "string",
-                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional if default configured)"
+                            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
                         }
-                    },
-                    "required": []
+                    }),
+                    "required": ["style"] if not has_server_style else []
                 }
             ),
             types.Tool(
@@ -255,20 +279,31 @@ def generate_output_path(output_path: Optional[str] = None, output_filename: Opt
                         title: Optional[str] = None, letterhead_name: Optional[str] = None) -> str:
     """Generate output path based on provided parameters and defaults"""
     
+    logger.info(f"generate_output_path called with: output_path={output_path}, output_filename={output_filename}, title={title}, letterhead_name={letterhead_name}")
+    logger.info(f"DEFAULT_OUTPUT_DIR={DEFAULT_OUTPUT_DIR}")
+    
     # If full path provided, use it directly
     if output_path and os.path.isabs(output_path):
+        logger.info(f"Using absolute output path: {output_path}")
         return os.path.expanduser(output_path)
     
     # Determine output directory
     if output_path:
         # output_path is treated as directory if not absolute
         output_dir = os.path.expanduser(output_path)
+        logger.info(f"Using provided output directory: {output_dir}")
     else:
         # Use default output directory
         output_dir = DEFAULT_OUTPUT_DIR
+        logger.info(f"Using default output directory: {output_dir}")
         
     # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
+    try:
+        os.makedirs(output_dir, exist_ok=True)
+        logger.info(f"Output directory created/verified: {output_dir}")
+    except Exception as e:
+        logger.error(f"Failed to create output directory {output_dir}: {e}")
+        raise
     
     # Determine filename
     if output_filename:
@@ -298,7 +333,9 @@ def generate_output_path(output_path: Optional[str] = None, output_filename: Opt
         components.append(timestamp)
         filename = "_".join(components) + ".pdf"
     
-    return os.path.join(output_dir, filename)
+    final_path = os.path.join(output_dir, filename)
+    logger.info(f"Generated final output path: {final_path}")
+    return final_path
 
 def resolve_letterhead_path(letterhead_input: Optional[str] = None) -> str:
     """Resolve letterhead path from name, full path, or use default"""
@@ -347,7 +384,8 @@ async def create_letterhead_pdf(
     output_filename: Optional[str] = None,
     title: Optional[str] = None,
     css_path: Optional[str] = None,
-    strategy: str = "darken"
+    strategy: str = "darken",
+    style: Optional[str] = None
 ) -> List[types.TextContent]:
     """Create a letterheaded PDF from Markdown content"""
     
@@ -358,8 +396,12 @@ async def create_letterhead_pdf(
         )]
     
     try:
+        # Determine which style/letterhead to use
+        style_or_template = style or letterhead_template
+        logger.info(f"Using style/template: {style_or_template} (from style param: {style is not None})")
+        
         # Resolve letterhead template path
-        letterhead_path = resolve_letterhead_path(letterhead_template)
+        letterhead_path = resolve_letterhead_path(style_or_template)
         
         # Create temporary markdown file
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as md_file:
@@ -367,7 +409,7 @@ async def create_letterhead_pdf(
             md_file_path = md_file.name
         
         # Generate output path
-        letterhead_name = letterhead_template or SERVER_NAME
+        letterhead_name = style or letterhead_template or SERVER_NAME
         output_path = generate_output_path(output_path, output_filename, title, letterhead_name)
         
         try:
@@ -377,8 +419,16 @@ async def create_letterhead_pdf(
                 md_processor = MarkdownProcessor()
                 temp_pdf = os.path.join(temp_dir, "converted.pdf")
                 
-                # Convert with proper CSS path handling - use default CSS if available
-                css_to_use = css_path or DEFAULT_CSS
+                # Convert with proper CSS path handling - use style CSS, custom CSS, or default CSS
+                if css_path:
+                    css_to_use = css_path
+                elif style and not DEFAULT_CSS:
+                    # If style is provided but no server-level CSS, try to find style-specific CSS
+                    style_css_path = os.path.join(LETTERHEAD_DIR, f"{style}.css")
+                    css_to_use = style_css_path if os.path.exists(style_css_path) else None
+                else:
+                    css_to_use = DEFAULT_CSS
+                
                 css_path_expanded = os.path.expanduser(css_to_use) if css_to_use else None
                 md_processor.md_to_pdf(md_file_path, temp_pdf, letterhead_path, css_path_expanded)
                 
@@ -389,7 +439,10 @@ async def create_letterhead_pdf(
             result_text = f"Successfully created letterheaded PDF: {output_path}"
             if title:
                 result_text += f"\nDocument title: {title}"
-            result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
+            if style:
+                result_text += f"\nStyle used: {style}"
+            else:
+                result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
             if css_to_use:
                 result_text += f"\nCSS used: {css_to_use}"
             result_text += f"\nMerge strategy: {strategy}"
@@ -418,7 +471,8 @@ async def merge_letterhead_pdf(
     letterhead_template: Optional[str] = None, 
     output_path: Optional[str] = None,
     output_filename: Optional[str] = None,
-    strategy: str = "darken"
+    strategy: str = "darken",
+    style: Optional[str] = None
 ) -> List[types.TextContent]:
     """Merge an existing PDF with a letterhead template"""
     
@@ -431,11 +485,15 @@ async def merge_letterhead_pdf(
                 text=f"Input PDF not found: {input_pdf_path}"
             )]
         
+        # Determine which style/letterhead to use
+        style_or_template = style or letterhead_template
+        logger.info(f"merge_letterhead_pdf using style/template: {style_or_template} (from style param: {style is not None})")
+        
         # Resolve letterhead template path
-        letterhead_path = resolve_letterhead_path(letterhead_template)
+        letterhead_path = resolve_letterhead_path(style_or_template)
         
         # Generate output path
-        letterhead_name = letterhead_template or SERVER_NAME
+        letterhead_name = style or letterhead_template or SERVER_NAME
         input_basename = os.path.splitext(os.path.basename(input_pdf_path))[0]
         output_path = generate_output_path(output_path, output_filename, input_basename, letterhead_name)
         
@@ -445,7 +503,10 @@ async def merge_letterhead_pdf(
         
         result_text = f"Successfully merged PDF with letterhead: {output_path}"
         result_text += f"\nInput PDF: {input_pdf_path}"
-        result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
+        if style:
+            result_text += f"\nStyle used: {style}"
+        else:
+            result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
         result_text += f"\nMerge strategy: {strategy}"
         
         logger.info(f"Merged PDF with letterhead: {output_path}")
@@ -460,12 +521,16 @@ async def merge_letterhead_pdf(
         logger.error(f"Unexpected error in merge_letterhead_pdf: {str(e)}", exc_info=True)
         return [types.TextContent(type="text", text=f"Unexpected error: {str(e)}")]
 
-async def analyze_letterhead(letterhead_template: Optional[str] = None) -> List[types.TextContent]:
+async def analyze_letterhead(letterhead_template: Optional[str] = None, style: Optional[str] = None) -> List[types.TextContent]:
     """Analyze a letterhead template to determine margins and printable areas"""
     
     try:
+        # Determine which style/letterhead to use
+        style_or_template = style or letterhead_template
+        logger.info(f"analyze_letterhead using style/template: {style_or_template} (from style param: {style is not None})")
+        
         # Resolve letterhead template path
-        letterhead_path = resolve_letterhead_path(letterhead_template)
+        letterhead_path = resolve_letterhead_path(style_or_template)
         
         # Analyze letterhead margins
         if MARKDOWN_AVAILABLE:
@@ -473,14 +538,17 @@ async def analyze_letterhead(letterhead_template: Optional[str] = None) -> List[
             margins = md_processor.analyze_letterhead(letterhead_path)
             
             result = {
-                "letterhead_template": letterhead_template,
+                "letterhead_template": style_or_template,
                 "letterhead_path": letterhead_path,
                 "margins": margins,
                 "analysis": "Smart margin analysis completed using letterhead content detection"
             }
             
             result_text = f"Letterhead Analysis Results:\n"
-            result_text += f"Template: {letterhead_template or 'default'}\n"
+            if style:
+                result_text += f"Style: {style}\n"
+            else:
+                result_text += f"Template: {letterhead_template or 'default'}\n"
             result_text += f"Path: {letterhead_path}\n\n"
             result_text += f"First Page Margins:\n"
             result_text += f"  Top: {margins['first_page']['top']:.1f}pt\n"

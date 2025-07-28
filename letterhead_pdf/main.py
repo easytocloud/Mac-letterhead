@@ -377,9 +377,7 @@ def mcp_command(args: argparse.Namespace) -> int:
         
         # Pass arguments to the MCP server
         server_args = {
-            'name': args.name,
-            'letterhead': args.letterhead,
-            'css': args.css,
+            'style': args.style,
             'output_dir': args.output_dir,
             'output_prefix': args.output_prefix
         }
@@ -443,9 +441,7 @@ def main(args: Optional[list] = None) -> int:
     
     # Add MCP server command
     mcp_parser = subparsers.add_parser('mcp', help='Run MCP server for letterhead PDF generation')
-    mcp_parser.add_argument('--name', help='Server name (auto-resolves ~/.letterhead/<name>.pdf and ~/.letterhead/<name>.css)')
-    mcp_parser.add_argument('--letterhead', help='Override letterhead PDF path')
-    mcp_parser.add_argument('--css', help='Override CSS file path')
+    mcp_parser.add_argument('--style', help='Style name (auto-resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)')
     mcp_parser.add_argument('--output-dir', help='Default output directory for generated PDFs (default: ~/Desktop)')
     mcp_parser.add_argument('--output-prefix', help='Default prefix for output filenames')
     

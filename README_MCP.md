@@ -14,13 +14,28 @@ uvx install "mac-letterhead[mcp]"
 Add to your MCP client configuration:
 
 ### Basic Configuration
+
+#### Generic Multi-Style Server
 ```json
 {
   "mcpServers": {
-    "mcp-letterhead": {
+    "letterhead": {
       "command": "uvx",
       "args": ["mac-letterhead[mcp]", "mcp"],
-      "description": "Mac Letterhead PDF Generator"
+      "description": "Generic letterhead PDF generator - style specified per tool call"
+    }
+  }
+}
+```
+
+#### Single-Style Server  
+```json
+{
+  "mcpServers": {
+    "easytocloud-letterhead": {
+      "command": "uvx",
+      "args": ["mac-letterhead[mcp]", "mcp", "--style", "easytocloud"],
+      "description": "EasyToCloud-specific letterhead PDF generator"
     }
   }
 }
@@ -51,26 +66,24 @@ Then configure multiple servers with various options:
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "easytocloud",
+        "--style", "easytocloud",
         "--output-dir", "~/Documents/generated-pdfs"
       ],
-      "description": "EasyToCloud letterhead PDF generator with custom output directory"
+      "description": "EasyToCloud letterhead PDF generator with auto-resolved style files"
     },
     "isc": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp", 
-        "--name", "isc",
-        "--css", "~/Documents/corporate-styles/isc-branding.css"
+        "--style", "isc"
       ],
-      "description": "ISC letterhead with custom CSS from corporate folder"
+      "description": "ISC letterhead with auto-resolved PDF and CSS files"
     },
     "personal": {
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "personal",
-        "--letterhead", "~/Dropbox/letterheads/erik-personal.pdf",
+        "--style", "personal",
         "--output-prefix", "Personal"
       ],
       "description": "Personal letterhead with custom prefix for output filenames"
@@ -79,21 +92,19 @@ Then configure multiple servers with various options:
       "command": "uvx",
       "args": [
         "mac-letterhead[mcp]", "mcp",
-        "--name", "client-acme",
-        "--letterhead", "~/Documents/clients/acme/letterhead.pdf",
-        "--css", "~/Documents/clients/acme/brand-guidelines.css"
+        "--style", "client-acme"
       ],
-      "description": "ACME Corp client letterhead with full custom paths"
+      "description": "ACME Corp client letterhead with auto-resolved style files"
     }
   }
 }
 ```
 
-**File Resolution Examples:**
+**Style File Resolution Examples:**
 - `easytocloud`: Uses convention-based files `~/.letterhead/easytocloud.pdf` + `~/.letterhead/easytocloud.css`
-- `isc`: Uses `~/.letterhead/isc.pdf` + custom CSS from `~/Documents/corporate-styles/isc-branding.css`
-- `personal`: Uses custom letterhead from `~/Dropbox/letterheads/erik-personal.pdf` + auto-resolves CSS from `~/.letterhead/personal.css`
-- `client-acme`: Uses fully custom paths for both letterhead and CSS files
+- `isc`: Uses convention-based files `~/.letterhead/isc.pdf` + `~/.letterhead/isc.css` (if exists)
+- `personal`: Uses convention-based files `~/.letterhead/personal.pdf` + `~/.letterhead/personal.css` (if exists)
+- `client-acme`: Uses convention-based files `~/.letterhead/client-acme.pdf` + `~/.letterhead/client-acme.css` (if exists)
 
 ### Configuration Flexibility
 
@@ -130,9 +141,7 @@ Then configure multiple servers with various options:
 ```
 
 ### Configuration Parameters
-- `--name`: Server name (auto-resolves `~/.letterhead/<name>.pdf` and `~/.letterhead/<name>.css`)
-- `--letterhead`: (Optional) Override letterhead PDF path
-- `--css`: (Optional) Override CSS file path
+- `--style`: Style name (auto-resolves both `~/.letterhead/<style>.pdf` and `~/.letterhead/<style>.css`)
 - `--output-dir`: (Optional) Default output directory (default: ~/Desktop)
 - `--output-prefix`: (Optional) Prefix for auto-generated filenames
 
@@ -141,42 +150,81 @@ Then configure multiple servers with various options:
 ### `create_letterhead_pdf`
 Creates a letterheaded PDF from Markdown content.
 
-**Parameters:**
+**Parameters (vary based on server configuration):**
+
+#### When server has NO style configured (generic server):
 - `markdown_content` (required): Markdown text to convert
-- `letterhead_template` (optional): Template name or path (uses default if configured)
-- `output_path` (optional): Output directory or full path (uses configured default if not specified)
+- `style` (required): Style name (resolves ~/.letterhead/<style>.pdf and .css)
+- `output_path` (optional): Output directory or full path
 - `output_filename` (optional): Specific filename (auto-generated with timestamp if not provided)
 - `title` (optional): Document title for metadata and filename generation
-- `css_path` (optional): Custom CSS file path (uses default if configured)
+- `css_path` (optional): Custom CSS file path (overrides style CSS)
+- `strategy` (optional): Merge strategy (`darken`, `multiply`, `overlay`, etc.)
+
+#### When server has style configured (dedicated server):
+- `markdown_content` (required): Markdown text to convert
+- `letterhead_template` (optional): Override template name or path (uses configured style if not provided)
+- `output_path` (optional): Output directory or full path
+- `output_filename` (optional): Specific filename (auto-generated with timestamp if not provided)
+- `title` (optional): Document title for metadata and filename generation
+- `css_path` (optional): Custom CSS file path (uses configured style CSS if not provided)
 - `strategy` (optional): Merge strategy (`darken`, `multiply`, `overlay`, etc.)
 
 ### `merge_letterhead_pdf`
 Merges an existing PDF with a letterhead template.
 
-**Parameters:**
+**Parameters (vary based on server configuration):**
+
+#### When server has NO style configured (generic server):
 - `input_pdf_path` (required): Path to the input PDF
-- `letterhead_template` (optional): Template name or path (uses default if configured)
-- `output_path` (optional): Output directory or full path (uses configured default if not specified)
+- `style` (required): Style name (resolves ~/.letterhead/<style>.pdf)
+- `output_path` (optional): Output directory or full path
+- `output_filename` (optional): Specific filename (auto-generated with timestamp if not provided)
+- `strategy` (optional): Merge strategy
+
+#### When server has style configured (dedicated server):
+- `input_pdf_path` (required): Path to the input PDF
+- `letterhead_template` (optional): Override template name or path (uses configured style if not provided)
+- `output_path` (optional): Output directory or full path
 - `output_filename` (optional): Specific filename (auto-generated with timestamp if not provided)
 - `strategy` (optional): Merge strategy
 
 ### `analyze_letterhead`
 Analyzes a letterhead template to determine margins and printable areas.
 
-**Parameters:**
-- `letterhead_template` (optional): Template to analyze (uses default if configured)
+**Parameters (vary based on server configuration):**
+
+#### When server has NO style configured (generic server):
+- `style` (required): Style name (resolves ~/.letterhead/<style>.pdf to analyze)
+
+#### When server has style configured (dedicated server):
+- `letterhead_template` (optional): Template to analyze (uses configured style if not provided)
 
 ### `list_letterhead_templates`
 Lists available letterhead templates in the templates directory.
 
 ## Usage Examples
 
-### With Claude Code
-Once configured with named servers, you can ask Claude to create specific letterheaded documents:
+### With Generic Multi-Style Server
+If you configured a generic server (no `--style` parameter), you can ask Claude to create documents with any available style:
 
 ```
-Please create an easytocloud letterheaded PDF for a business proposal with the following content:
-[your markdown content here]
+Using the letterhead server, create a PDF with easytocloud style about cloud migration strategies.
+```
+
+```
+Create a document using isc style about network security best practices.
+```
+
+```
+Generate a personal style letterheaded PDF for my consulting contract.
+```
+
+### With Style-Specific Servers  
+If you configured dedicated servers (with `--style` parameter), you can ask Claude to use specific servers:
+
+```
+Create an easytocloud letterheaded PDF about cloud migration strategies.
 ```
 
 ```
@@ -187,11 +235,13 @@ Write an ISC letterheaded document about network security best practices.
 Create a personal letterheaded PDF for my consulting contract.
 ```
 
+### How It Works
 Claude will automatically:
-1. Identify which letterhead server to use based on your request
-2. Generate the appropriate content
-3. Use the correct MCP server to create the letterheaded PDF
-4. Apply the associated letterhead template and CSS styling
+1. **Generic Server**: Extract the style from your request and pass it as a parameter to the tools
+2. **Dedicated Server**: Identify which letterhead server to use based on your request
+3. Generate the appropriate content
+4. Use the correct MCP server and style to create the letterheaded PDF
+5. Apply the associated letterhead template and CSS styling
 
 ## File Organization
 
