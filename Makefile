@@ -117,7 +117,14 @@ test-full: $(foreach ver,$(PYTHON_VERSIONS),test-py$(ver)-full)
 test-weasyprint: $(foreach ver,$(PYTHON_VERSIONS),test-py$(ver)-weasyprint)
 	@echo "All WeasyPrint tests completed"
 
-test-all: test-basic test-full test-weasyprint
+test-list-rendering: test-setup
+	@echo "Running comprehensive list rendering tests..."
+	uv venv --python $(word 1,$(PYTHON_VERSIONS)) $(VENV_DIR)-list-tests
+	cd $(VENV_DIR)-list-tests && uv pip install -e ..[markdown,dev]
+	cd $(VENV_DIR)-list-tests && uv run python -m pytest ../tests/test_list_rendering.py -v
+	@echo "List rendering tests completed"
+
+test-all: test-basic test-full test-weasyprint test-list-rendering
 	@echo "All tests completed"
 
 # =============================================================================
@@ -184,6 +191,7 @@ help:
 	@echo "  test-basic           - Run basic tests with all Python versions"
 	@echo "  test-full            - Run full tests with all Python versions"
 	@echo "  test-weasyprint      - Run WeasyPrint tests with all Python versions"
+	@echo "  test-list-rendering  - Run comprehensive list rendering edge case tests"
 	@echo "  test-all             - Run all tests with all Python versions"
 	@echo "  test-py<X>-basic     - Test basic functionality with Python <X> (e.g., test-py3.11-basic)"
 	@echo "  test-py<X>-full      - Test full functionality with Python <X> (e.g., test-py3.11-full)"
