@@ -367,6 +367,34 @@ def install_command(args: argparse.Namespace) -> int:
         print(f"Unexpected error: {str(e)}")
         return 1
 
+def mcp_command(args: argparse.Namespace) -> int:
+    """Handle the MCP server command"""
+    try:
+        logging.info(f"Starting MCP server with args: {args}")
+        
+        # Import and run the MCP server
+        from letterhead_pdf.mcp_server import run_mcp_server
+        
+        # Pass arguments to the MCP server
+        server_args = {
+            'name': args.name,
+            'letterhead': args.letterhead,
+            'css': args.css
+        }
+        
+        # Run the MCP server (this will block)
+        return run_mcp_server(server_args)
+        
+    except ImportError as e:
+        logging.error(f"MCP server dependencies not available: {str(e)}")
+        print("Error: MCP server requires additional dependencies.")
+        print("Install with: pip install 'mac-letterhead[mcp]'")
+        return 1
+    except Exception as e:
+        logging.error(f"Error starting MCP server: {str(e)}", exc_info=True)
+        print(f"Error starting MCP server: {str(e)}")
+        return 1
+
 def main(args: Optional[list] = None) -> int:
     """Main entry point"""
     if args is None:
@@ -411,6 +439,12 @@ def main(args: Optional[list] = None) -> int:
     merge_md_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     merge_md_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling')
     
+    # Add MCP server command
+    mcp_parser = subparsers.add_parser('mcp', help='Run MCP server for letterhead PDF generation')
+    mcp_parser.add_argument('--name', help='Server name (auto-resolves ~/.letterhead/<name>.pdf and ~/.letterhead/<name>.css)')
+    mcp_parser.add_argument('--letterhead', help='Override letterhead PDF path')
+    mcp_parser.add_argument('--css', help='Override CSS file path')
+    
     args = parser.parse_args(args)
     
     # Set log level based on command and command-line arguments
@@ -437,6 +471,8 @@ def main(args: Optional[list] = None) -> int:
         return print_command(args)
     elif args.command == 'merge-md':
         return merge_md_command(args)
+    elif args.command == 'mcp':
+        return mcp_command(args)
     elif args.command == 'print':  # Keep support for old print command for backward compatibility
         return print_command(args)
     else:

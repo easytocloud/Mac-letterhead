@@ -5,8 +5,8 @@ The Mac-letterhead MCP (Model Context Protocol) server enables LLMs to create le
 ## Installation
 
 ```bash
-# Install with MCP support
-uvx install mac-letterhead[mcp]
+# Install Mac-letterhead with MCP support
+uvx install "mac-letterhead[mcp]"
 ```
 
 ## MCP Configuration
@@ -19,7 +19,7 @@ Add to your MCP client configuration:
   "mcpServers": {
     "mcp-letterhead": {
       "command": "uvx",
-      "args": ["mac-letterhead[mcp]", "mcp-letterhead"],
+      "args": ["mac-letterhead[mcp]", "mcp"],
       "description": "Mac Letterhead PDF Generator"
     }
   }
@@ -50,7 +50,7 @@ Then configure multiple servers with various options:
     "easytocloud": {
       "command": "uvx",
       "args": [
-        "mac-letterhead[mcp]", "mcp-letterhead",
+        "mac-letterhead[mcp]", "mcp",
         "--name", "easytocloud"
       ],
       "description": "EasyToCloud letterhead PDF generator (uses ~/.letterhead/easytocloud.pdf and .css)"
@@ -58,7 +58,7 @@ Then configure multiple servers with various options:
     "isc": {
       "command": "uvx",
       "args": [
-        "mac-letterhead[mcp]", "mcp-letterhead", 
+        "mac-letterhead[mcp]", "mcp", 
         "--name", "isc",
         "--css", "~/Documents/corporate-styles/isc-branding.css"
       ],
@@ -67,7 +67,7 @@ Then configure multiple servers with various options:
     "personal": {
       "command": "uvx",
       "args": [
-        "mac-letterhead[mcp]", "mcp-letterhead",
+        "mac-letterhead[mcp]", "mcp",
         "--name", "personal",
         "--letterhead", "~/Dropbox/letterheads/erik-personal.pdf"
       ],
@@ -76,7 +76,7 @@ Then configure multiple servers with various options:
     "client-acme": {
       "command": "uvx",
       "args": [
-        "mac-letterhead[mcp]", "mcp-letterhead",
+        "mac-letterhead[mcp]", "mcp",
         "--name", "client-acme",
         "--letterhead", "~/Documents/clients/acme/letterhead.pdf",
         "--css", "~/Documents/clients/acme/brand-guidelines.css"
@@ -108,7 +108,7 @@ Then configure multiple servers with various options:
     "shared-branding": {
       "command": "uvx",
       "args": [
-        "mac-letterhead[mcp]", "mcp-letterhead",
+        "mac-letterhead[mcp]", "mcp",
         "--name", "shared-branding",
         "--css", "/Volumes/SharedDrive/brand-assets/company.css"
       ],
@@ -117,7 +117,7 @@ Then configure multiple servers with various options:
     "project-alpha": {
       "command": "uvx", 
       "args": [
-        "mac-letterhead[mcp]", "mcp-letterhead",
+        "mac-letterhead[mcp]", "mcp",
         "--name", "project-alpha",
         "--letterhead", "~/Projects/alpha/deliverables/letterhead.pdf"
       ],

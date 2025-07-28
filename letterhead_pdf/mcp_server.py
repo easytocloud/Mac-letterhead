@@ -37,32 +37,37 @@ DEFAULT_CSS = None
 SERVER_NAME = "mcp-letterhead"
 LETTERHEAD_DIR = os.path.expanduser("~/.letterhead")
 
-def parse_server_args():
-    """Parse server arguments for default letterhead, CSS, and server name"""
-    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME
+def setup_server_config(server_args=None):
+    """Setup server configuration from provided arguments"""
+    global DEFAULT_LETTERHEAD, DEFAULT_CSS, SERVER_NAME, server
     
-    # Arguments after the script name
-    args = sys.argv[1:]
-    
-    # Parse command line arguments
-    for i, arg in enumerate(args):
-        if arg == "--letterhead" and i + 1 < len(args):
-            DEFAULT_LETTERHEAD = os.path.expanduser(args[i + 1])
+    if server_args:
+        # Use provided arguments
+        if server_args.get('letterhead'):
+            DEFAULT_LETTERHEAD = os.path.expanduser(server_args['letterhead'])
             logger.info(f"Using explicit letterhead: {DEFAULT_LETTERHEAD}")
-        elif arg == "--css" and i + 1 < len(args):
-            DEFAULT_CSS = os.path.expanduser(args[i + 1])
+        if server_args.get('css'):
+            DEFAULT_CSS = os.path.expanduser(server_args['css'])
             logger.info(f"Using explicit CSS: {DEFAULT_CSS}")
-        elif arg == "--name" and i + 1 < len(args):
-            SERVER_NAME = args[i + 1]
+        if server_args.get('name'):
+            SERVER_NAME = server_args['name']
             logger.info(f"Using server name: {SERVER_NAME}")
+    else:
+        # Parse from sys.argv for backwards compatibility
+        args = sys.argv[1:]
+        for i, arg in enumerate(args):
+            if arg == "--letterhead" and i + 1 < len(args):
+                DEFAULT_LETTERHEAD = os.path.expanduser(args[i + 1])
+                logger.info(f"Using explicit letterhead: {DEFAULT_LETTERHEAD}")
+            elif arg == "--css" and i + 1 < len(args):
+                DEFAULT_CSS = os.path.expanduser(args[i + 1])
+                logger.info(f"Using explicit CSS: {DEFAULT_CSS}")
+            elif arg == "--name" and i + 1 < len(args):
+                SERVER_NAME = args[i + 1]
+                logger.info(f"Using server name: {SERVER_NAME}")
 
-def resolve_default_files():
-    """Resolve default letterhead and CSS files based on server name"""
-    global DEFAULT_LETTERHEAD, DEFAULT_CSS
-    
-    # Only set defaults if not explicitly provided
+    # Resolve default files based on server name
     if not DEFAULT_LETTERHEAD and SERVER_NAME != "mcp-letterhead":
-        # Try to find letterhead based on server name
         letterhead_path = os.path.join(LETTERHEAD_DIR, f"{SERVER_NAME}.pdf")
         if os.path.exists(letterhead_path):
             DEFAULT_LETTERHEAD = letterhead_path
@@ -71,7 +76,6 @@ def resolve_default_files():
             logger.warning(f"Letterhead not found at: {letterhead_path}")
     
     if not DEFAULT_CSS and SERVER_NAME != "mcp-letterhead":
-        # Try to find CSS based on server name
         css_path = os.path.join(LETTERHEAD_DIR, f"{SERVER_NAME}.css")
         if os.path.exists(css_path):
             DEFAULT_CSS = css_path
@@ -79,12 +83,11 @@ def resolve_default_files():
         else:
             logger.info(f"No CSS file found at: {css_path} (optional)")
 
-# Parse arguments at startup
-parse_server_args()
-resolve_default_files()
+    # Initialize the MCP server with the parsed name
+    server = Server(SERVER_NAME)
 
-# Initialize the MCP server with the parsed name
-server = Server(SERVER_NAME)
+# Setup server configuration
+setup_server_config()
 
 # Default letterhead templates directory
 DEFAULT_TEMPLATES_DIR = os.path.expanduser("~/Documents/letterhead-templates")
@@ -474,5 +477,21 @@ async def main():
             )
         )
 
+def run_mcp_server(server_args=None):
+    """Run MCP server with provided arguments"""
+    # Reconfigure with new arguments
+    setup_server_config(server_args)
+    
+    # Run the server
+    try:
+        asyncio.run(main())
+        return 0
+    except KeyboardInterrupt:
+        logger.info("MCP server stopped by user")
+        return 0
+    except Exception as e:
+        logger.error(f"MCP server error: {str(e)}", exc_info=True)
+        return 1
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    sys.exit(run_mcp_server())
