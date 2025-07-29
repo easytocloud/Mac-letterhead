@@ -1,3 +1,18 @@
+<!-- 
+CSS Test Document for mac-letterhead WeasyPrint PDF Generation
+
+This document intentionally violates some markdown-lint rules for testing purposes:
+- MD033: Inline HTML elements (needed for HTML-specific styling tests)
+- MD025: Multiple H1 headings (needed for heading hierarchy tests)
+- MD040: Code block without language (testing generic code blocks)
+- MD028: Blank lines in blockquotes (testing blockquote formatting)
+- MD035: Mixed horizontal rule styles (testing different HR styles)
+- MD036: Emphasis as heading (testing text styling)
+- MD026: Trailing punctuation in headings (testing edge cases)
+
+Other violations are fixed for cleaner output.
+-->
+
 # Complete CSS Test Document
 
 This document tests all CSS styles defined in beautified.css for WeasyPrint PDF generation.
@@ -9,17 +24,25 @@ This is a regular paragraph with **bold text**, *italic text*, and ***bold itali
 ### Links and References
 
 Here are different types of links:
+
 - [Internal link](#headings-test)
 - [External link](https://example.com)
-- Raw URL: https://example.com
+- Raw URL: <https://example.com>
 
 ## Headings Test
 
+<!-- MD025: Multiple H1 headings intentionally used for testing hierarchy -->
+
 # Heading Level 1
+
 ## Heading Level 2
+
 ### Heading Level 3
+
 #### Heading Level 4
+
 ##### Heading Level 5
+
 ###### Heading Level 6
 
 This paragraph follows directly after headings to test spacing.
@@ -109,6 +132,8 @@ $ grep -r "pattern" ./src/
 
 ### Code Block Without Language
 
+<!-- MD040: Code block without language intentionally used for testing -->
+
 ```
 This is a code block without syntax highlighting.
 It should still be formatted as monospace text.
@@ -139,11 +164,14 @@ It should still be formatted as monospace text.
 
 > This is a simple blockquote. It should have special formatting with a left border and background color.
 
+<!-- MD028: Blank lines in blockquotes intentionally used for testing -->
+
 > Blockquotes can contain multiple paragraphs.
 >
 > Like this second paragraph within the same blockquote.
 
 > Blockquotes can also contain other elements:
+>
 > - Lists work here
 > - Another list item
 >
@@ -156,6 +184,8 @@ Here's a horizontal rule:
 
 ---
 
+<!-- MD035: Mixed HR styles intentionally used for testing -->
+
 And another one:
 
 ***
@@ -165,6 +195,8 @@ And another one:
 ![Alt text for image](image.png)
 
 ## Definition Lists (if supported)
+
+<!-- MD033: HTML elements intentionally used for testing HTML support -->
 
 <dl>
   <dt>Term 1</dt>
@@ -179,6 +211,8 @@ And another one:
 </dl>
 
 ## Abbreviations (if supported)
+
+<!-- MD033: HTML abbr elements intentionally used for testing -->
 
 The <abbr title="World Wide Web Consortium">W3C</abbr> and <abbr title="Hypertext Markup Language">HTML</abbr> are important for web standards.
 
@@ -247,13 +281,16 @@ Thisissuperlongwordwithoutanyspacestotestwordbreakingbehaviorinweasyprint.
 Empty paragraph below:
 
 Empty list items:
-- 
+
+- <!-- empty item for testing -->
 - Item with text
-- 
+- <!-- another empty item -->
 
 ### Page Break Tests
 
 This content is before a potential page break. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+
+<!-- MD033: HTML div element intentionally used for page break testing -->
 
 <div style="page-break-after: always;"></div>
 
@@ -264,5 +301,7 @@ This content should appear on a new page if page breaks are respected.
 This is the final section to ensure the document renders completely. All styles should have been tested above. The page number at the bottom should be visible and styled according to the CSS.
 
 ---
+
+<!-- MD036: Emphasis as heading intentionally used for testing -->
 
 *End of CSS test document*

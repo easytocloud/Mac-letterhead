@@ -1,7 +1,7 @@
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.12.8
+VERSION := 0.12.9
 
 # Directory setup
 TOOLS_DIR := tools
@@ -120,8 +120,8 @@ test-weasyprint: $(foreach ver,$(PYTHON_VERSIONS),test-py$(ver)-weasyprint)
 test-list-rendering: test-setup
 	@echo "Running comprehensive list rendering tests..."
 	uv venv --python $(word 1,$(PYTHON_VERSIONS)) $(VENV_DIR)-list-tests
-	cd $(VENV_DIR)-list-tests && uv pip install -e ..[markdown,dev]
-	cd $(VENV_DIR)-list-tests && uv run python -m pytest ../tests/test_list_rendering.py -v
+	cd $(VENV_DIR)-list-tests && uv pip install -e ..[dev]
+	$(VENV_DIR)-list-tests/bin/python -m pytest tests/test_list_rendering.py -v
 	@echo "List rendering tests completed"
 
 test-all: test-basic test-full test-weasyprint test-list-rendering

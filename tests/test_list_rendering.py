@@ -42,10 +42,12 @@ class TestListRendering(unittest.TestCase):
     def setUpClass(cls):
         """Set up test class with processors and test data."""
         cls.processor = MarkdownProcessor()
-        cls.merger = PDFMerger()
         
         # Create a simple test letterhead for testing
         cls.test_letterhead_path = cls._create_test_letterhead()
+        
+        # Initialize PDFMerger with the test letterhead
+        cls.merger = PDFMerger(cls.test_letterhead_path)
         
         # Performance tracking
         cls.performance_data = {}
@@ -430,8 +432,8 @@ class TestListRenderingIntegration(unittest.TestCase):
     def setUpClass(cls):
         """Set up integration test class."""
         cls.processor = MarkdownProcessor()
-        cls.merger = PDFMerger()
         cls.test_letterhead_path = TestListRendering._create_test_letterhead()
+        cls.merger = PDFMerger(cls.test_letterhead_path)
     
     def test_end_to_end_list_processing(self):
         """Test complete pipeline from Markdown with lists to final letterheaded PDF."""
