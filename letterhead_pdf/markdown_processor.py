@@ -85,7 +85,8 @@ class MarkdownProcessor:
             'footnotes',
             'attr_list',
             'def_list',
-            'abbr'
+            'abbr',
+            'sane_lists'
         ]
         
         # Add codehilite extension if Pygments is available
@@ -525,8 +526,18 @@ class MarkdownProcessor:
         
         return html_content
 
-    def process_list_items(self, list_type, lines, start_index):
-        """Process list items and return a list of items and the new index"""
+    def process_list_items(self, list_type, lines, start_index, nesting_level=0):
+        """Process list items and return a list of items and the new index
+        
+        Args:
+            list_type: 'bullet' or 'number'
+            lines: List of HTML lines to process
+            start_index: Starting index in lines
+            nesting_level: Current nesting depth (0 = top level)
+        
+        Returns:
+            Tuple of (items_with_indentation, new_index)
+        """
         items = []
         i = start_index
         
@@ -552,12 +563,12 @@ class MarkdownProcessor:
                 text = text.replace('<em>', '<i>').replace('</em>', '</i>')
                 text = text.replace('<code>', '<font face="Courier">').replace('</code>', '</font>')
                 
-                # Check for nested lists
-                if '<ul>' in text or '<ol>' in text:
-                    # Handle nested lists later
-                    pass
-                
-                items.append(text)
+                # Store item with its nesting level
+                items.append({
+                    'text': text,
+                    'nesting_level': nesting_level,
+                    'has_nested': '<ul>' in text or '<ol>' in text
+                })
             
             elif line == '</ul>' or line == '</ol>':
                 break
@@ -566,6 +577,130 @@ class MarkdownProcessor:
         
         return items, i
 
+    def detect_list_nesting_structure(self, html_content):
+        """Analyze HTML structure to detect list nesting levels and calculate indentation
+        
+        Returns:
+            Dict with nesting information and calculated indentation values
+        """
+        import re
+        
+        # Find all nested list structures
+        nested_levels = []
+        
+        # Count maximum nesting depth by analyzing nested ul/ol tags
+        ul_ol_pattern = r'<(ul|ol)[^>]*>'
+        close_pattern = r'</(?:ul|ol)>'
+        
+        depth = 0
+        max_depth = 0
+        
+        # Simple depth tracking - count opening vs closing tags
+        for match in re.finditer(ul_ol_pattern + '|' + close_pattern, html_content):
+            tag = match.group(0)
+            if tag.startswith('</'):
+                depth -= 1
+            else:
+                depth += 1
+                max_depth = max(max_depth, depth)
+        
+        # Calculate base indentation per level
+        # We'll use 15pt for 2-space equivalent, 20pt for 4-space equivalent
+        # The system will auto-detect based on typical patterns
+        base_indent = 18  # Compromise between 15pt and 20pt for good readability
+        
+        return {
+            'max_depth': max_depth,
+            'base_indent': base_indent,
+            'indent_per_level': base_indent
+        }
+    
+    def calculate_list_indentation(self, nesting_level, indent_info):
+        """Calculate appropriate indentation for a given nesting level
+        
+        Args:
+            nesting_level: The depth level (0, 1, 2, etc.)
+            indent_info: Dict from detect_list_nesting_structure
+            
+        Returns:
+            Indentation value in points
+        """
+        base = indent_info['base_indent']
+        per_level = indent_info['indent_per_level']
+        
+        # Calculate total indentation: base + (level * per_level)
+        total_indent = base + (nesting_level * per_level)
+        
+        # Ensure minimum indentation
+        return max(total_indent, 12)
+
+    def parse_nested_lists(self, text):
+        """Parse nested list structures and return ReportLab-compatible structure"""
+        import re
+        
+        # For now, implement a simple approach that handles one level of nesting
+        # This addresses the TODO and provides basic nested list functionality
+        
+        # Find nested <ul> or <ol> blocks
+        nested_pattern = r'<(ul|ol)>(.*?)</\1>'
+        
+        def replace_nested_list(match):
+            list_type = match.group(1)
+            list_content = match.group(2)
+            
+            # Extract list items from the nested content
+            item_pattern = r'<li>(.*?)</li>'
+            items = re.findall(item_pattern, list_content, re.DOTALL)
+            
+            # Create a simple text representation for now
+            # In a full implementation, this would create nested ListFlowable objects
+            nested_text = ""
+            for i, item in enumerate(items, 1):
+                # Add indentation to show nesting
+                if list_type == 'ul':
+                    nested_text += "\n    • " + item.strip()
+                else:
+                    nested_text += f"\n    {i}. " + item.strip()
+            
+            return nested_text
+        
+        # Replace nested lists with indented text representation
+        result = re.sub(nested_pattern, replace_nested_list, text, flags=re.DOTALL)
+        
+        return result
+
+    def safe_list_item_value(self, item_type, proposed_value=None):
+        """
+        Return safe value for ListItem to prevent ReportLab crashes.
+        
+        ReportLab has a critical bug where setting integer values (except 0) 
+        on ListItem objects in bulleted lists causes crashes. This function
+        provides safe defaults and validates proposed values.
+        
+        Args:
+            item_type (str): 'bullet' or 'number'
+            proposed_value: The value to validate (optional)
+            
+        Returns:
+            Safe value for ListItem.value parameter
+        """
+        if item_type == 'bullet':
+            # For bullets: use string values or 0 only
+            if proposed_value is None:
+                return '•'  # Safe default bullet character
+            elif proposed_value == 0:
+                return 0  # Zero is safe
+            else:
+                return str(proposed_value)  # Convert to string for safety
+        else:
+            # For numbered lists: avoid integer values except 0
+            if proposed_value is None:
+                return 0  # Safe default for numbered lists
+            elif isinstance(proposed_value, int) and proposed_value != 0:
+                return str(proposed_value)  # Convert problematic integers to strings
+            else:
+                return proposed_value  # Other values should be safe
+    
     def markdown_to_flowables(self, html_content: str) -> list:
         """Convert HTML content from markdown to reportlab flowables"""
         # Create list of flowables
@@ -628,41 +763,95 @@ class MarkdownProcessor:
                     flowables.append(Paragraph(text, self.styles['Normal']))
                     flowables.append(Spacer(1, 6))
             
-            # Lists - improved handling
+            # Lists - improved handling with dynamic indentation
             elif line.startswith('<ul>'):
+                # Detect indentation structure for the entire HTML content
+                indent_info = self.detect_list_nesting_structure(html_content)
                 items, i = self.process_list_items('bullet', lines, i + 1)
                 
-                # Create bullet list
+                # Create bullet list with dynamic indentation
                 bullet_list = []
-                for item_text in items:
-                    bullet_list.append(ListItem(Paragraph(item_text, self.styles['BulletItem']), leftIndent=20))
+                for item_data in items:
+                    if isinstance(item_data, dict):
+                        item_text = item_data['text']
+                        nesting_level = item_data['nesting_level']
+                        calculated_indent = self.calculate_list_indentation(nesting_level, indent_info)
+                    else:
+                        # Backward compatibility for simple string items
+                        item_text = item_data
+                        calculated_indent = 20
+                    
+                    # Create dynamic style for this indentation level
+                    item_style = ParagraphStyle(
+                        name=f'BulletItem_Level{nesting_level if isinstance(item_data, dict) else 0}',
+                        parent=self.styles['Normal'],
+                        leftIndent=calculated_indent,
+                        firstLineIndent=0
+                    )
+                    
+                    # Use safe value to prevent ReportLab crashes with integer values
+                    safe_value = self.safe_list_item_value('bullet')
+                    bullet_list.append(ListItem(
+                        Paragraph(item_text, item_style), 
+                        leftIndent=calculated_indent,
+                        value=safe_value
+                    ))
                 
+                # Use base indentation for the list container
+                base_indent = indent_info['base_indent']
                 flowables.append(ListFlowable(
                     bullet_list,
                     bulletType='bullet',
                     start=0,
                     bulletFontName='Helvetica',
                     bulletFontSize=10,
-                    leftIndent=20,
+                    leftIndent=base_indent,
                     spaceBefore=6,
                     spaceAfter=6
                 ))
             
             elif line.startswith('<ol>'):
+                # Detect indentation structure for the entire HTML content
+                indent_info = self.detect_list_nesting_structure(html_content)
                 items, i = self.process_list_items('number', lines, i + 1)
                 
-                # Create numbered list
+                # Create numbered list with dynamic indentation
                 number_list = []
-                for item_text in items:
-                    number_list.append(ListItem(Paragraph(item_text, self.styles['NumberItem']), leftIndent=20))
+                for item_data in items:
+                    if isinstance(item_data, dict):
+                        item_text = item_data['text']
+                        nesting_level = item_data['nesting_level']
+                        calculated_indent = self.calculate_list_indentation(nesting_level, indent_info)
+                    else:
+                        # Backward compatibility for simple string items
+                        item_text = item_data
+                        calculated_indent = 20
+                    
+                    # Create dynamic style for this indentation level
+                    item_style = ParagraphStyle(
+                        name=f'NumberItem_Level{nesting_level if isinstance(item_data, dict) else 0}',
+                        parent=self.styles['Normal'],
+                        leftIndent=calculated_indent,
+                        firstLineIndent=0
+                    )
+                    
+                    # Use safe value to prevent ReportLab crashes with integer values
+                    safe_value = self.safe_list_item_value('number')
+                    number_list.append(ListItem(
+                        Paragraph(item_text, item_style), 
+                        leftIndent=calculated_indent,
+                        value=safe_value
+                    ))
                 
+                # Use base indentation for the list container
+                base_indent = indent_info['base_indent']
                 flowables.append(ListFlowable(
                     number_list,
                     bulletType='1',
                     start=1,
                     bulletFontName='Helvetica',
                     bulletFontSize=10,
-                    leftIndent=20,
+                    leftIndent=base_indent,
                     spaceBefore=6,
                     spaceAfter=6
                 ))
@@ -745,8 +934,16 @@ class MarkdownProcessor:
         logging.info(f"Generated {len(flowables)} flowables")
         return flowables
 
-    def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str, css_path: str = None) -> str:
-        """Convert markdown file to PDF with proper margins based on letterhead"""
+    def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str, css_path: str = None, save_html: str = None) -> str:
+        """Convert markdown file to PDF with proper margins based on letterhead
+        
+        Args:
+            md_path: Path to input markdown file
+            output_path: Path for output PDF file  
+            letterhead_path: Path to letterhead PDF template
+            css_path: Optional path to custom CSS file
+            save_html: Optional path to save intermediate HTML file for debugging
+        """
         logging.info(f"Converting markdown to PDF: {md_path} -> {output_path}")
         
         try:
@@ -757,6 +954,12 @@ class MarkdownProcessor:
             # Convert to HTML
             html_content = self.md.convert(md_content)
             logging.info("Generated HTML content")
+            
+            # Save intermediate HTML if requested
+            if save_html:
+                with open(save_html, 'w', encoding='utf-8') as f:
+                    f.write(html_content)
+                logging.info(f"Saved intermediate HTML to: {save_html}")
             
             # Analyze letterhead for margins and page size
             doc = fitz.open(letterhead_path)

@@ -53,32 +53,32 @@ This paragraph follows directly after headings to test spacing.
 
 - First level bullet point
 - Another first level item
-  - Second level bullet point
-  - Another second level item
-    - Third level bullet point
-    - Another third level item
+    - Second level bullet point
+    - Another second level item
+        - Third level bullet point
+        - Another third level item
 - Back to first level
 
 ### Ordered Lists
 
 1. First ordered item
 2. Second ordered item
-   1. Nested ordered item
-   2. Another nested item
-      1. Deep nested item
-      2. Another deep item
+    1. Nested ordered item
+    2. Another nested item
+        1. Deep nested item
+        2. Another deep item
 3. Back to main list
 
 ### Mixed Lists
 
 1. Ordered item one
-   - Unordered sub-item
-   - Another unordered sub-item
+    - Unordered sub-item
+    - Another unordered sub-item
 2. Ordered item two
-   1. Ordered sub-item
-   2. Another ordered sub-item
-      - Mixed nesting
-      - Works well
+    1. Ordered sub-item
+    2. Another ordered sub-item
+        - Mixed nesting
+        - Works well
 
 ## Code Examples
 

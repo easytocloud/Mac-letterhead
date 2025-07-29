@@ -147,18 +147,37 @@ a:visited {
 }
 
 /* ==================== LISTS ==================== */
+/* CSS Custom Properties for flexible indentation */
+:root {
+	--base-indent: 12pt;
+	--indent-step: 18pt;
+}
+
 ul {
 	margin-top: 6pt;
 	margin-bottom: 6pt;
-	padding-left: 10pt;
+	padding-left: var(--base-indent);
 	list-style-type: disc;
 }
 
 ol {
 	margin-top: 6pt;
 	margin-bottom: 6pt;
-	padding-left: 10pt;
+	padding-left: var(--base-indent);
 	list-style-type: decimal;
+}
+
+/* Nested list indentation levels */
+ul ul, ol ol, ul ol, ol ul {
+	padding-left: var(--indent-step);
+}
+
+ul ul ul, ol ol ol, ul ol ul, ol ul ol {
+	padding-left: 27pt; /* --indent-step * 1.5 = 18pt * 1.5 */
+}
+
+ul ul ul ul, ol ol ol ol, ul ol ul ul, ol ul ol ol {
+	padding-left: 36pt; /* --indent-step * 2 = 18pt * 2 */
 }
 
 li {

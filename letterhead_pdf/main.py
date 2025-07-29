@@ -219,8 +219,11 @@ def merge_md_command(args: argparse.Namespace) -> int:
                 # Get CSS path if provided
                 css_path = getattr(args, 'css', None)
                 
+                # Get HTML save path if provided
+                save_html = getattr(args, 'save_html', None)
+                
                 # Convert markdown to PDF with proper margins
-                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path, css_path)
+                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path, css_path, save_html)
                 
                 # Merge the converted PDF with letterhead
                 letterhead.merge_pdfs(temp_pdf, output_path, strategy=args.strategy)
@@ -472,6 +475,7 @@ def main(args: Optional[list] = None) -> int:
     merge_md_parser.add_argument('--output-postfix', help='Postfix to add to output filename instead of "lh"')
     merge_md_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     merge_md_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling')
+    merge_md_parser.add_argument('--save-html', help='Save intermediate HTML file to specified path for debugging')
     
     # Add MCP server command
     mcp_parser = subparsers.add_parser('mcp', help='Run MCP server for letterhead PDF generation')
