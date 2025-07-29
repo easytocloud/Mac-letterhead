@@ -1,7 +1,7 @@
 # Makefile for Mac-letterhead
 
 # Version management (single source of truth)
-VERSION := 0.12.10
+VERSION := 0.12.11
 
 # Directory setup
 TOOLS_DIR := tools
@@ -94,7 +94,7 @@ test-py$(1)-$(2): test-setup
 		for file in $(TEST_INPUT_DIR)/*.md; do \
 			if [ -f "$$$$file" ]; then \
 				echo "Processing $$$$file with $(2) configuration..."; \
-				$(call run-in-venv,$(1),$(2),python -m letterhead_pdf.main merge-md ../$(TEST_LETTERHEAD) "$$$$(basename $$$$file .md)" ../$(TEST_OUTPUT_DIR) ../$$$$file --output ../$(TEST_OUTPUT_DIR)/$$$$(basename $$$$file .md)-py$(1)-$(2).pdf); \
+				$(call run-in-venv,$(1),$(2),python -m letterhead_pdf.main merge-md ../$(TEST_LETTERHEAD) "$$$$(basename $$$$file .md)" ../$(TEST_OUTPUT_DIR) ../$$$$file --output ../$(TEST_OUTPUT_DIR)/$$$$(basename $$$$file .md)-py$(1)-$(2).pdf --save-html ../$(TEST_OUTPUT_DIR)/$$$$(basename $$$$file .md)-py$(1)-$(2).html); \
 			fi; \
 		done; \
 	else \
@@ -141,7 +141,7 @@ clean-droplets:
 	rm -rf "$(HOME)/Desktop/Test Dev Droplet.app"
 
 clean-test-files:
-	if [ -d "$(TEST_OUTPUT_DIR)" ]; then rm -rf $(TEST_OUTPUT_DIR)/*.pdf; fi
+	if [ -d "$(TEST_OUTPUT_DIR)" ]; then rm -rf $(TEST_OUTPUT_DIR)/*.pdf $(TEST_OUTPUT_DIR)/*.html; fi
 
 clean-all: clean-build clean-droplets clean-test-files
 	if [ -d "$(TOOLS_DIR)" ] && [ -f "$(TOOLS_DIR)/Makefile" ]; then cd $(TOOLS_DIR) && make clean; fi

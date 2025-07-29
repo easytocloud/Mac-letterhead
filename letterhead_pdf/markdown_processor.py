@@ -577,6 +577,98 @@ class MarkdownProcessor:
         
         return items, i
 
+    def preprocess_markdown_indentation(self, md_content):
+        """Preprocess markdown to normalize list indentation to 4-space increments
+        
+        This ensures that both 2-space and 4-space indented lists work correctly
+        with the Python markdown library, which requires 4-space indentation for nesting.
+        
+        Uses context-aware processing to properly handle mixed indentation patterns.
+        
+        Args:
+            md_content: Raw markdown content string
+            
+        Returns:
+            Preprocessed markdown with normalized 4-space list indentation
+        """
+        import re
+        
+        lines = md_content.split('\n')
+        processed_lines = []
+        
+        # Pattern to match list items (unordered and ordered)
+        list_item_pattern = re.compile(r'^(\s*)([-*+]|\d+\.)\s+(.*)$')
+        
+        # Track indentation context for proper nesting
+        indent_stack = []  # Stack of (original_indent, normalized_indent) pairs
+        
+        for line in lines:
+            match = list_item_pattern.match(line)
+            if match:
+                indent_str, marker, content = match.groups()
+                current_indent = len(indent_str)
+                
+                # Find the appropriate nesting level by comparing with stack
+                normalized_indent = self._calculate_normalized_indent(current_indent, indent_stack)
+                
+                # Reconstruct the line with normalized indentation
+                indent_spaces = ' ' * normalized_indent
+                processed_line = f"{indent_spaces}{marker} {content}"
+                processed_lines.append(processed_line)
+                
+                # Log the conversion for debugging
+                if current_indent != normalized_indent:
+                    logging.debug(f"Converted indentation: {current_indent} -> {normalized_indent} spaces: {line.strip()}")
+            else:
+                # Non-list line - reset indentation context and keep as-is
+                if line.strip() == '':
+                    # Empty line - don't reset context (lists can have blank lines)
+                    pass
+                elif not line.startswith(' '):
+                    # Non-indented line (like headers) - reset context
+                    indent_stack = []
+                
+                processed_lines.append(line)
+        
+        return '\n'.join(processed_lines)
+    
+    def _calculate_normalized_indent(self, current_indent, indent_stack):
+        """Calculate the normalized indentation level based on context
+        
+        Args:
+            current_indent: Current number of spaces
+            indent_stack: Stack tracking indentation context
+            
+        Returns:
+            Normalized indentation (multiple of 4)
+        """
+        if current_indent == 0:
+            # Top level - reset stack
+            indent_stack.clear()
+            return 0
+        
+        # Remove stack entries for indentation levels we've moved back from
+        while indent_stack and indent_stack[-1][0] >= current_indent:
+            indent_stack.pop()
+        
+        # Check if this is a known indentation level
+        for original, normalized in indent_stack:
+            if original == current_indent:
+                return normalized
+        
+        # New indentation level - calculate normalized value
+        if not indent_stack:
+            # First nested level
+            normalized = 4
+        else:
+            # Deeper nesting - add 4 spaces to the previous level
+            normalized = indent_stack[-1][1] + 4
+        
+        # Add to stack for future reference
+        indent_stack.append((current_indent, normalized))
+        
+        return normalized
+
     def detect_list_nesting_structure(self, html_content):
         """Analyze HTML structure to detect list nesting levels and calculate indentation
         
@@ -950,6 +1042,10 @@ class MarkdownProcessor:
             # Read markdown content
             with open(md_path, 'r', encoding='utf-8') as f:
                 md_content = f.read()
+            
+            # Preprocess markdown to normalize list indentation
+            # This ensures both 2-space and 4-space indented lists work correctly
+            md_content = self.preprocess_markdown_indentation(md_content)
             
             # Convert to HTML
             html_content = self.md.convert(md_content)
