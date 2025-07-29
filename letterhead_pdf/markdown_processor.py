@@ -578,10 +578,13 @@ class MarkdownProcessor:
         return items, i
 
     def preprocess_markdown_indentation(self, md_content):
-        """Preprocess markdown to normalize list indentation to 4-space increments
+        """Preprocess markdown to normalize list indentation and fix colon-list formatting
         
-        This ensures that both 2-space and 4-space indented lists work correctly
-        with the Python markdown library, which requires 4-space indentation for nesting.
+        This ensures that:
+        1. Both 2-space and 4-space indented lists work correctly with the Python 
+           markdown library, which requires 4-space indentation for nesting.
+        2. Lists following lines ending with ':' are properly recognized by inserting
+           blank lines where needed.
         
         Uses context-aware processing to properly handle mixed indentation patterns.
         
@@ -589,7 +592,7 @@ class MarkdownProcessor:
             md_content: Raw markdown content string
             
         Returns:
-            Preprocessed markdown with normalized 4-space list indentation
+            Preprocessed markdown with normalized 4-space list indentation and fixed colon-list formatting
         """
         import re
         
@@ -599,14 +602,25 @@ class MarkdownProcessor:
         # Pattern to match list items (unordered and ordered)
         list_item_pattern = re.compile(r'^(\s*)([-*+]|\d+\.)\s+(.*)$')
         
+        # Pattern to match lines ending with colon (potential list introduction)
+        colon_line_pattern = re.compile(r'^.*:\s*$')
+        
         # Track indentation context for proper nesting
         indent_stack = []  # Stack of (original_indent, normalized_indent) pairs
         
-        for line in lines:
+        for i, line in enumerate(lines):
             match = list_item_pattern.match(line)
             if match:
                 indent_str, marker, content = match.groups()
                 current_indent = len(indent_str)
+                
+                # Check if previous line ends with colon and has no blank line
+                if (processed_lines and 
+                    colon_line_pattern.match(processed_lines[-1]) and
+                    current_indent == 0):  # Only for top-level lists
+                    # Insert blank line before the list for proper markdown parsing
+                    processed_lines.append('')
+                    logging.debug(f"Inserted blank line after colon before list: {line.strip()}")
                 
                 # Find the appropriate nesting level by comparing with stack
                 normalized_indent = self._calculate_normalized_indent(current_indent, indent_stack)
