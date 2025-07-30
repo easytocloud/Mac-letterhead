@@ -204,6 +204,44 @@ ul ul ul {
 	list-style-type: square;
 }
 
+/* ==================== GITHUB FLAVORED MARKDOWN TASK LISTS ==================== */
+/* Style checkboxes in task lists */
+li[data-gfm-task] {
+	list-style-type: none;
+	position: relative;
+}
+
+li[data-gfm-task] input[type="checkbox"] {
+	margin-right: 6pt;
+	margin-top: 0;
+	vertical-align: baseline;
+	/* Note: WeasyPrint has limited support for form elements, 
+	   but this provides basic styling where supported */
+}
+
+/* Fallback styling for when checkboxes aren't supported */
+li[data-gfm-task]::before {
+	content: "";
+	display: inline-block;
+	width: 10pt;
+	height: 10pt;
+	margin-right: 6pt;
+	border: 0.75pt solid #666666;
+	background-color: #ffffff;
+	vertical-align: baseline;
+}
+
+/* Checked task styling - this won't work in WeasyPrint but doesn't hurt */
+li[data-gfm-task] input[type="checkbox"]:checked + * {
+	text-decoration: none; /* Could add line-through for completed tasks if desired */
+}
+
+/* Style nested task lists */
+ul li[data-gfm-task] {
+	margin-left: 0;
+	padding-left: 0;
+}
+
 /* ==================== CODE AND PREFORMATTED TEXT ==================== */
 code {
 	font-family: Courier, 'Courier New', monospace;
