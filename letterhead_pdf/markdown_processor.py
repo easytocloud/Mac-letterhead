@@ -18,6 +18,16 @@ except ImportError as e:
     MARKDOWN_AVAILABLE = False
     logging.warning(f"Markdown module not available: {e}. Install with: uvx mac-letterhead@0.8.2")
 
+# Check if pycmarkgfm is available for GitHub Flavored Markdown
+PYCMARKGFM_AVAILABLE = False
+try:
+    import pycmarkgfm
+    PYCMARKGFM_AVAILABLE = True
+    logging.info("pycmarkgfm available for GitHub Flavored Markdown support")
+except ImportError:
+    PYCMARKGFM_AVAILABLE = False
+    logging.info("pycmarkgfm not available, using standard markdown")
+
 # Check if WeasyPrint is available and functional
 WEASYPRINT_AVAILABLE = False
 if importlib.util.find_spec("weasyprint") is not None:
@@ -71,29 +81,48 @@ pt = 1
 class MarkdownProcessor:
     """Handles conversion of Markdown files to PDF with proper formatting"""
     
-    def __init__(self):
-        """Initialize the Markdown processor with default settings"""
-        # Check if markdown is available
-        if not MARKDOWN_AVAILABLE:
-            from letterhead_pdf.exceptions import MarkdownProcessingError
-            raise MarkdownProcessingError("Markdown module not available. Install with: uvx mac-letterhead[markdown]@0.8.0")
-            
-        # Initialize Markdown with extensions
-        extensions = [
-            'tables',
-            'fenced_code',
-            'footnotes',
-            'attr_list',
-            'def_list',
-            'abbr',
-            'sane_lists'
-        ]
+    def __init__(self, use_gfm=None):
+        """Initialize the Markdown processor with default settings
         
-        # Add codehilite extension if Pygments is available
-        if PYGMENTS_AVAILABLE:
-            extensions.append('codehilite')
+        Args:
+            use_gfm: Boolean to force GFM mode (True/False) or None for auto-detection
+        """
+        # Determine which markdown backend to use
+        if use_gfm is None:
+            # Auto-detect: prefer GFM if available, fallback to standard markdown
+            self.use_gfm = PYCMARKGFM_AVAILABLE
+        else:
+            # Explicit choice
+            self.use_gfm = use_gfm and PYCMARKGFM_AVAILABLE
+        
+        # Initialize the appropriate markdown backend
+        if self.use_gfm:
+            logging.info("Using GitHub Flavored Markdown (pycmarkgfm) backend")
+            # pycmarkgfm doesn't need explicit initialization like python-markdown
+            self.md = None  # We'll use pycmarkgfm.gfm_to_html() directly
+        else:
+            # Check if standard markdown is available
+            if not MARKDOWN_AVAILABLE:
+                from letterhead_pdf.exceptions import MarkdownProcessingError
+                raise MarkdownProcessingError("No markdown module available. Install with: uvx mac-letterhead[markdown]@0.8.0")
             
-        self.md = markdown.Markdown(extensions=extensions)
+            logging.info("Using standard markdown backend")
+            # Initialize Markdown with extensions
+            extensions = [
+                'tables',
+                'fenced_code',
+                'footnotes',
+                'attr_list',
+                'def_list',
+                'abbr',
+                'sane_lists'
+            ]
+            
+            # Add codehilite extension if Pygments is available
+            if PYGMENTS_AVAILABLE:
+                extensions.append('codehilite')
+                
+            self.md = markdown.Markdown(extensions=extensions)
         
         # Initialize styles
         self.styles = getSampleStyleSheet()
@@ -101,6 +130,22 @@ class MarkdownProcessor:
         
         # Temp directory for downloaded images
         self.temp_dir = None
+    
+    def md_to_html(self, md_content: str) -> str:
+        """Convert markdown content to HTML using the appropriate backend
+        
+        Args:
+            md_content: Raw markdown content string
+            
+        Returns:
+            HTML content string
+        """
+        if self.use_gfm:
+            # Use GitHub Flavored Markdown
+            return pycmarkgfm.gfm_to_html(md_content)
+        else:
+            # Use standard markdown
+            return self.md.convert(md_content)
     
     def setup_styles(self):
         """Set up custom styles for PDF generation"""
@@ -1061,9 +1106,10 @@ class MarkdownProcessor:
             # This ensures both 2-space and 4-space indented lists work correctly
             md_content = self.preprocess_markdown_indentation(md_content)
             
-            # Convert to HTML
-            html_content = self.md.convert(md_content)
-            logging.info("Generated HTML content")
+            # Convert to HTML using appropriate backend
+            html_content = self.md_to_html(md_content)
+            backend_info = "GitHub Flavored Markdown" if self.use_gfm else "standard markdown"
+            logging.info(f"Generated HTML content using {backend_info}")
             
             # Save intermediate HTML if requested
             if save_html:
