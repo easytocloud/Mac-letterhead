@@ -573,10 +573,16 @@ class MarkdownProcessor:
         # Handle inline code tags more carefully
         html_content = re.sub(r'<code[^>]*>(.*?)</code>', r'<font face="Courier">\1</font>', html_content)
         
-        # Handle GFM task list checkboxes - convert to text representation
-        # Checked: [✓] or [x], Unchecked: [ ]
-        html_content = re.sub(r'<input type="checkbox" checked[^>]*\s*/?\s*>\s*', '[✓] ', html_content)
-        html_content = re.sub(r'<input type="checkbox"[^>]*\s*/?\s*>\s*', '[ ] ', html_content)
+        # Handle GFM task list checkboxes - convert to better text representation
+        # Use Unicode checkbox symbols for better visual appearance
+        html_content = re.sub(r'<input type="checkbox" checked[^>]*\s*/?\s*>\s*', '☑ ', html_content)  # ☑ U+2611
+        html_content = re.sub(r'<input type="checkbox"[^>]*\s*/?\s*>\s*', '☐ ', html_content)  # ☐ U+2610 - back to original
+        
+        # Handle checkbox syntax in table cells and other text content
+        # Convert [x] and [ ] patterns to Unicode checkbox symbols
+        # Back to original symbols
+        html_content = re.sub(r'\[x\]', '☑', html_content)  # ☑ U+2611 - checked
+        html_content = re.sub(r'\[\s\]', '☐', html_content)  # ☐ U+2610 - unchecked
         
         # Remove any remaining data-gfm-task attributes and other GFM attributes
         html_content = re.sub(r'\s+data-gfm-task="[^"]*"', '', html_content)
@@ -1101,7 +1107,7 @@ class MarkdownProcessor:
         logging.info(f"Generated {len(flowables)} flowables")
         return flowables
 
-    def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str, css_path: str = None, save_html: str = None) -> str:
+    def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str, css_path: str = None, save_html: str = None, pdf_backend: str = 'auto') -> str:
         """Convert markdown file to PDF with proper margins based on letterhead
         
         Args:
@@ -1110,6 +1116,7 @@ class MarkdownProcessor:
             letterhead_path: Path to letterhead PDF template
             css_path: Optional path to custom CSS file
             save_html: Optional path to save intermediate HTML file for debugging
+            pdf_backend: PDF backend to use ('auto', 'weasyprint', 'reportlab')
         """
         logging.info(f"Converting markdown to PDF: {md_path} -> {output_path}")
         
@@ -1145,11 +1152,26 @@ class MarkdownProcessor:
             
             # Create temporary file for initial PDF
             with tempfile.NamedTemporaryFile(suffix='.pdf', delete=False) as temp_pdf:
-                if WEASYPRINT_AVAILABLE:
+                # Determine which PDF backend to use
+                use_weasyprint = False
+                if pdf_backend == 'weasyprint':
+                    if WEASYPRINT_AVAILABLE:
+                        use_weasyprint = True
+                    else:
+                        raise PDFCreationError(f"WeasyPrint backend requested but not available")
+                elif pdf_backend == 'reportlab':
+                    use_weasyprint = False
+                else:  # auto
+                    use_weasyprint = WEASYPRINT_AVAILABLE
+                
+                backend_name = "WeasyPrint" if use_weasyprint else "ReportLab"
+                logging.info(f"Using {backend_name} for PDF generation")
+                
+                if use_weasyprint:
                     # Use WeasyPrint for high-quality PDF generation
                     self._md_to_pdf_weasyprint(html_content, temp_pdf.name, margins, page_size, css_path)
                 else:
-                    # Fallback to ReportLab
+                    # Use ReportLab
                     self._md_to_pdf_reportlab(html_content, temp_pdf.name, margins, page_size)
                 
                 # Create final PDF with metadata
@@ -1182,6 +1204,9 @@ class MarkdownProcessor:
     def _md_to_pdf_weasyprint(self, html_content, output_path, margins, page_size, css_path=None):
         """Convert HTML to PDF using WeasyPrint"""
         logging.info("Using WeasyPrint for PDF generation")
+        
+        # Enhance GFM task list HTML for better CSS styling
+        html_content = self._enhance_gfm_task_lists_for_weasyprint(html_content)
         
         # Import WeasyPrint components when needed
         from weasyprint import HTML, CSS
@@ -1339,3 +1364,55 @@ class MarkdownProcessor:
         
         # Build PDF
         doc.build(flowables)
+    
+    def _enhance_gfm_task_lists_for_weasyprint(self, html_content: str) -> str:
+        """Enhance GFM task list HTML for better WeasyPrint rendering with CSS classes"""
+        import re
+        
+        # Add CSS classes to task list items for better styling control
+        # Pattern: <li data-gfm-task="..."><input type="checkbox" checked="" disabled="" /> text</li>
+        # Replace with: <li class="task-item task-checked" data-gfm-task="...">text</li>
+        
+        def replace_checked_task(match):
+            full_match = match.group(0)
+            data_attr = match.group(1) if match.group(1) else ''
+            checkbox_html = match.group(2)
+            text_content = match.group(3)
+            
+            # Add CSS classes and replace checkbox with Unicode symbol
+            return f'<li class="task-item task-checked"{data_attr}>☑ {text_content}</li>'
+        
+        def replace_unchecked_task(match):
+            full_match = match.group(0)
+            data_attr = match.group(1) if match.group(1) else ''
+            checkbox_html = match.group(2)
+            text_content = match.group(3)
+            
+            # Add CSS classes and replace checkbox with Unicode symbol
+            return f'<li class="task-item task-unchecked"{data_attr}>☐ {text_content}</li>'
+        
+        # Pattern for checked tasks
+        checked_pattern = re.compile(
+            r'<li(\s+data-gfm-task="[^"]*")?>\s*(<input type="checkbox" checked[^>]*\s*/?\s*>)\s*(.*?)</li>',
+            re.DOTALL
+        )
+        
+        # Pattern for unchecked tasks  
+        unchecked_pattern = re.compile(
+            r'<li(\s+data-gfm-task="[^"]*")?>\s*(<input type="checkbox"[^>]*\s*/?\s*>)\s*(.*?)</li>',
+            re.DOTALL
+        )
+        
+        # Replace checked tasks first (more specific pattern)
+        html_content = checked_pattern.sub(replace_checked_task, html_content)
+        
+        # Then replace remaining unchecked tasks
+        html_content = unchecked_pattern.sub(replace_unchecked_task, html_content)
+        
+        # Handle checkbox syntax in table cells and other text content (for WeasyPrint)
+        # Convert [x] and [ ] patterns to Unicode checkbox symbols with appropriate styling
+        # Back to original symbols with CSS scaling for table cells
+        html_content = re.sub(r'\[x\]', '<span class="task-checked">☑</span>', html_content)  # ☑ U+2611 - checked
+        html_content = re.sub(r'\[\s\]', '<span class="task-unchecked task-unchecked-scaled">☐</span>', html_content)  # ☐ U+2610 - unchecked with scaling
+        
+        return html_content

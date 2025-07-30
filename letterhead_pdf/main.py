@@ -170,16 +170,47 @@ def merge_md_command(args: argparse.Namespace) -> int:
             print(error_msg)
             return 1
         
-        # Check if WeasyPrint is available
+        # Determine backend selections
+        pdf_backend = getattr(args, 'pdf_backend', 'auto')
+        markdown_backend = getattr(args, 'markdown_backend', 'auto')
+        
+        # Check backend availability
         import importlib.util
         weasyprint_available = importlib.util.find_spec("weasyprint") is not None
+        pycmarkgfm_available = importlib.util.find_spec("pycmarkgfm") is not None
         
-        if not weasyprint_available:
-            logging.warning("WeasyPrint not available, falling back to ReportLab for Markdown processing")
-            print("Note: WeasyPrint is not installed. Using ReportLab for Markdown processing (limited formatting).")
-            print("For high-quality Markdown processing, please install the required dependencies:")
-            print("1. Install system dependencies: brew install pango cairo fontconfig freetype harfbuzz")
-            print("2. Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@0.8.0")
+        # Handle PDF backend selection
+        if pdf_backend == 'weasyprint' and not weasyprint_available:
+            error_msg = (
+                "WeasyPrint backend requested but not available. Please install the required dependencies:\n"
+                "1. Install system dependencies: brew install pango cairo fontconfig freetype harfbuzz\n"
+                "2. Install Mac-letterhead with full support: uvx mac-letterhead[markdown]@latest"
+            )
+            logging.error("WeasyPrint backend requested but not available")
+            print(error_msg)
+            return 1
+        
+        # Handle Markdown backend selection  
+        if markdown_backend == 'gfm' and not pycmarkgfm_available:
+            error_msg = (
+                "GitHub Flavored Markdown backend requested but not available. Please install:\n"
+                "uvx mac-letterhead[gfm]@latest"
+            )
+            logging.error("GFM backend requested but not available")
+            print(error_msg)
+            return 1
+        
+        # Log backend selections
+        final_pdf_backend = 'weasyprint' if (pdf_backend == 'weasyprint' or (pdf_backend == 'auto' and weasyprint_available)) else 'reportlab'
+        final_markdown_backend = 'gfm' if (markdown_backend == 'gfm' or (markdown_backend == 'auto' and pycmarkgfm_available)) else 'standard'
+        
+        logging.info(f"Using PDF backend: {final_pdf_backend}")
+        logging.info(f"Using Markdown backend: {final_markdown_backend}")
+        
+        if pdf_backend != 'auto':
+            print(f"PDF Backend: {final_pdf_backend}")
+        if markdown_backend != 'auto':
+            print(f"Markdown Backend: {final_markdown_backend}")
         
         # Initialize with custom suffix if provided
         suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " lh.pdf"
@@ -211,8 +242,11 @@ def merge_md_command(args: argparse.Namespace) -> int:
         
         # Create a temporary directory for intermediate files
         with tempfile.TemporaryDirectory() as temp_dir:
-            # Convert markdown to PDF
-            md_processor = MarkdownProcessor()
+            # Convert markdown to PDF with selected backends
+            use_gfm = (final_markdown_backend == 'gfm')
+            use_weasyprint = (final_pdf_backend == 'weasyprint')
+            
+            md_processor = MarkdownProcessor(use_gfm=use_gfm)
             temp_pdf = os.path.join(temp_dir, "converted.pdf")
             
             try:
@@ -222,8 +256,8 @@ def merge_md_command(args: argparse.Namespace) -> int:
                 # Get HTML save path if provided
                 save_html = getattr(args, 'save_html', None)
                 
-                # Convert markdown to PDF with proper margins
-                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path, css_path, save_html)
+                # Convert markdown to PDF with proper margins and backend selection
+                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path, css_path, save_html, final_pdf_backend)
                 
                 # Merge the converted PDF with letterhead
                 letterhead.merge_pdfs(temp_pdf, output_path, strategy=args.strategy)
@@ -476,6 +510,10 @@ def main(args: Optional[list] = None) -> int:
     merge_md_parser.add_argument('--output', help='Specify output file path directly (bypasses save dialog)')
     merge_md_parser.add_argument('--css', help='Path to custom CSS file for Markdown styling')
     merge_md_parser.add_argument('--save-html', help='Save intermediate HTML file to specified path for debugging')
+    merge_md_parser.add_argument('--pdf-backend', choices=['weasyprint', 'reportlab', 'auto'], 
+                              default='auto', help='PDF rendering backend (default: auto - prefers WeasyPrint)')
+    merge_md_parser.add_argument('--markdown-backend', choices=['gfm', 'standard', 'auto'], 
+                              default='auto', help='Markdown processing backend (default: auto - prefers GFM)')
     
     # Add MCP server command
     mcp_parser = subparsers.add_parser('mcp', help='Run MCP server for letterhead PDF generation')

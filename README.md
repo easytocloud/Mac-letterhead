@@ -204,6 +204,102 @@ Mac-letterhead provides professional Markdown rendering with:
 - **Images & Links**: Full support for embedded images and hyperlinks
 - **Math**: LaTeX-style mathematical expressions (when supported)
 
+#### GitHub Flavored Markdown Support
+
+Mac-letterhead includes enhanced support for GitHub Flavored Markdown (GFM) features:
+
+- **Strikethrough**: `~~deleted text~~` renders with proper strikethrough formatting
+- **Task Lists**: Interactive-style checkboxes with `- [x] completed` and `- [ ] pending`
+- **Enhanced Tables**: Improved table rendering with better alignment and styling
+- **Automatic Detection**: GFM features are automatically enabled when the pycmarkgfm library is available
+
+Task lists are rendered with professional Unicode checkboxes (☑ for completed, ☐ for pending) that are properly sized and aligned, including within table cells.
+
+### Dual Rendering Pipeline
+
+Mac-letterhead features a sophisticated dual-backend rendering system that automatically selects the best available technology while providing manual control when needed.
+
+#### PDF Rendering Backends
+
+**WeasyPrint** (Preferred when available):
+- **Advantages**: Superior CSS support, advanced typography, precise layout control
+- **Features**: Full HTML5/CSS3 support, web fonts, complex layouts, print-specific CSS
+- **Requirements**: System libraries (`brew install pango cairo fontconfig freetype harfbuzz`)
+- **Use Case**: High-quality documents requiring advanced styling and typography
+
+**ReportLab** (Reliable fallback):
+- **Advantages**: Pure Python implementation, no system dependencies, consistent rendering
+- **Features**: Professional PDF generation, basic HTML support, reliable cross-platform operation
+- **Requirements**: None (included with Python installation)
+- **Use Case**: Simple documents, environments without system library access
+
+#### Markdown Processing Backends
+
+**GitHub Flavored Markdown (GFM)** (Enhanced when available):
+- **Library**: pycmarkgfm (Python bindings to GitHub's cmark-gfm parser)
+- **Features**: Strikethrough, task lists, enhanced tables, autolinks, GitHub-compatible parsing
+- **Compatibility**: Full compatibility with GitHub markdown rendering
+- **Use Case**: Documents with GFM-specific features, GitHub repository documentation
+
+**Standard Markdown** (Universal fallback):
+- **Library**: Python markdown with extensions
+- **Features**: CommonMark compliance, basic table support, code highlighting
+- **Compatibility**: Works in all Python environments
+- **Use Case**: Simple documents, maximum compatibility requirements
+
+#### Backend Selection and Control
+
+**Automatic Selection** (Default behavior):
+```bash
+# Uses best available backends automatically
+uvx mac-letterhead merge-md letterhead.pdf "Document" ~/Desktop document.md
+```
+
+**Manual Backend Control**:
+```bash
+# Force specific PDF backend
+uvx mac-letterhead merge-md letterhead.pdf "Report" ~/Desktop report.md --pdf-backend reportlab
+
+# Force specific Markdown backend  
+uvx mac-letterhead merge-md letterhead.pdf "Guide" ~/Desktop guide.md --markdown-backend standard
+
+# Combine specific backends
+uvx mac-letterhead merge-md letterhead.pdf "Technical" ~/Desktop tech.md --pdf-backend weasyprint --markdown-backend gfm
+```
+
+**Available Backend Options**:
+- `--pdf-backend`: `weasyprint`, `reportlab`, `auto` (default: `auto`)
+- `--markdown-backend`: `gfm`, `standard`, `auto` (default: `auto`)
+
+#### Backend Capabilities Matrix
+
+| Feature | WeasyPrint + GFM | WeasyPrint + Standard | ReportLab + GFM | ReportLab + Standard |
+|---------|------------------|----------------------|-----------------|---------------------|
+| Basic Markdown | ✅ Excellent | ✅ Excellent | ✅ Good | ✅ Good |
+| Advanced CSS | ✅ Full Support | ✅ Full Support | ⚠️ Limited | ⚠️ Limited |
+| Strikethrough | ✅ Native | ❌ Not Available | ✅ Unicode | ❌ Not Available |
+| Task Lists | ✅ Styled Checkboxes | ❌ Not Available | ✅ Unicode Checkboxes | ❌ Not Available |
+| Complex Tables | ✅ Advanced | ✅ Good | ✅ Basic | ✅ Basic |
+| Typography | ✅ Professional | ✅ Professional | ✅ Standard | ✅ Standard |
+| System Dependencies | ⚠️ Required | ⚠️ Required | ✅ None | ✅ None |
+
+#### Testing and Validation
+
+The project includes comprehensive testing for all backend combinations:
+
+```bash
+# Test all combinations across Python versions
+make test-backend-combinations
+
+# Test specific combinations
+make test-weasyprint-gfm      # WeasyPrint + GitHub Flavored Markdown
+make test-weasyprint-standard # WeasyPrint + Standard Markdown  
+make test-reportlab-gfm       # ReportLab + GitHub Flavored Markdown
+make test-reportlab-standard  # ReportLab + Standard Markdown
+```
+
+Each test combination generates output files with naming patterns like `document-py3.11-weasyprint-gfm.pdf` for easy comparison and quality validation.
+
 ## Use Cases
 
 - **Corporate Communications**: Apply company branding to business correspondence

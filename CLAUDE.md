@@ -9,25 +9,51 @@ Mac-letterhead is a macOS utility that merges letterhead templates with PDF and 
 ## Development Commands
 
 ### Build and Test Commands
+
+**Development Setup:**
 ```bash
-# Development setup
 make dev-install        # Install package for local development using uv
 make dev-droplet        # Create development droplet using local code
-make test-setup         # Set up test files and environment
+```
 
-# Testing (uses Python 3.10 by default)
-make test-basic         # Run basic tests (PDF only)
-make test-full          # Run full tests (PDF + Markdown with ReportLab)
-make test-weasyprint    # Run WeasyPrint tests (requires system dependencies)
-make test-all           # Run all tests
-make test-py3.10-basic  # Test specific Python version
+**Unit Tests (pytest-based software testing):**
+```bash
+make test-unit          # Run unit tests with default Python version
+make test-unit-py3.11   # Run unit tests with specific Python version
+make test-all-unit      # Run unit tests across all Python versions (3.10, 3.11, 3.12)
+```
 
-# Cleaning
+**Rendering Tests (document generation validation):**
+```bash
+make rendering-reportlab-basic      # Basic ReportLab rendering (minimal deps)
+make rendering-reportlab-enhanced   # Enhanced ReportLab with full markdown features
+make rendering-weasyprint           # High-quality WeasyPrint rendering (requires system deps)
+make rendering-backend-matrix       # Test all backend/markdown combinations
+make rendering-all-python-versions  # Test across all Python versions
+make test-all-rendering             # Run all rendering tests
+```
+
+**Quick Tests:**
+```bash
+make test-dev           # Quick development validation (unit tests only)
+make test-smoke         # Fast smoke test with single input file
+```
+
+**Comprehensive Testing:**
+```bash
+make test-all           # Run ALL tests (unit + smoke + rendering)
+```
+
+**Cleaning:**
+```bash
 make clean-all          # Clean everything (build artifacts, test files, droplets)
-make clean-build        # Remove build artifacts and virtual environments only
+make clean-build        # Remove build artifacts and virtual environments only  
 make clean-droplets     # Remove test droplets only
+make clean-test-output  # Remove test output files (PDFs, HTMLs)
+```
 
-# Release
+**Release:**
+```bash
 make release-version    # Update version numbers in source files  
 make release-publish    # Run tests, update version, and publish to PyPI
 ```
@@ -74,18 +100,28 @@ uvx mac-letterhead install --name "report" --letterhead /path/to/custom.pdf
 uvx mac-letterhead install --name "test" --dev
 ```
 
-### Testing Individual Components
+### Test File Processing
+
+**Input Files:**
+- Place `.md` test files in `test-input/` directory
+- All files are automatically discovered and processed
+- Hidden files (starting with `.`) are ignored during rendering tests
+
+**Output Organization:**
+- Generated files appear in `test-output/` organized by input filename  
+- Format: `test-output/{filename}/{filename}-py{version}-{config}.{pdf,html}`
+- Example: `test-output/gfm-features-test/gfm-features-test-py3.11-reportlab-enhanced.pdf`
+
+**Workflow Examples:**
 ```bash
-# Run specific test for Python version
-make test-py3.10-basic  # Python 3.10 support
-make test-py3.11-full   # Python 3.11 support
-make test-py3.12-weasyprint # Python 3.12 support
+# Development workflow
+make dev-droplet → test → make clean-droplets
 
-# Test all versions at once
-make test-all
+# Testing workflow  
+make test-dev → make test-smoke → make test-all
 
-# Test files are processed from test-input/ 
-# Version-specific outputs in test-output/ (e.g., css-test-markdown-py3.10-basic.pdf)
+# Release workflow
+make test-all → make release-publish
 ```
 
 ## Architecture Overview

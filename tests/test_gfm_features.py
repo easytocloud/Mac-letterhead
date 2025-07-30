@@ -188,6 +188,34 @@ class TestGitHubFlavoredMarkdown(unittest.TestCase):
         total_checkboxes = html.count('<input type="checkbox"')
         self.assertEqual(total_checkboxes, 5, "Should have 5 total checkboxes")
     
+    def test_table_checkbox_processing(self):
+        """Test that checkboxes in table cells are properly converted"""
+        if not self.gfm_available:
+            self.skipTest("pycmarkgfm not available")
+        
+        processor = MarkdownProcessor(use_gfm=True)
+        
+        markdown = """| Task | Status |
+|------|--------|
+| Feature A | [x] Complete |
+| Feature B | [ ] Pending |"""
+        
+        html = processor.md_to_html(markdown)
+        
+        # Raw HTML should contain [x] and [ ] text in table cells
+        self.assertIn('[x] Complete', html)
+        self.assertIn('[ ] Pending', html)
+        
+        # Test WeasyPrint enhancement
+        enhanced_html = processor._enhance_gfm_task_lists_for_weasyprint(html)
+        self.assertIn('<span class="task-checked">☑</span> Complete', enhanced_html)
+        self.assertIn('<span class="task-unchecked task-unchecked-scaled">☐</span> Pending', enhanced_html)
+        
+        # Test ReportLab processing
+        cleaned_html = processor.clean_html_for_reportlab(html)
+        self.assertIn('☑ Complete', cleaned_html)
+        self.assertIn('☐ Pending', cleaned_html)
+    
     def test_mixed_content_with_gfm(self):
         """Test mixed content including GFM features."""
         if not self.gfm_available:
@@ -278,8 +306,8 @@ Code with `~~not strikethrough~~` in backticks."""
         self.assertIn('<strike>', cleaned_html)  # del -> strike
         self.assertNotIn('<del>', cleaned_html)
         
-        self.assertIn('[✓]', cleaned_html)  # checked checkbox -> [✓]
-        self.assertIn('[ ]', cleaned_html)  # unchecked checkbox -> [ ]
+        self.assertIn('☑', cleaned_html)  # checked checkbox -> ☑
+        self.assertIn('☐', cleaned_html)  # unchecked checkbox -> ☐
         self.assertNotIn('<input', cleaned_html)
         self.assertNotIn('data-gfm-task', cleaned_html)
     
