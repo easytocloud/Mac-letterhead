@@ -142,9 +142,13 @@ class MarkdownProcessor:
         """
         if self.use_gfm:
             # Use GitHub Flavored Markdown
-            return pycmarkgfm.gfm_to_html(md_content)
+            logging.debug("Using pycmarkgfm.gfm_to_html for markdown conversion")
+            html = pycmarkgfm.gfm_to_html(md_content)
+            logging.debug("GFM HTML preview: %s", html[:200])
+            return html
         else:
             # Use standard markdown
+            logging.debug("Using standard markdown.convert for markdown conversion")
             return self.md.convert(md_content)
     
     def setup_styles(self):
@@ -563,8 +567,20 @@ class MarkdownProcessor:
         html_content = html_content.replace('<strong>', '<b>').replace('</strong>', '</b>')
         html_content = html_content.replace('<em>', '<i>').replace('</em>', '</i>')
         
+        # Handle GFM strikethrough: <del> -> <strike> (ReportLab compatibility)
+        html_content = html_content.replace('<del>', '<strike>').replace('</del>', '</strike>')
+        
         # Handle inline code tags more carefully
         html_content = re.sub(r'<code[^>]*>(.*?)</code>', r'<font face="Courier">\1</font>', html_content)
+        
+        # Handle GFM task list checkboxes - convert to text representation
+        # Checked: [✓] or [x], Unchecked: [ ]
+        html_content = re.sub(r'<input type="checkbox" checked[^>]*\s*/?\s*>\s*', '[✓] ', html_content)
+        html_content = re.sub(r'<input type="checkbox"[^>]*\s*/?\s*>\s*', '[ ] ', html_content)
+        
+        # Remove any remaining data-gfm-task attributes and other GFM attributes
+        html_content = re.sub(r'\s+data-gfm-task="[^"]*"', '', html_content)
+        html_content = re.sub(r'\s+disabled=""', '', html_content)
         
         # Remove any remaining class attributes from any tags
         html_content = re.sub(r'(\s+class="[^"]*")', '', html_content)
@@ -1109,9 +1125,9 @@ class MarkdownProcessor:
             # Convert to HTML using appropriate backend
             html_content = self.md_to_html(md_content)
             backend_info = "GitHub Flavored Markdown" if self.use_gfm else "standard markdown"
-            logging.info(f"Generated HTML content using {backend_info}")
+            logging.info("Generated HTML content using %s", backend_info)
             
-            # Save intermediate HTML if requested
+            # Save intermediate HTML if requested (save the raw HTML before any processing)
             if save_html:
                 with open(save_html, 'w', encoding='utf-8') as f:
                     f.write(html_content)
