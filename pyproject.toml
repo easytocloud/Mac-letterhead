@@ -19,7 +19,8 @@ dependencies = [
     "importlib-resources; python_version < '3.9'",  # For accessing package resources
     "pymupdf==1.25.4",   # For PDF analysis and margin detection
     "reportlab>=3.6.0",  # For PDF generation (fallback when WeasyPrint is not available)
-    "markdown>=3.7",     # For parsing markdown to HTML
+    "markdown>=3.7",     # For parsing markdown to HTML (fallback)
+    "pycmarkgfm>=1.2.0", # For GitHub Flavored Markdown support
     "html5lib==1.1",     # For HTML parsing
     "weasyprint==65.0",  # For converting markdown/HTML to PDF
     "pillow==11.1.0",    # For image handling

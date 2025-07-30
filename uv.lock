@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 1
 requires-python = ">=3.10"
 
 [[package]]
@@ -552,6 +552,7 @@ dependencies = [
     { name = "html5lib" },
     { name = "markdown" },
     { name = "pillow" },
+    { name = "pycmarkgfm" },
     { name = "pydyf" },
     { name = "pygments" },
     { name = "pymupdf" },
@@ -585,6 +586,7 @@ requires-dist = [
     { name = "markdown", specifier = ">=3.7" },
     { name = "mcp", marker = "extra == 'mcp'", specifier = ">=1.0.0" },
     { name = "pillow", specifier = "==11.1.0" },
+    { name = "pycmarkgfm", specifier = ">=1.2.0" },
     { name = "pydyf", specifier = ">=0.5.0" },
     { name = "pygments", specifier = ">=2.16.0" },
     { name = "pymupdf", specifier = "==1.25.4" },
@@ -716,6 +718,47 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538 },
+]
+
+[[package]]
+name = "pycmarkgfm"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cffi" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/32/f0/af5333c36a502bad34c28f36799f5ce453443e47d0a66a9429d27f010e5e/pycmarkgfm-1.2.1.tar.gz", hash = "sha256:a0f925081e786879f7ddec13892957831dfc4f44732eeadee4ecc6b85c2c2cda", size = 158780 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fe/47/e41d43f2f56e8a41c65c5442cae8075ebc976aa7af1065fb04ea30114384/pycmarkgfm-1.2.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:0269f5c098c8bd6a57ca086376b69c2294ef4ff19d2b1b9752889a06ec2651cf", size = 142582 },
+    { url = "https://files.pythonhosted.org/packages/4c/3f/37794ec58138019222983aa3adcf136622a0ddd1bfd69d900d5714e89340/pycmarkgfm-1.2.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:bd4cad3056b7ffd72b436dc194995f7b06970e89e527da490a4aa4ce5eee71ad", size = 140812 },
+    { url = "https://files.pythonhosted.org/packages/95/bf/978652f1bd8e7986709d6dbd109427a94d456ec1325c09352ce49832a9b0/pycmarkgfm-1.2.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c10800a59e85e54deb8ce3a26517dc6d3d3f80fc8ec03860288ef37a8cf1b27f", size = 464537 },
+    { url = "https://files.pythonhosted.org/packages/ef/6c/3a3ce8cf951d5fb2c07db1209eee4c8a255aadad175e58ed07ab433b3462/pycmarkgfm-1.2.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cdd2ca9a3da85cc34be77d8ed3cfdd7dbef956592f7e22c73c6ccdafc8925ca2", size = 470525 },
+    { url = "https://files.pythonhosted.org/packages/80/da/4382bdb1031d75cdb5c096146b5854b6a97b63577181a643634716626c96/pycmarkgfm-1.2.1-cp310-cp310-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:c2da36606b1ae07159ad2d996e4af032e4e40a0169732eb8068af4354437dab0", size = 441363 },
+    { url = "https://files.pythonhosted.org/packages/fd/ab/b8cf0657634b5a51d093e4b106814e7007a333c8b6fa49074cffcfd23866/pycmarkgfm-1.2.1-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:27c08d6123e2afe72ad8ee980fca99c2ff431ea088f5ae65585b73d767845aed", size = 454375 },
+    { url = "https://files.pythonhosted.org/packages/9b/3a/afa823d3a31718e8aec66aedebed2bcbdd7e4ec67b83e5fb7b70f8de2583/pycmarkgfm-1.2.1-cp310-cp310-musllinux_1_1_i686.whl", hash = "sha256:f67ed420bfa2eec001c125d5cc49d78723fa9b5b329a311cf61f850fcf65ed36", size = 433115 },
+    { url = "https://files.pythonhosted.org/packages/d9/7f/8934ecbecf269d8f4cbe47161966bc1c88bba8b8b051e46fd63996c15ce1/pycmarkgfm-1.2.1-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:34b84b0750d324151ed398d3e6123984af33fb0f6e1404b7847bf8f8f8858821", size = 462214 },
+    { url = "https://files.pythonhosted.org/packages/84/e6/1e7d692b633a23efbea138dc7e29f30e8d2986b6e104316f8237bd2680e0/pycmarkgfm-1.2.1-cp310-cp310-win32.whl", hash = "sha256:dd10b9ecd1e466f68eb2e974b9db97d9865704394ad39e7e2d7b1660e3b865dd", size = 131598 },
+    { url = "https://files.pythonhosted.org/packages/05/4f/0e1fb0336b24d8ba1f90b99d2097cfef9f8ae330cb04f872bb89ef700a88/pycmarkgfm-1.2.1-cp310-cp310-win_amd64.whl", hash = "sha256:5cdca8f260e43c3d4c7cc031818c05dbb3d3d54bab309f99fa6247794771ee21", size = 142786 },
+    { url = "https://files.pythonhosted.org/packages/27/b0/d14ae21eaed9ded07a4540b731bdd129a3840775d08d44a28d1f8666681c/pycmarkgfm-1.2.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:bf83c75890e1b18e428bf8bf811c7a17aa2d20030c8a952afedbf028efbf37d9", size = 142577 },
+    { url = "https://files.pythonhosted.org/packages/d1/31/8d15d5232e02e7234aadf87c9eabfb8f61f605a3f0d2597e51fbe4ddc4f6/pycmarkgfm-1.2.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:9189109fefc28fbb1763410d435f56815959df66e479992f4e845bf39861d6ee", size = 140806 },
+    { url = "https://files.pythonhosted.org/packages/6b/38/1d596a154ce8da8afe0a2ec6cd658da46ff75d8cb2e03d3a5db07513801c/pycmarkgfm-1.2.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:407baaf633391e77a23684e86cdd636ae58ed9d985577e9890e7509d610a0a6b", size = 464537 },
+    { url = "https://files.pythonhosted.org/packages/4d/47/53c4e038ce0431a905df15b5d5d0779179ea534cf4721192d7b63fddc316/pycmarkgfm-1.2.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0998277e69999ad23c2ee69ec15bf0beedb6c47c08718883f71741ac9f00ae7a", size = 470518 },
+    { url = "https://files.pythonhosted.org/packages/d3/db/b4ba970bb983344f46806c25e14ba7ca15a19178584c5190e2dd22da428a/pycmarkgfm-1.2.1-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a3276a347b621389e2f27acabd66a993612ad64a34105ccdc060fa91b4db14a0", size = 441374 },
+    { url = "https://files.pythonhosted.org/packages/af/39/0b1a06e06581cd91e2267aa7910e4c46fb414cbe73240704fb88e17ddfb0/pycmarkgfm-1.2.1-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:b4e92de0733e1ec6f1a5704e874dea93211f4e9e52c7cb192085a4c6e7540403", size = 454389 },
+    { url = "https://files.pythonhosted.org/packages/e0/e0/94ab285839d50ead03d70b782c84335113ddac82ae4bde5c04f8023037ab/pycmarkgfm-1.2.1-cp311-cp311-musllinux_1_1_i686.whl", hash = "sha256:4ceb250195c68f60bd76dd5ca498c4ec9026eeedb72bf1f5abcdb25e5bbe5353", size = 433179 },
+    { url = "https://files.pythonhosted.org/packages/d2/90/3cdd135a8a3eeee57e8548a107a4370cba0721822e221361077352d07073/pycmarkgfm-1.2.1-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:cd584bf73d6ff98648c642814ebc302adf9a2d31dec357deb42133cf3f8a7b81", size = 462236 },
+    { url = "https://files.pythonhosted.org/packages/eb/ff/9dc16d93485e5cad816fb188c3893d3da8e2e84f5a00655fddba0275b4d5/pycmarkgfm-1.2.1-cp311-cp311-win32.whl", hash = "sha256:1c201121667fa35f9c31ad5033bfabf9b6d18e400f4ae01a7276025ea864472a", size = 131599 },
+    { url = "https://files.pythonhosted.org/packages/95/de/8a5d44024c9c749db9e651f6a06a7fd548b74c46ac971ac1bfc2f793d559/pycmarkgfm-1.2.1-cp311-cp311-win_amd64.whl", hash = "sha256:2fca88d5d347f405a2c2f14d43151411880d7f1e6b7277436e966effb0ea8df2", size = 142783 },
+    { url = "https://files.pythonhosted.org/packages/ea/12/22dc2aa19e4ceeb94dba69bac20d80731374d46fe2757d7f82e2f85ccc7e/pycmarkgfm-1.2.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:8732b69f522173de80434df203b3eec88ac6aeb27f5b31ebac1ad65a053f75ca", size = 142567 },
+    { url = "https://files.pythonhosted.org/packages/48/a3/c5341a65773b21ed82785fb2015af3bbe871bbda487b724099b233ecbfc3/pycmarkgfm-1.2.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:48cb1ba3d83936e442d2a84538314c8ea830fe8c8f345133c1d7f0d7b963b64d", size = 140822 },
+    { url = "https://files.pythonhosted.org/packages/9d/e6/3d8589ed4bc4d7438224cc023938a073446e7b349fcc1fd6f9b37b8cbe02/pycmarkgfm-1.2.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5476c4c0c4b9b7c33e06d866c64a5a46f23129d0c561dc08f996592d84c2c21e", size = 465121 },
+    { url = "https://files.pythonhosted.org/packages/2c/f0/90b7f74c8028d0a50dcfc26347679d28ec3aedb826051e9dd6e3fec4a34a/pycmarkgfm-1.2.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c80df2e80bbcbd6389d8b07ff2b4e6129cef87891275055fb92fbe8fb9eef1ab", size = 471190 },
+    { url = "https://files.pythonhosted.org/packages/03/8a/caa79fb302e49fad7265e9991767beb3962afe386b47f0a052c3ce101c67/pycmarkgfm-1.2.1-cp312-cp312-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:52eae88a7817b1c5fac5e1c98fd51b38a8e4ab5a7fbd1b3c9b1dbf214b528916", size = 441811 },
+    { url = "https://files.pythonhosted.org/packages/25/16/527990e03faf2c54761e2efe397e7eb5b7623757144525858fda83ab3eb8/pycmarkgfm-1.2.1-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:a2493abf1e32f958cc5ed5bf48a0ff9791081907ceed684fceaf231988d8923f", size = 454952 },
+    { url = "https://files.pythonhosted.org/packages/cb/0b/721911de9fe2fcd67963414b8f3956b0df2fa8c3e68637800739514e1f30/pycmarkgfm-1.2.1-cp312-cp312-musllinux_1_1_i686.whl", hash = "sha256:84085c333e865baf15a110a281ff35022c656b13f6e84c7dae55df9f7adacab6", size = 433751 },
+    { url = "https://files.pythonhosted.org/packages/10/bf/4e0221cbce9a579fa7913efac682aadfb3b76f34397a82fd95613bf12c0a/pycmarkgfm-1.2.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:456f8ea93abd2f6384394425594e75158f20f9bb8c7e50c65df6cc9bda903a01", size = 463254 },
+    { url = "https://files.pythonhosted.org/packages/3e/e6/5c15797e4d5cd68514e46c9eeb0e46805758f5150db48774e3ec37b86329/pycmarkgfm-1.2.1-cp312-cp312-win32.whl", hash = "sha256:cc78e01f1e6296b1b043ff88b9cb2d173f68db19704a7562debccbc006018136", size = 131639 },
+    { url = "https://files.pythonhosted.org/packages/87/41/0e464336e0a4bdeb5ab5758ccd910aff708e1a66719c6ac61c613a964a69/pycmarkgfm-1.2.1-cp312-cp312-win_amd64.whl", hash = "sha256:f855f1c2e8b098e2dcbb246c1ee283d82b2c65141f75ae393800cbb0d7a489ba", size = 142810 },
 ]
 
 [[package]]
