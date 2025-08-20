@@ -105,6 +105,12 @@ class MacOSIntegration:
                 plist_data['CFBundleIdentifier'] = bundle_id
                 self.logger.info(f"Added bundle identifier: {bundle_id}")
             
+            # Add display name to show proper name in Privacy & Security
+            if 'CFBundleDisplayName' not in plist_data:
+                app_name = os.path.basename(app_path).replace('.app', '')
+                plist_data['CFBundleDisplayName'] = app_name
+                self.logger.info(f"Added display name: {app_name}")
+            
             # Add document types if not present
             if 'CFBundleDocumentTypes' not in plist_data:
                 document_types = [
