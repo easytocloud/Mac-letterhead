@@ -9,6 +9,7 @@ This class manages macOS-specific functionality:
 
 import os
 import logging
+import plistlib
 from subprocess import run, PIPE
 
 from letterhead_pdf.exceptions import InstallerError
@@ -80,7 +81,7 @@ class MacOSIntegration:
             # Don't fail the installation for configuration issues
     
     def _configure_info_plist(self, app_path: str) -> None:
-        """Configure Info.plist for file associations."""
+        """Configure Info.plist for file associations and bundle identifier."""
         info_plist_path = os.path.join(app_path, "Contents", "Info.plist")
         
         if not os.path.exists(info_plist_path):
@@ -88,54 +89,50 @@ class MacOSIntegration:
             return
         
         try:
-            # Read existing plist
-            with open(info_plist_path, 'r') as f:
-                plist_content = f.read()
+            # Read and parse existing plist
+            with open(info_plist_path, 'rb') as f:
+                plist_data = plistlib.load(f)
             
-            # Add document types if not already present
-            if 'CFBundleDocumentTypes' not in plist_content:
-                document_types = '''	<key>CFBundleDocumentTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>pdf</string>
-			</array>
-			<key>CFBundleTypeName</key>
-			<string>PDF Document</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-		</dict>
-		<dict>
-			<key>CFBundleTypeExtensions</key>
-			<array>
-				<string>md</string>
-				<string>markdown</string>
-			</array>
-			<key>CFBundleTypeName</key>
-			<string>Markdown Document</string>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
-			<key>LSHandlerRank</key>
-			<string>Alternate</string>
-		</dict>
-	</array>
-	<key>NSHighResolutionCapable</key>
-	<true/>'''
+            # Add bundle identifier if not present
+            if 'CFBundleIdentifier' not in plist_data:
+                # Generate unique bundle identifier from app name
+                app_name = os.path.basename(app_path).replace('.app', '')
+                # Sanitize name for bundle identifier (alphanumeric and hyphens only)
+                sanitized_name = ''.join(c.lower() if c.isalnum() else '-' for c in app_name)
+                sanitized_name = '-'.join(filter(None, sanitized_name.split('-')))  # Remove empty parts
+                bundle_id = f"com.mac-letterhead.droplet.{sanitized_name}"
                 
-                # Insert before closing dict tag
-                plist_content = plist_content.replace(
-                    '</dict>\n</plist>', 
-                    document_types + '\n</dict>\n</plist>'
-                )
-                
-                # Write back
-                with open(info_plist_path, 'w') as f:
-                    f.write(plist_content)
-                
-                self.logger.info("Updated Info.plist with file associations")
+                plist_data['CFBundleIdentifier'] = bundle_id
+                self.logger.info(f"Added bundle identifier: {bundle_id}")
+            
+            # Add document types if not present
+            if 'CFBundleDocumentTypes' not in plist_data:
+                document_types = [
+                    {
+                        'CFBundleTypeExtensions': ['pdf'],
+                        'CFBundleTypeName': 'PDF Document',
+                        'CFBundleTypeRole': 'Viewer',
+                        'LSHandlerRank': 'Alternate'
+                    },
+                    {
+                        'CFBundleTypeExtensions': ['md', 'markdown'],
+                        'CFBundleTypeName': 'Markdown Document',
+                        'CFBundleTypeRole': 'Viewer',
+                        'LSHandlerRank': 'Alternate'
+                    }
+                ]
+                plist_data['CFBundleDocumentTypes'] = document_types
+                self.logger.info("Added document type associations")
+            
+            # Add high resolution support
+            if 'NSHighResolutionCapable' not in plist_data:
+                plist_data['NSHighResolutionCapable'] = True
+            
+            # Write back the modified plist
+            with open(info_plist_path, 'wb') as f:
+                plistlib.dump(plist_data, f)
+            
+            self.logger.info("Successfully updated Info.plist")
             
         except Exception as e:
             self.logger.warning(f"Could not configure Info.plist: {e}")
