@@ -202,7 +202,15 @@ blockquote {
             # Find the icons in the package resources
             package_resources_dir = self._get_package_resources_dir()
             
-            # Copy main application icon
+            # Copy Mac-letterhead.icns directly (referenced by Info.plist)
+            self._copy_icon_if_exists(
+                package_resources_dir, 
+                resources_dir, 
+                "Mac-letterhead.icns", 
+                "Mac-letterhead.icns"
+            )
+            
+            # Copy main application icon (legacy support)
             self._copy_icon_if_exists(
                 package_resources_dir, 
                 resources_dir, 
@@ -210,7 +218,7 @@ blockquote {
                 "applet.icns"
             )
             
-            # Also copy as droplet icon for drag-and-drop
+            # Also copy as droplet icon for drag-and-drop (legacy support)
             self._copy_icon_if_exists(
                 package_resources_dir, 
                 resources_dir, 
@@ -254,6 +262,8 @@ blockquote {
         if os.path.exists(source_path):
             dest_path = os.path.join(dest_dir, dest_name)
             shutil.copy2(source_path, dest_path)
+            # Ensure proper permissions for macOS icon system
+            os.chmod(dest_path, 0o644)
             self.logger.info(f"Copied icon: {source_name} -> {dest_name}")
         else:
             self.logger.warning(f"Icon not found: {source_path}")
