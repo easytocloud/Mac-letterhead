@@ -111,6 +111,9 @@ class MacOSIntegration:
                 plist_data['CFBundleDisplayName'] = app_name
                 self.logger.info(f"Added display name: {app_name}")
             
+            # Rename executable to match app name for better system integration
+            self._rename_executable_to_match_app_name(app_path, plist_data)
+            
             # Add document types if not present
             if 'CFBundleDocumentTypes' not in plist_data:
                 document_types = [
@@ -133,6 +136,9 @@ class MacOSIntegration:
             # Add high resolution support
             if 'NSHighResolutionCapable' not in plist_data:
                 plist_data['NSHighResolutionCapable'] = True
+            
+            # Configure custom app icon
+            self._configure_app_icon(plist_data)
             
             # Write back the modified plist
             with open(info_plist_path, 'wb') as f:
@@ -159,3 +165,59 @@ class MacOSIntegration:
             
         except Exception as e:
             self.logger.warning(f"Could not set executable permissions: {e}")
+    
+    def _rename_executable_to_match_app_name(self, app_path: str, plist_data: dict) -> None:
+        """Rename the executable to match the app name for better system integration."""
+        try:
+            app_name = os.path.basename(app_path).replace('.app', '')
+            macos_dir = os.path.join(app_path, "Contents", "MacOS")
+            
+            if not os.path.exists(macos_dir):
+                self.logger.warning("MacOS directory not found")
+                return
+                
+            # Find current executable
+            current_executable = plist_data.get('CFBundleExecutable', 'droplet')
+            current_exec_path = os.path.join(macos_dir, current_executable)
+            
+            if not os.path.exists(current_exec_path):
+                self.logger.warning(f"Current executable not found: {current_exec_path}")
+                return
+            
+            # Sanitize app name for use as executable name (alphanumeric and limited symbols)
+            safe_name = ''.join(c if c.isalnum() or c in '-_' else '-' for c in app_name)
+            safe_name = safe_name.strip('-_')  # Remove leading/trailing symbols
+            
+            if not safe_name:
+                self.logger.warning("Could not create safe executable name")
+                return
+                
+            # Skip if already correct
+            if current_executable == safe_name:
+                return
+                
+            new_exec_path = os.path.join(macos_dir, safe_name)
+            
+            # Rename the executable file
+            os.rename(current_exec_path, new_exec_path)
+            
+            # Update CFBundleExecutable in plist
+            plist_data['CFBundleExecutable'] = safe_name
+            
+            self.logger.info(f"Renamed executable: {current_executable} → {safe_name}")
+            
+        except Exception as e:
+            self.logger.warning(f"Could not rename executable: {e}")
+    
+    def _configure_app_icon(self, plist_data: dict) -> None:
+        """Configure the app to use our custom icon."""
+        try:
+            # Use the applet.icns file which contains our custom Mac-letterhead icon
+            # This is copied by the resource manager from Mac-letterhead.icns
+            plist_data['CFBundleIconFile'] = 'applet'
+            plist_data['CFBundleIconName'] = 'applet'
+            
+            self.logger.info("Configured custom app icon (applet.icns)")
+            
+        except Exception as e:
+            self.logger.warning(f"Could not configure app icon: {e}")
