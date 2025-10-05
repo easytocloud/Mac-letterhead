@@ -19,15 +19,13 @@ on open dropped_items
                 set is_dev_mode to false
                 set python_path to ""
                 try
-                    tell application "System Events"
-                        if exists file dev_mode_path then
-                            set is_dev_mode to true
-                            -- Read the python path from the dev_mode file
-                            set python_path to read file dev_mode_path as string
-                            -- Remove any trailing newlines
-                            set python_path to do shell script "echo " & quoted form of python_path & " | tr -d '\\n'"
-                        end if
-                    end tell
+                    -- Use shell commands instead of System Events to avoid permission requirements
+                    set dev_mode_posix to POSIX path of dev_mode_path
+                    set is_dev_mode to (do shell script "test -f " & quoted form of dev_mode_posix & " && echo 'true' || echo 'false'") is "true"
+                    if is_dev_mode then
+                        -- Read the python path from the dev_mode file
+                        set python_path to do shell script "cat " & quoted form of dev_mode_posix & " | tr -d '\\n'"
+                    end if
                 end try
                 
                 -- Check for custom CSS file in app bundle
@@ -35,19 +33,17 @@ on open dropped_items
                 set css_exists to false
                 set css_posix to ""
                 try
-                    tell application "System Events"
-                        if exists file css_path then
-                            set css_exists to true
-                        end if
-                    end tell
-                    
-                    -- If CSS file exists, convert path outside of System Events block
+                    -- Use shell command instead of System Events to avoid permission requirements
+                    set css_posix_check to POSIX path of css_path
+                    set css_exists to (do shell script "test -f " & quoted form of css_posix_check & " && echo 'true' || echo 'false'") is "true"
+
+                    -- If CSS file exists, convert path
                     if css_exists then
                         try
                             set css_posix_source to POSIX path of css_path
                             
                             -- Debug: log the path conversion
-                            do shell script "echo 'CSS Path Debug: HFS=" & css_path & ", POSIX=" & css_posix_source & "' >> /tmp/mac-letterhead-applescript-debug.txt"
+                            do shell script "echo " & quoted form of ("CSS Path Debug: HFS=" & css_path & ", POSIX=" & css_posix_source) & " >> /tmp/mac-letterhead-applescript-debug.txt"
                             
                             -- For production mode, copy CSS to temp location to avoid sandboxing issues
                             if not is_dev_mode then
@@ -59,16 +55,14 @@ on open dropped_items
                                 set css_posix to css_posix_source
                             end if
                         on error path_error
-                            do shell script "echo 'CSS Path Conversion Error: " & path_error & "' >> /tmp/mac-letterhead-applescript-debug.txt"
+                            do shell script "echo " & quoted form of ("CSS Path Conversion Error: " & path_error) & " >> /tmp/mac-letterhead-applescript-debug.txt"
                         end try
                     end if
                 end try
                 
-                -- Get file info
-                tell application "System Events"
-                    set file_name to name of disk item item_path
-                    set file_extension to name extension of disk item item_path
-                end tell
+                -- Get file info using shell commands instead of System Events
+                set file_name to do shell script "basename " & quoted form of posix_path
+                set file_extension to do shell script "echo " & quoted form of file_name & " | sed 's/.*\\.//'"
                 
                 -- Get directory of the file
                 set file_dir to do shell script "dirname " & quoted form of posix_path
@@ -99,7 +93,7 @@ on open dropped_items
                 end if
                 
                 -- Debug: Log the final command for troubleshooting
-                do shell script "echo 'AppleScript Debug: CSS exists=" & (css_exists as string) & ", CSS path=" & css_posix & ", Final command: " & cmd & "' >> /tmp/mac-letterhead-applescript-debug.txt"
+                do shell script "echo " & quoted form of ("AppleScript Debug: CSS exists=" & (css_exists as string) & ", CSS path=" & css_posix & ", Final command: " & cmd) & " >> /tmp/mac-letterhead-applescript-debug.txt"
                 
                 -- Execute command
                 do shell script cmd
@@ -116,16 +110,15 @@ on open dropped_items
 end open
 
 on run
-    -- Check if this is development mode
+    -- Check if this is development mode using shell command instead of System Events
     set app_path to path to me as string
     set dev_mode_path to app_path & "Contents:Resources:dev_mode"
     set mode_text to "Production"
     try
-        tell application "System Events"
-            if exists file dev_mode_path then
-                set mode_text to "Development"
-            end if
-        end tell
+        set dev_mode_posix to POSIX path of dev_mode_path
+        if (do shell script "test -f " & quoted form of dev_mode_posix & " && echo 'true' || echo 'false'") is "true" then
+            set mode_text to "Development"
+        end if
     end try
     
     -- Show dialog with two buttons
@@ -136,19 +129,12 @@ on run
         -- Get letterhead path from app bundle
         set letterhead_path to app_path & "Contents:Resources:letterhead.pdf"
         
-        -- Check if letterhead exists and open it
+        -- Check if letterhead exists and open it using shell command instead of System Events
         try
-            tell application "System Events"
-                if exists file letterhead_path then
-                    set letterhead_exists to true
-                else
-                    set letterhead_exists to false
-                end if
-            end tell
-            
+            set letterhead_posix to POSIX path of letterhead_path
+            set letterhead_exists to (do shell script "test -f " & quoted form of letterhead_posix & " && echo 'true' || echo 'false'") is "true"
+
             if letterhead_exists then
-                -- Convert to POSIX path outside of System Events block
-                set letterhead_posix to POSIX path of letterhead_path
                 do shell script "open " & quoted form of letterhead_posix
             else
                 -- Critical error - app bundle is corrupted
