@@ -9,7 +9,6 @@ This class manages macOS-specific functionality:
 
 import os
 import logging
-import plistlib
 from subprocess import run, PIPE
 
 from letterhead_pdf.exceptions import InstallerError
@@ -61,93 +60,193 @@ class MacOSIntegration:
     def configure_app_bundle(self, app_path: str) -> None:
         """
         Configure app bundle for file associations and permissions.
-        
+
         Args:
             app_path: Path to the app bundle
         """
         self.logger.info(f"Configuring app bundle: {app_path}")
-        
+
         try:
-            # Configure Info.plist for file associations
+            # Configure Info.plist for file associations and identification
             self._configure_info_plist(app_path)
-            
+
+            # Rename executable from "droplet" to "Mac-letterhead" to match Info.plist
+            self._rename_executable(app_path)
+
             # Set executable permissions
             self._set_executable_permissions(app_path)
-            
+
             self.logger.info("App bundle configuration completed")
-            
+
         except Exception as e:
             self.logger.warning(f"App bundle configuration failed: {e}")
             # Don't fail the installation for configuration issues
     
     def _configure_info_plist(self, app_path: str) -> None:
-        """Configure Info.plist for file associations and bundle identifier."""
+        """Configure Info.plist for file associations and proper identification."""
         info_plist_path = os.path.join(app_path, "Contents", "Info.plist")
-        
+
         if not os.path.exists(info_plist_path):
             self.logger.warning("Info.plist not found")
             return
-        
+
         try:
-            # Read and parse existing plist
-            with open(info_plist_path, 'rb') as f:
-                plist_data = plistlib.load(f)
-            
-            # Add bundle identifier if not present
-            if 'CFBundleIdentifier' not in plist_data:
-                # Generate unique bundle identifier from app name
-                app_name = os.path.basename(app_path).replace('.app', '')
-                # Sanitize name for bundle identifier (alphanumeric and hyphens only)
-                sanitized_name = ''.join(c.lower() if c.isalnum() else '-' for c in app_name)
-                sanitized_name = '-'.join(filter(None, sanitized_name.split('-')))  # Remove empty parts
-                bundle_id = f"com.mac-letterhead.droplet.{sanitized_name}"
-                
-                plist_data['CFBundleIdentifier'] = bundle_id
-                self.logger.info(f"Added bundle identifier: {bundle_id}")
-            
-            # Add display name to show proper name in Privacy & Security
-            if 'CFBundleDisplayName' not in plist_data:
-                app_name = os.path.basename(app_path).replace('.app', '')
-                plist_data['CFBundleDisplayName'] = app_name
-                self.logger.info(f"Added display name: {app_name}")
-            
-            # Rename executable to match app name for better system integration
-            self._rename_executable_to_match_app_name(app_path, plist_data)
-            
-            # Add document types if not present
-            if 'CFBundleDocumentTypes' not in plist_data:
-                document_types = [
-                    {
-                        'CFBundleTypeExtensions': ['pdf'],
-                        'CFBundleTypeName': 'PDF Document',
-                        'CFBundleTypeRole': 'Viewer',
-                        'LSHandlerRank': 'Alternate'
-                    },
-                    {
-                        'CFBundleTypeExtensions': ['md', 'markdown'],
-                        'CFBundleTypeName': 'Markdown Document',
-                        'CFBundleTypeRole': 'Viewer',
-                        'LSHandlerRank': 'Alternate'
-                    }
-                ]
-                plist_data['CFBundleDocumentTypes'] = document_types
+            # Read existing plist
+            with open(info_plist_path, 'r') as f:
+                plist_content = f.read()
+
+            # Get app name for identifier generation
+            app_name = os.path.basename(app_path).replace('.app', '')
+
+            # Generate a unique bundle identifier based on app name
+            # Convert to a valid reverse-DNS identifier (lowercase, no spaces)
+            identifier_suffix = app_name.lower().replace(' ', '-').replace('(', '').replace(')', '')
+            bundle_identifier = f"com.mac-letterhead.{identifier_suffix}"
+
+            # Add or update CFBundleIdentifier (critical for macOS to distinguish apps)
+            if 'CFBundleIdentifier' not in plist_content:
+                identifier_config = f'''	<key>CFBundleIdentifier</key>
+	<string>{bundle_identifier}</string>'''
+
+                # Insert after CFBundleInfoDictionaryVersion
+                plist_content = plist_content.replace(
+                    '<key>CFBundleInfoDictionaryVersion</key>',
+                    identifier_config + '\n	<key>CFBundleInfoDictionaryVersion</key>'
+                )
+                self.logger.info(f"Added CFBundleIdentifier: {bundle_identifier}")
+            else:
+                # Update existing identifier
+                import re
+                plist_content = re.sub(
+                    r'(<key>CFBundleIdentifier</key>\s*<string>)[^<]*(</string>)',
+                    rf'\1{bundle_identifier}\2',
+                    plist_content
+                )
+                self.logger.info(f"Updated CFBundleIdentifier: {bundle_identifier}")
+
+            # Add document types if not already present
+            if 'CFBundleDocumentTypes' not in plist_content:
+                document_types = '''	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>pdf</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>PDF Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>md</string>
+				<string>markdown</string>
+			</array>
+			<key>CFBundleTypeName</key>
+			<string>Markdown Document</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+		</dict>
+	</array>
+	<key>NSHighResolutionCapable</key>
+	<true/>'''
+
+                # Insert before closing dict tag
+                plist_content = plist_content.replace(
+                    '</dict>\n</plist>',
+                    document_types + '\n</dict>\n</plist>'
+                )
+
                 self.logger.info("Added document type associations")
-            
-            # Add high resolution support
-            if 'NSHighResolutionCapable' not in plist_data:
-                plist_data['NSHighResolutionCapable'] = True
-            
-            # Configure custom app icon
-            self._configure_app_icon(plist_data)
-            
-            # Write back the modified plist
-            with open(info_plist_path, 'wb') as f:
-                plistlib.dump(plist_data, f)
-            
-            self.logger.info("Successfully updated Info.plist")
-            
+
+            # Remove CFBundleIconName if present (interferes with custom icons)
+            if 'CFBundleIconName' in plist_content:
+                import re
+                plist_content = re.sub(
+                    r'\s*<key>CFBundleIconName</key>\s*<string>[^<]*</string>\s*',
+                    '\n',
+                    plist_content
+                )
+                self.logger.info("Removed CFBundleIconName to prevent icon conflicts")
+
+            # Add CFBundleDisplayName for Privacy & Security display
+            if 'CFBundleDisplayName' not in plist_content:
+                display_name_config = f'''	<key>CFBundleDisplayName</key>
+	<string>{app_name}</string>'''
+
+                # Insert before closing dict tag
+                plist_content = plist_content.replace(
+                    '</dict>\n</plist>',
+                    display_name_config + '\n</dict>\n</plist>'
+                )
+                self.logger.info(f"Added CFBundleDisplayName: {app_name}")
+
+            # Update CFBundleExecutable from "droplet" to "Mac-letterhead" for better identification
+            if 'CFBundleExecutable' in plist_content:
+                import re
+                plist_content = re.sub(
+                    r'(<key>CFBundleExecutable</key>\s*<string>)[^<]*(</string>)',
+                    r'\1Mac-letterhead\2',
+                    plist_content
+                )
+                self.logger.info("Updated CFBundleExecutable: Mac-letterhead")
+
+            # Add application category to help system classify the app
+            if 'LSApplicationCategoryType' not in plist_content:
+                category_config = '''	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.utilities</string>'''
+
+                # Insert before closing dict tag
+                plist_content = plist_content.replace(
+                    '</dict>\n</plist>',
+                    category_config + '\n</dict>\n</plist>'
+                )
+                self.logger.info("Added LSApplicationCategoryType: utilities")
+
+            # DO NOT MODIFY CFBundleIconFile - this would break app identity
+            # Instead, ResourceManager copies Mac-letterhead.icns as droplet.icns
+
+            # Write back the modified content
+            with open(info_plist_path, 'w') as f:
+                f.write(plist_content)
+
+            self.logger.info("Updated Info.plist with unique identifier and proper naming")
+
         except Exception as e:
             self.logger.warning(f"Could not configure Info.plist: {e}")
+    
+    def _rename_executable(self, app_path: str) -> None:
+        """Rename executable from 'droplet' to 'Mac-letterhead' to match Info.plist."""
+        try:
+            macos_dir = os.path.join(app_path, "Contents", "MacOS")
+
+            if not os.path.exists(macos_dir):
+                self.logger.warning("MacOS directory not found in app bundle")
+                return
+
+            # Find the current executable (should be "droplet")
+            droplet_path = os.path.join(macos_dir, "droplet")
+            new_executable_path = os.path.join(macos_dir, "Mac-letterhead")
+
+            if os.path.exists(droplet_path):
+                # Remove target if it already exists (from previous rename attempts)
+                if os.path.exists(new_executable_path):
+                    os.remove(new_executable_path)
+
+                # Rename the executable file to match CFBundleExecutable in Info.plist
+                os.rename(droplet_path, new_executable_path)
+                self.logger.info("Renamed executable: droplet → Mac-letterhead")
+            else:
+                self.logger.debug("Executable already renamed or not found")
+
+        except Exception as e:
+            self.logger.warning(f"Could not rename executable: {e}")
     
     def _set_executable_permissions(self, app_path: str) -> None:
         """Set appropriate executable permissions on the app bundle."""
@@ -165,59 +264,3 @@ class MacOSIntegration:
             
         except Exception as e:
             self.logger.warning(f"Could not set executable permissions: {e}")
-    
-    def _rename_executable_to_match_app_name(self, app_path: str, plist_data: dict) -> None:
-        """Rename the executable to match the app name for better system integration."""
-        try:
-            app_name = os.path.basename(app_path).replace('.app', '')
-            macos_dir = os.path.join(app_path, "Contents", "MacOS")
-            
-            if not os.path.exists(macos_dir):
-                self.logger.warning("MacOS directory not found")
-                return
-                
-            # Find current executable
-            current_executable = plist_data.get('CFBundleExecutable', 'droplet')
-            current_exec_path = os.path.join(macos_dir, current_executable)
-            
-            if not os.path.exists(current_exec_path):
-                self.logger.warning(f"Current executable not found: {current_exec_path}")
-                return
-            
-            # Sanitize app name for use as executable name (alphanumeric and limited symbols)
-            safe_name = ''.join(c if c.isalnum() or c in '-_' else '-' for c in app_name)
-            safe_name = safe_name.strip('-_')  # Remove leading/trailing symbols
-            
-            if not safe_name:
-                self.logger.warning("Could not create safe executable name")
-                return
-                
-            # Skip if already correct
-            if current_executable == safe_name:
-                return
-                
-            new_exec_path = os.path.join(macos_dir, safe_name)
-            
-            # Rename the executable file
-            os.rename(current_exec_path, new_exec_path)
-            
-            # Update CFBundleExecutable in plist
-            plist_data['CFBundleExecutable'] = safe_name
-            
-            self.logger.info(f"Renamed executable: {current_executable} → {safe_name}")
-            
-        except Exception as e:
-            self.logger.warning(f"Could not rename executable: {e}")
-    
-    def _configure_app_icon(self, plist_data: dict) -> None:
-        """Configure the app to use our custom icon."""
-        try:
-            # Use the applet.icns file which contains our custom Mac-letterhead icon
-            # This is copied by the resource manager from Mac-letterhead.icns
-            plist_data['CFBundleIconFile'] = 'applet'
-            plist_data['CFBundleIconName'] = 'applet'
-            
-            self.logger.info("Configured custom app icon (applet.icns)")
-            
-        except Exception as e:
-            self.logger.warning(f"Could not configure app icon: {e}")
