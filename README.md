@@ -1,8 +1,11 @@
 # Mac-letterhead
 
+<!-- mcp-name: io.github.easytocloud/mac-letterhead -->
+
 ![PyPI Version](https://img.shields.io/pypi/v/Mac-letterhead.svg)
 ![Build Status](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml/badge.svg)
 ![License](https://img.shields.io/github/license/easytocloud/Mac-letterhead.svg)
+![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMyA3TDEyIDEyTDIxIDdMMTIgMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zIDdWMTdMMTIgMjJWMTJMMyA3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTIxIDdWMTdMMTIgMjJWMTJMMjEgN1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=)
 
 <!-- GitHub can't render .icns files directly, so we use HTML to link the icon badge -->
 <a href="https://pypi.org/project/Mac-letterhead/" title="Mac-letterhead on PyPI">
@@ -48,6 +51,22 @@ uvx mac-letterhead install --name "Company"
 # For AI integration, install with MCP support
 uvx install "mac-letterhead[mcp]"
 ```
+
+### MCP Registry
+
+Mac-letterhead is published in the [official MCP Registry](https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead), making it easily discoverable by AI assistants and MCP clients.
+
+**Find Mac-letterhead in**:
+- **Official MCP Registry**: https://registry.modelcontextprotocol.io
+- **GitHub MCP Registry**: Automatically synced from official registry
+- **Community Directories**: mcp.so and other MCP server catalogs
+
+**Quick Install for MCP Clients**:
+```bash
+uvx mac-letterhead[mcp]
+```
+
+For complete MCP configuration and usage, see [README_MCP.md](README_MCP.md).
 
 ### Prerequisites
 
