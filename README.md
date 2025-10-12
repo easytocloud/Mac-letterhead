@@ -1,6 +1,6 @@
 # Mac-letterhead
 
-<!-- mcp-name: io.github.easytocloud/mac-letterhead -->
+mcp-name: io.github.easytocloud/mac-letterhead
 
 ![PyPI Version](https://img.shields.io/pypi/v/Mac-letterhead.svg)
 ![Build Status](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml/badge.svg)
