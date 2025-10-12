@@ -319,6 +319,36 @@ make test-reportlab-standard  # ReportLab + Standard Markdown
 
 Each test combination generates output files with naming patterns like `document-py3.11-weasyprint-gfm.pdf` for easy comparison and quality validation.
 
+## Versioning & Publishing
+
+Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) via GitHub Actions. Use Conventional Commit messages on `main` and the workflow will:
+
+- determine the next semantic version
+- update `letterhead_pdf/__init__.py`, `server.json`, `uv.lock`, and `CHANGELOG.md`
+- build the package and upload it to PyPI
+- create the GitHub release and tag
+
+Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) format so semantic-release can infer the correct version bump.
+
+### Local tooling (optional)
+
+1. Install once:
+   ```bash
+   npm install
+   ```
+2. Preview the next release without publishing:
+   ```bash
+   make release-dry-run
+   ```
+3. If you need to release from your workstation, provide your PyPI token and run:
+   ```bash
+   export TWINE_USERNAME=__token__
+   export TWINE_PASSWORD=...
+   make publish
+   ```
+
+The GitHub Action uses the same configuration, so merging Conventional Commits into `main` is usually all that’s required.
+
 ## Use Cases
 
 - **Corporate Communications**: Apply company branding to business correspondence

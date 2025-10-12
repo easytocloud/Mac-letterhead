@@ -63,31 +63,36 @@ make publisher
 
 ### Version Updates
 
-When releasing a new Mac-letterhead version:
+Releases are now handled by a GitHub Action powered by `semantic-release`. Merging Conventional Commits into `main` will trigger the workflow, which:
 
-1. **Update version in source files** (handled by `make release-version`):
-   - `letterhead_pdf/__init__.py`
-   - `Makefile`
+- calculates the next version
+- runs `node tools/version-manager.mjs` to update packaging metadata
+- builds the wheel/sdist and uploads to PyPI via Twine
+- creates the GitHub release, changelog entry, and tag
 
-2. **Update server.json**
+Ensure all commits follow the [Conventional Commits](https://www.conventionalcommits.org/) specification so version bumps are calculated correctly.
+
+### Manual release (optional)
+
+If you need to run a release locally:
+
+1. Install tooling (one-time):
    ```bash
-   # Update version field to match new release
-   sed -i '' 's/"version": ".*"/"version": "0.13.8"/' server.json
-
-   # Update packages version
-   sed -i '' 's/"version": "0.13.7"/"version": "0.13.8"/' server.json
+   npm install
+   python -m pip install --upgrade pip
+   pip install build twine
+   ```
+2. Export the PyPI token:
+   ```bash
+   export TWINE_USERNAME=__token__
+   export TWINE_PASSWORD=...
+   ```
+3. Run the Make target (same command used in CI):
+   ```bash
+   make publish
    ```
 
-3. **Publish Updated Version**
-   ```bash
-   mcp-publisher publish
-   ```
-
-4. **Commit Changes**
-   ```bash
-   git add server.json
-   git commit -m "chore: update MCP registry version to 0.13.8"
-   ```
+Use `make release-dry-run` to preview the changelog and next version without publishing.
 
 ## Publishing to Community Directories
 

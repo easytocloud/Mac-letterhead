@@ -183,3 +183,6 @@ test-output/
 
 # Temporary files
 tmp/
+
+# Node tooling
+node_modules/

@@ -5,7 +5,12 @@
 # VERSION MANAGEMENT
 # =============================================================================
 
-VERSION := 0.13.9
+RELEASE_TYPE ?= patch
+CURRENT_VERSION := $(shell grep '^__version__ = ' letterhead_pdf/__init__.py | cut -d'"' -f2)
+
+ifeq ($(strip $(CURRENT_VERSION)),)
+CURRENT_VERSION := 0.0.0
+endif
 
 # =============================================================================
 # DIRECTORY CONFIGURATION
@@ -46,7 +51,7 @@ ABS_TESTS_DIR := $(PROJECT_ROOT)/$(TESTS_DIR)
 	rendering-backend-matrix rendering-all-python-versions \
 	test-all-unit test-all-rendering test-all \
 	clean-all clean-build clean-droplets clean-test-output \
-	release-version release-publish \
+	version-current publish release-dry-run \
 	$(addprefix rendering-py, $(PYTHON_VERSIONS)) \
 	$(addprefix test-unit-py, $(PYTHON_VERSIONS))
 
@@ -315,31 +320,16 @@ clean-all: clean-build clean-droplets clean-test-output
 # RELEASE TARGETS
 # =============================================================================
 
-release-version:
-	@echo "📝 Updating version to $(VERSION)..."
-	sed -i '' "s/^__version__ = .*/__version__ = \"$(VERSION)\"/" letterhead_pdf/__init__.py
-	if [ -f "uv.lock" ]; then \
-		CURRENT_REVISION=$$(grep "^revision = " uv.lock | sed 's/revision = //'); \
-		NEW_REVISION=$$((CURRENT_REVISION + 1)); \
-		sed -i '' "s/^revision = .*/revision = $$NEW_REVISION/" uv.lock; \
-	fi
-	@echo "✅ Version updated to $(VERSION)"
+version-current:
+	@echo "📌 Current version: $(CURRENT_VERSION)"
 
-release-publish: test-unit test-smoke
-	@echo "🚀 Publishing version $(VERSION)..."
-	@echo "📋 Running pre-publish validation..."
-	git diff-index --quiet HEAD || (echo "❌ Working directory not clean" && exit 1)
-	$(MAKE) release-version
-	@echo "📝 Committing version update..."
-	git add letterhead_pdf/__init__.py
-	if [ -f "uv.lock" ]; then git add uv.lock; fi
-	git commit -m "Release version $(VERSION)"
-	git push origin main
-	@echo "🏷️  Tagging release..."
-	git tag -a v$(VERSION) -m "Version $(VERSION)"
-	git push origin v$(VERSION)
-	@echo "🎉 Version $(VERSION) published and tagged!"
-	@echo "📦 GitHub Actions will handle PyPI release automatically"
+publish: test-unit test-smoke
+	@echo "🚀 Running semantic-release..."
+	npm run release
+
+release-dry-run:
+	@echo "🧪 Running semantic-release dry run..."
+	npm run release -- --dry-run
 
 # =============================================================================
 # HELP DOCUMENTATION
@@ -379,13 +369,14 @@ help:
 	@echo "  clean-test-output        - Remove test output files (PDFs, HTMLs)"
 	@echo ""
 	@echo "🚀 RELEASE:"
-	@echo "  release-version          - Update version numbers in source files"
-	@echo "  release-publish          - Run tests, update version, and publish to PyPI"
+	@echo "  version-current          - Display the current project version"
+	@echo "  publish                  - Run tests then semantic-release for PyPI/GitHub"
+	@echo "  release-dry-run          - Preview semantic-release output without publishing"
 	@echo ""
 	@echo "💡 WORKFLOW EXAMPLES:"
 	@echo "  Development: make dev-droplet → test → make clean-droplets"
 	@echo "  Testing: make test-dev → make test-smoke → make test-all"
-	@echo "  Release: make test-all → make release-publish"
+	@echo "  Release: merge conventional commits to main (semantic-release handles publishing)"
 	@echo ""
 	@echo "📋 SYSTEM REQUIREMENTS:"
 	@echo "  Basic tests: Python ≥3.10, uv package manager"
@@ -398,7 +389,7 @@ help:
 	@echo ""
 	@echo "ℹ️  INPUT FILES DETECTED: $(words $(INPUT_MD_FILES)) files"
 	@echo "🐍 PYTHON VERSIONS: $(PYTHON_VERSIONS)"
-	@echo "📌 CURRENT VERSION: $(VERSION)"
+	@echo "📌 CURRENT VERSION: $(CURRENT_VERSION)"
 
 # Default target
 all: help
