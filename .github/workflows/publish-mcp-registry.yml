@@ -1,0 +1,139 @@
+name: Publish to MCP Registry
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.13.7)'
+        required: true
+        type: string
+
+jobs:
+  publish-mcp:
+    runs-on: macos-latest
+    permissions:
+      contents: write  # Required to commit server.json updates
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for proper git operations
+
+    - name: Extract version from tag
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/v}
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Publishing version: $VERSION"
+
+    - name: Update server.json version
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        echo "Updating server.json to version $VERSION"
+
+        # Update version field
+        sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" server.json
+
+        # Update packages.version field (may appear multiple times)
+        sed -i '' "s/\"version\": \"[^\"]*\",/\"version\": \"$VERSION\",/g" server.json
+
+        # Verify updates
+        echo "Updated server.json:"
+        cat server.json | grep -A2 '"version"'
+
+    - name: Install mcp-publisher
+      run: |
+        echo "Installing mcp-publisher..."
+        # Download latest release
+        RELEASE_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/latest"
+        DOWNLOAD_URL=$(curl -s $RELEASE_URL | grep "browser_download_url.*darwin.*tar.gz" | cut -d '"' -f 4)
+
+        if [ -z "$DOWNLOAD_URL" ]; then
+          echo "Failed to find mcp-publisher download URL"
+          exit 1
+        fi
+
+        echo "Downloading from: $DOWNLOAD_URL"
+        curl -L -o mcp-publisher.tar.gz "$DOWNLOAD_URL"
+        tar -xzf mcp-publisher.tar.gz
+        chmod +x mcp-publisher
+        ./mcp-publisher --version
+
+    - name: Validate server.json
+      run: |
+        echo "Validating server.json..."
+        ./mcp-publisher publish --dry-run
+
+    - name: Authenticate with GitHub
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Authenticating with GitHub..."
+        # The publisher will use GITHUB_TOKEN for authentication
+        export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+
+    - name: Publish to MCP Registry
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Publishing to MCP Registry..."
+        ./mcp-publisher publish
+        echo "✅ Successfully published to MCP Registry"
+
+    - name: Commit updated server.json
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        if git diff --quiet server.json; then
+          echo "No changes to server.json"
+        else
+          git add server.json
+          git commit -m "chore: update MCP registry version to $VERSION"
+          git push origin HEAD:main
+          echo "✅ Committed and pushed updated server.json"
+        fi
+
+    - name: Create summary
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        cat >> $GITHUB_STEP_SUMMARY <<EOF
+        ## 🚀 MCP Registry Publication
+
+        Successfully published Mac-letterhead MCP server to the official registry.
+
+        **Version**: $VERSION
+
+        **Namespace**: io.github.easytocloud/mac-letterhead
+
+        **Registry URL**: https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead
+
+        ### What's Next?
+
+        - ✅ Server is now discoverable in MCP registries
+        - ✅ Automatically appears in GitHub MCP Registry
+        - 📝 Consider submitting to community directories (mcp.so, etc.)
+
+        ### User Configuration
+
+        Users can now install with:
+        \`\`\`json
+        {
+          "mcpServers": {
+            "letterhead": {
+              "command": "uvx",
+              "args": ["mac-letterhead[mcp]", "mcp"]
+            }
+          }
+        }
+        \`\`\`
+        EOF

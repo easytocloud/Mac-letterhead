@@ -175,3 +175,11 @@ cython_debug/
 .pypirc
 
 test-output/
+
+# MCP Registry authentication tokens (should never be committed)
+.mcpregistry_github_token
+.mcpregistry_registry_token
+~/.mcp_publisher_token
+
+# Temporary files
+tmp/

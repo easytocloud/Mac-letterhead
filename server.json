@@ -1,0 +1,124 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.easytocloud/mac-letterhead",
+  "title": "Mac-letterhead",
+  "description": "Professional letterhead PDF generator for macOS with Markdown support and smart margin detection",
+  "repository": {
+    "url": "https://github.com/easytocloud/Mac-letterhead",
+    "source": "github"
+  },
+  "version": "0.13.9",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "Mac-letterhead",
+      "version": "0.13.9",
+      "runtimeHint": "python3",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "value": "mcp"
+        }
+      ],
+      "environmentVariables": []
+    }
+  ],
+  "_meta": {
+    "io.github.easytocloud/mac-letterhead": {
+      "license": "MIT",
+      "author": {
+        "name": "Erik",
+        "url": "https://github.com/easytocloud"
+      },
+      "categories": [
+        "document-generation",
+        "pdf",
+        "productivity"
+      ],
+      "tags": [
+        "pdf",
+        "letterhead",
+        "markdown",
+        "document-generation",
+        "macos",
+        "branding",
+        "professional-documents",
+        "pdf-merge",
+        "markdown-to-pdf",
+        "github-flavored-markdown",
+        "weasyprint",
+        "reportlab"
+      ],
+      "capabilities": {
+        "tools": [
+          {
+            "name": "create_letterhead_pdf",
+            "description": "Create a letterheaded PDF from Markdown content. Converts Markdown to professionally formatted PDF with smart margin detection and letterhead overlay. Supports GFM, tables, code blocks, and custom CSS styling."
+          },
+          {
+            "name": "merge_letterhead_pdf",
+            "description": "Merge an existing PDF with a letterhead template. Applies letterhead overlay to existing PDFs with multiple blend strategies (darken, multiply, overlay, transparency). Preserves original document formatting."
+          },
+          {
+            "name": "analyze_letterhead",
+            "description": "Analyze a letterhead template to determine margins and printable areas. Uses smart content detection to identify header, footer, and logo positions. Calculates optimal margins for document content."
+          },
+          {
+            "name": "list_letterhead_templates",
+            "description": "List all available letterhead templates in the ~/.letterhead directory. Shows template names, file paths, and associated CSS files."
+          }
+        ]
+      },
+      "platform": {
+        "os": ["macos"],
+        "pythonVersion": ">=3.10",
+        "systemDependencies": [
+          {
+            "name": "pango, cairo, fontconfig, freetype, harfbuzz",
+            "description": "Optional system libraries for WeasyPrint high-quality rendering",
+            "install": "brew install pango cairo fontconfig freetype harfbuzz",
+            "required": false
+          }
+        ]
+      },
+      "configuration": {
+        "examples": [
+          {
+            "name": "Generic multi-style server",
+            "description": "Generic server where style is specified per tool call",
+            "config": {
+              "command": "uvx",
+              "args": ["Mac-letterhead[mcp]", "mcp"]
+            }
+          },
+          {
+            "name": "Style-specific server",
+            "description": "Dedicated server pre-configured with a specific letterhead style",
+            "config": {
+              "command": "uvx",
+              "args": ["Mac-letterhead[mcp]", "mcp", "--style", "easytocloud"]
+            }
+          },
+          {
+            "name": "Custom output directory",
+            "description": "Server with custom output directory for generated PDFs",
+            "config": {
+              "command": "uvx",
+              "args": ["Mac-letterhead[mcp]", "mcp", "--style", "company", "--output-dir", "~/Documents/generated-pdfs"]
+            }
+          }
+        ],
+        "setupInstructions": "Place letterhead PDF files in ~/.letterhead/ directory. Optional CSS files can be added with matching names (e.g., ~/.letterhead/company.pdf and ~/.letterhead/company.css)."
+      },
+      "documentation": {
+        "readme": "https://github.com/easytocloud/Mac-letterhead/blob/main/README.md",
+        "mcpGuide": "https://github.com/easytocloud/Mac-letterhead/blob/main/README_MCP.md",
+        "llmInstallation": "https://github.com/easytocloud/Mac-letterhead/blob/main/llms-install.md",
+        "contributing": "https://github.com/easytocloud/Mac-letterhead/blob/main/CONTRIBUTING.md"
+      }
+    }
+  }
+}
