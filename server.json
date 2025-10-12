@@ -7,13 +7,13 @@
     "url": "https://github.com/easytocloud/Mac-letterhead",
     "source": "github"
   },
-  "version": "0.13.9",
+  "version": "0.14.0",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "Mac-letterhead",
-      "version": "0.13.9",
+      "version": "0.14.0",
       "runtimeHint": "python3",
       "transport": {
         "type": "stdio"

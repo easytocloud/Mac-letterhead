@@ -1,5 +1,5 @@
 version = 1
-revision = 21
+revision = 22
 requires-python = ">=3.10"
 
 [[package]]
