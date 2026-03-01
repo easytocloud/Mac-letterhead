@@ -1,3 +1,10 @@
+## [0.14.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.14.2...v0.14.3) (2026-03-01)
+
+
+### Bug Fixes
+
+* pin cryptography>=46.0.5 to address subgroup attack vulnerability ([a6d26e3](https://github.com/easytocloud/Mac-letterhead/commit/a6d26e3c59c5cf8c309ecb75d489785196fdd981))
+
 ## [0.14.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.14.1...v0.14.2) (2026-03-01)
 
 
