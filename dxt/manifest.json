@@ -1,0 +1,81 @@
+{
+  "$schema": "https://raw.githubusercontent.com/anthropics/dxt/main/schema/manifest.schema.json",
+  "manifest_version": "0.4",
+  "name": "mac-letterhead",
+  "display_name": "Mac Letterhead",
+  "version": "0.14.3",
+  "description": "Create letterheaded PDFs from Markdown or merge existing PDFs with your letterhead template",
+  "long_description": "Mac Letterhead applies your organisation's letterhead PDF to documents with a single click — or through Claude.\n\nDrop Markdown content and Claude will convert it to a professionally-formatted PDF, automatically detecting margins from your letterhead template. Or merge an existing PDF with your letterhead overlay.\n\n**Setup:** Place your letterhead PDF at `~/.letterhead/<style>.pdf`. Optionally add a matching CSS file at `~/.letterhead/<style>.css` for custom typography.\n\n**Features:**\n- Markdown → letterheaded PDF via WeasyPrint (high-quality) or ReportLab (fallback)\n- GitHub Flavored Markdown: tables, task lists, code highlighting\n- Smart margin detection — analyses your letterhead to find safe printable areas\n- Multi-page letterhead support (different first/even/odd page templates)\n- Five blend strategies: darken (default), multiply, overlay, transparency, reverse",
+  "author": {
+    "name": "Erik",
+    "url": "https://github.com/easytocloud"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/easytocloud/Mac-letterhead"
+  },
+  "homepage": "https://github.com/easytocloud/Mac-letterhead",
+  "documentation": "https://github.com/easytocloud/Mac-letterhead/blob/main/README_MCP.md",
+  "support": "https://github.com/easytocloud/Mac-letterhead/issues",
+  "icon": "icon.png",
+  "license": "MIT",
+  "keywords": [
+    "pdf",
+    "letterhead",
+    "markdown",
+    "document-generation",
+    "macos",
+    "branding",
+    "professional-documents"
+  ],
+  "server": {
+    "type": "uv",
+    "entry_point": "server.py",
+    "mcp_config": {
+      "env": {
+        "LETTERHEAD_STYLE": "${user_config.style}",
+        "LETTERHEAD_OUTPUT_DIR": "${user_config.output_directory}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "create_letterhead_pdf",
+      "description": "Convert Markdown content to a letterheaded PDF"
+    },
+    {
+      "name": "merge_letterhead_pdf",
+      "description": "Apply a letterhead template to an existing PDF"
+    },
+    {
+      "name": "analyze_letterhead",
+      "description": "Analyse a letterhead template to determine margins and printable areas"
+    },
+    {
+      "name": "list_letterhead_templates",
+      "description": "List available letterhead templates in ~/.letterhead/"
+    }
+  ],
+  "user_config": {
+    "style": {
+      "type": "string",
+      "title": "Letterhead Style",
+      "description": "Style name used to resolve ~/.letterhead/<style>.pdf (and optional ~/.letterhead/<style>.css). Leave blank for generic mode — style must then be provided per tool call.",
+      "required": false
+    },
+    "output_directory": {
+      "type": "directory",
+      "title": "Output Directory",
+      "description": "Directory where generated PDFs are saved.",
+      "default": "${HOME}/Desktop",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"],
+    "runtimes": {
+      "python": ">=3.10"
+    }
+  },
+  "privacy_policies": []
+}

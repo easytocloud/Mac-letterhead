@@ -45,7 +45,7 @@ ABS_TESTS_DIR := $(PROJECT_ROOT)/$(TESTS_DIR)
 # PHONY TARGETS DECLARATION
 # =============================================================================
 
-.PHONY: all help dev-install dev-droplet test-setup \
+.PHONY: all help dev-install dev-droplet build-dxt test-setup \
 	test-unit test-dev test-smoke \
 	rendering-reportlab-basic rendering-reportlab-enhanced rendering-weasyprint \
 	rendering-backend-matrix rendering-all-python-versions \
@@ -62,6 +62,12 @@ ABS_TESTS_DIR := $(PROJECT_ROOT)/$(TESTS_DIR)
 dev-install:
 	@echo "🔧 Installing package for local development..."
 	uv pip install -e .
+
+build-dxt:
+	@echo "📦 Building Desktop Extension (DXT)..."
+	@cp letterhead_pdf/resources/icon.png dxt/icon.png
+	@cd dxt && npx --yes @anthropic-ai/dxt pack
+	@echo "✅ Built dxt/mac-letterhead.dxt"
 
 dev-droplet: test-setup
 	@echo "🚀 Creating development test droplet..."
@@ -341,6 +347,7 @@ help:
 	@echo "📦 DEVELOPMENT:"
 	@echo "  dev-install              - Install package for local development using uv"
 	@echo "  dev-droplet              - Create development droplet using local code"
+	@echo "  build-dxt                - Build Desktop Extension (.dxt) for Claude"
 	@echo ""
 	@echo "🧪 UNIT TESTS (pytest-based software testing):"
 	@echo "  test-unit                - Run unit tests with default Python version"
