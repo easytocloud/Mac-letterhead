@@ -45,12 +45,22 @@ Mac-letterhead transforms your letterhead PDF into a powerful document processin
 Install Mac-letterhead and create your first letterhead application:
 
 ```bash
-# Quick start - create a letterhead droplet on your desktop  
+# Quick start - create a letterhead droplet on your desktop
 uvx mac-letterhead install --name "Company"
 
 # For AI integration, install with MCP support
 uvx install "mac-letterhead[mcp]"
 ```
+
+### Desktop Extension for Claude for macOS
+
+The easiest way to use Mac-letterhead with Claude is via the Desktop Extension (`.mcpb` file). Download the latest `mac-letterhead-<version>.mcpb` from the [GitHub Releases page](https://github.com/easytocloud/Mac-letterhead/releases) and double-click it to install directly into Claude for macOS — no terminal required.
+
+After installation, Claude's settings UI lets you configure:
+- **Letterhead Style**: The style name to use (resolves `~/.letterhead/<style>.pdf` and `.css`). Leave blank to specify a style per request.
+- **Output Directory**: Where generated PDFs are saved (defaults to `~/Desktop`).
+
+For complete Desktop Extension details, see [README_MCP.md](README_MCP.md).
 
 ### MCP Registry
 

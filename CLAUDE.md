@@ -16,6 +16,13 @@ make dev-install        # Install package for local development using uv
 make dev-droplet        # Create development droplet using local code
 ```
 
+**Desktop Extension (DXT/MCPB):**
+```bash
+make build-dxt          # Build the Desktop Extension (.mcpb) for Claude for macOS
+                        # Output: dxt/mac-letterhead-<version>.mcpb
+                        # Requires: Node.js (npx @anthropic-ai/mcpb pack)
+```
+
 **Unit Tests (pytest-based software testing):**
 ```bash
 make test-unit          # Run unit tests with default Python version

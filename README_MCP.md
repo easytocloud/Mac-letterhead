@@ -4,10 +4,25 @@ The Mac-letterhead MCP (Model Context Protocol) server enables LLMs to create le
 
 ## Installation
 
+### Option 1 — Desktop Extension (Recommended for Claude for macOS)
+
+Download the latest `mac-letterhead-<version>.mcpb` from the [GitHub Releases page](https://github.com/easytocloud/Mac-letterhead/releases) and double-click it. Claude for macOS installs the server automatically and presents a settings UI where you can configure:
+
+| Setting | Description | Default |
+|---------|-------------|---------|
+| **Letterhead Style** | Style name — resolves `~/.letterhead/<style>.pdf` (and `.css`). Leave blank to specify style per tool call. | _(none)_ |
+| **Output Directory** | Directory where generated PDFs are saved. | `~/Desktop` |
+
+No terminal, no JSON editing — just download and double-click.
+
+### Option 2 — Manual installation via uvx
+
 ```bash
 # Install Mac-letterhead with MCP support
 uvx install "mac-letterhead[mcp]"
 ```
+
+Then add the server to your MCP client configuration as described below.
 
 ## MCP Configuration
 
