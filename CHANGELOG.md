@@ -1,3 +1,10 @@
+## [0.14.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.14.0...v0.14.1) (2026-03-01)
+
+
+### Bug Fixes
+
+* upgrade dependencies to address security vulnerabilities ([ee95775](https://github.com/easytocloud/Mac-letterhead/commit/ee95775289f5a57f433d8a893eef6838a1d1cdb7))
+
 # [0.14.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.13.9...v0.14.0) (2025-10-12)
 
 
