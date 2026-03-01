@@ -1,3 +1,15 @@
+# [0.15.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.14.3...v0.15.0) (2026-03-01)
+
+
+### Bug Fixes
+
+* correct DXT manifest and build toolchain for mcpb packer ([2159ad7](https://github.com/easytocloud/Mac-letterhead/commit/2159ad756ee138acf41d752c3b03e368ac4b6fd8))
+
+
+### Features
+
+* add Desktop Extension (DXT) for one-click Claude installation ([d42104b](https://github.com/easytocloud/Mac-letterhead/commit/d42104b5928e53592cd18795afa7778edd9ba203))
+
 ## [0.14.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.14.2...v0.14.3) (2026-03-01)
 
 
