@@ -1,0 +1,4 @@
+.venv/
+*.mcpb
+pyproject.toml
+uv.lock

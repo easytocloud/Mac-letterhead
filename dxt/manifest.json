@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/anthropics/dxt/main/schema/manifest.schema.json",
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/schema/manifest.schema.json",
   "manifest_version": "0.4",
   "name": "mac-letterhead",
   "display_name": "Mac Letterhead",
@@ -29,9 +29,15 @@
     "professional-documents"
   ],
   "server": {
-    "type": "uv",
+    "type": "python",
     "entry_point": "server.py",
     "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--with", "mac-letterhead[mcp]>=0.14.3",
+        "${__dirname}/server.py"
+      ],
       "env": {
         "LETTERHEAD_STYLE": "${user_config.style}",
         "LETTERHEAD_OUTPUT_DIR": "${user_config.output_directory}"
@@ -76,6 +82,5 @@
     "runtimes": {
       "python": ">=3.10"
     }
-  },
-  "privacy_policies": []
+  }
 }

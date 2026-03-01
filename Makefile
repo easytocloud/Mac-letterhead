@@ -66,8 +66,9 @@ dev-install:
 build-dxt:
 	@echo "📦 Building Desktop Extension (DXT)..."
 	@cp letterhead_pdf/resources/icon.png dxt/icon.png
-	@cd dxt && npx --yes @anthropic-ai/dxt pack
-	@echo "✅ Built dxt/mac-letterhead.dxt"
+	@cd dxt && npx --yes @anthropic-ai/mcpb pack
+	@mv dxt/dxt.mcpb dxt/mac-letterhead-$(CURRENT_VERSION).mcpb 2>/dev/null || true
+	@echo "✅ Built dxt/mac-letterhead-$(CURRENT_VERSION).mcpb"
 
 dev-droplet: test-setup
 	@echo "🚀 Creating development test droplet..."
