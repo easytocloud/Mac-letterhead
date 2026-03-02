@@ -76,14 +76,19 @@ jobs:
         chmod +x mcp-publisher
         ./mcp-publisher --version
 
+    - name: Login to MCP Registry
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        echo "Logging in to MCP Registry via GitHub..."
+        ./mcp-publisher login github --token "$GITHUB_TOKEN"
+
     - name: Validate server.json
       run: |
         echo "Validating server.json..."
         ./mcp-publisher publish --dry-run
 
     - name: Publish to MCP Registry
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "Publishing to MCP Registry..."
         ./mcp-publisher publish
