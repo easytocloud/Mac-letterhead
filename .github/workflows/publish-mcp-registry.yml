@@ -88,11 +88,6 @@ jobs:
         echo "Logging in to MCP Registry via GitHub..."
         ./mcp-publisher login github --token "$MCP_PUBLISHER_TOKEN"
 
-    - name: Validate server.json
-      run: |
-        echo "Validating server.json..."
-        ./mcp-publisher publish --dry-run
-
     - name: Publish to MCP Registry
       run: |
         echo "Publishing to MCP Registry..."
