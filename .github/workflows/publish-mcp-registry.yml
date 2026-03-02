@@ -38,7 +38,7 @@ jobs:
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           VERSION="${{ inputs.version }}"
         else
-          VERSION=$(gh release view --latest --json tagName --jq '.tagName' | sed 's/^v//')
+          VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' | sed 's/^v//')
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Publishing version: $VERSION"
