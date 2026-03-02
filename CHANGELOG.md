@@ -1,3 +1,10 @@
+## [0.15.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.0...v0.15.1) (2026-03-02)
+
+
+### Bug Fixes
+
+* keep DXT manifest version in lockstep with package version ([3cbd301](https://github.com/easytocloud/Mac-letterhead/commit/3cbd3019efce1377990d19bb9f1fc52d42763024))
+
 # [0.15.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.14.3...v0.15.0) (2026-03-01)
 
 
