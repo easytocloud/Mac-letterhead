@@ -1,3 +1,10 @@
+## [0.15.6](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.5...v0.15.6) (2026-03-02)
+
+
+### Bug Fixes
+
+* add mcp-publisher login step before publish ([6031ca7](https://github.com/easytocloud/Mac-letterhead/commit/6031ca78873aced90b966f3fe316098103766608))
+
 ## [0.15.5](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.4...v0.15.5) (2026-03-02)
 
 
