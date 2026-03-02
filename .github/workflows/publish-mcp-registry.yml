@@ -1,58 +1,47 @@
 name: Publish to MCP Registry
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_run:
+    workflows: ["Semantic Release"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 0.13.7)'
+        description: 'Version to publish (e.g., 0.15.1)'
         required: true
         type: string
 
 jobs:
   publish-mcp:
     runs-on: macos-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
-      contents: write  # Required to commit server.json updates
+      contents: write
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Full history for proper git operations
+        ref: main
+        fetch-depth: 0
 
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
 
-    - name: Extract version from tag
+    - name: Extract version from latest release
       id: version
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           VERSION="${{ inputs.version }}"
         else
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=$(gh release view --latest --json tagName --jq '.tagName' | sed 's/^v//')
         fi
         echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
         echo "Publishing version: $VERSION"
-
-    - name: Update server.json version
-      run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
-        echo "Updating server.json to version $VERSION"
-
-        # Update version field
-        sed -i '' "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" server.json
-
-        # Update packages.version field (may appear multiple times)
-        sed -i '' "s/\"version\": \"[^\"]*\",/\"version\": \"$VERSION\",/g" server.json
-
-        # Verify updates
-        echo "Updated server.json:"
-        cat server.json | grep -A2 '"version"'
 
     - name: Build Desktop Extension (.mcpb)
       run: |
@@ -73,7 +62,6 @@ jobs:
     - name: Install mcp-publisher
       run: |
         echo "Installing mcp-publisher..."
-        # Download latest release
         RELEASE_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/latest"
         DOWNLOAD_URL=$(curl -s $RELEASE_URL | grep "browser_download_url.*darwin.*tar.gz" | cut -d '"' -f 4)
 
@@ -93,14 +81,6 @@ jobs:
         echo "Validating server.json..."
         ./mcp-publisher publish --dry-run
 
-    - name: Authenticate with GitHub
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Authenticating with GitHub..."
-        # The publisher will use GITHUB_TOKEN for authentication
-        export GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN }}"
-
     - name: Publish to MCP Registry
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -109,52 +89,18 @@ jobs:
         ./mcp-publisher publish
         echo "✅ Successfully published to MCP Registry"
 
-    - name: Commit updated server.json
-      run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-
-        if git diff --quiet server.json; then
-          echo "No changes to server.json"
-        else
-          git add server.json
-          git commit -m "chore: update MCP registry version to $VERSION"
-          git push origin HEAD:main
-          echo "✅ Committed and pushed updated server.json"
-        fi
-
     - name: Create summary
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         VERSION="${{ steps.version.outputs.VERSION }}"
         cat >> $GITHUB_STEP_SUMMARY <<EOF
-        ## 🚀 MCP Registry Publication
+        ## MCP Registry Publication
 
         Successfully published Mac-letterhead MCP server to the official registry.
 
         **Version**: $VERSION
-
         **Namespace**: io.github.easytocloud/mac-letterhead
-
         **Registry URL**: https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead
-
-        ### What's Next?
-
-        - ✅ Server is now discoverable in MCP registries
-        - ✅ Automatically appears in GitHub MCP Registry
-        - 📝 Consider submitting to community directories (mcp.so, etc.)
-
-        ### User Configuration
-
-        Users can now install with:
-        \`\`\`json
-        {
-          "mcpServers": {
-            "letterhead": {
-              "command": "uvx",
-              "args": ["mac-letterhead[mcp]", "mcp"]
-            }
-          }
-        }
-        \`\`\`
+        **Release**: https://github.com/easytocloud/Mac-letterhead/releases/tag/v${VERSION}
         EOF
