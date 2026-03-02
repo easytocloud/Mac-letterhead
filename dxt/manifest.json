@@ -3,7 +3,7 @@
   "manifest_version": "0.4",
   "name": "mac-letterhead",
   "display_name": "Mac Letterhead",
-  "version": "0.14.3",
+  "version": "0.15.0",
   "description": "Create letterheaded PDFs from Markdown or merge existing PDFs with your letterhead template",
   "long_description": "Mac Letterhead applies your organisation's letterhead PDF to documents with a single click — or through Claude.\n\nDrop Markdown content and Claude will convert it to a professionally-formatted PDF, automatically detecting margins from your letterhead template. Or merge an existing PDF with your letterhead overlay.\n\n**Setup:** Place your letterhead PDF at `~/.letterhead/<style>.pdf`. Optionally add a matching CSS file at `~/.letterhead/<style>.css` for custom typography.\n\n**Features:**\n- Markdown → letterheaded PDF via WeasyPrint (high-quality) or ReportLab (fallback)\n- GitHub Flavored Markdown: tables, task lists, code highlighting\n- Smart margin detection — analyses your letterhead to find safe printable areas\n- Multi-page letterhead support (different first/even/odd page templates)\n- Five blend strategies: darken (default), multiply, overlay, transparency, reverse",
   "author": {
@@ -35,7 +35,7 @@
       "command": "uv",
       "args": [
         "run",
-        "--with", "mac-letterhead[mcp]>=0.14.3",
+        "--with", "mac-letterhead[mcp]>=0.15.0",
         "${__dirname}/server.py"
       ],
       "env": {

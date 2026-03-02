@@ -24,6 +24,7 @@
         "assets": [
           "CHANGELOG.md",
           "letterhead_pdf/__init__.py",
+          "dxt/manifest.json",
           "server.json",
           "uv.lock"
         ],

@@ -12,6 +12,7 @@ const repoRoot = path.resolve(__dirname, '..');
 const FILES = {
   init: path.join(repoRoot, 'letterhead_pdf', '__init__.py'),
   serverJson: path.join(repoRoot, 'server.json'),
+  dxtManifest: path.join(repoRoot, 'dxt', 'manifest.json'),
   makefile: path.join(repoRoot, 'Makefile'),
   uvLock: path.join(repoRoot, 'uv.lock'),
 };
@@ -32,6 +33,7 @@ async function setVersion(newVersion) {
 
   await updateInit(newVersion);
   await updateServerJson(newVersion);
+  await updateDxtManifest(newVersion);
   await updateMakefile(newVersion);
   await bumpUvLockRevision();
 
@@ -49,6 +51,24 @@ async function updateServerJson(version) {
     const serverContent = await readFile(FILES.serverJson, 'utf8');
     const updated = serverContent.replace(/("version"\s*:\s*")[^"]+(")/g, `$1${version}$2`);
     await writeFile(FILES.serverJson, updated);
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error;
+    }
+  }
+}
+
+async function updateDxtManifest(version) {
+  try {
+    const content = await readFile(FILES.dxtManifest, 'utf8');
+    // Update top-level "version" field
+    let updated = content.replace(/("version"\s*:\s*")[^"]+(")/g, `$1${version}$2`);
+    // Update the pinned version in mcp_config args: "mac-letterhead[mcp]>=X.Y.Z"
+    updated = updated.replace(
+      /"mac-letterhead\[mcp\]>=[^"]+"/g,
+      `"mac-letterhead[mcp]>=${version}"`
+    );
+    await writeFile(FILES.dxtManifest, updated);
   } catch (error) {
     if (error.code !== 'ENOENT') {
       throw error;

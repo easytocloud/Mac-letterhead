@@ -23,6 +23,11 @@ jobs:
       with:
         fetch-depth: 0  # Full history for proper git operations
 
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
     - name: Extract version from tag
       id: version
       run: |
@@ -48,6 +53,22 @@ jobs:
         # Verify updates
         echo "Updated server.json:"
         cat server.json | grep -A2 '"version"'
+
+    - name: Build Desktop Extension (.mcpb)
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        echo "Building Desktop Extension for version $VERSION..."
+        make build-dxt
+        echo "MCPB_FILE=dxt/mac-letterhead-${VERSION}.mcpb" >> $GITHUB_ENV
+        echo "✅ Built dxt/mac-letterhead-${VERSION}.mcpb"
+
+    - name: Upload .mcpb to GitHub release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${{ steps.version.outputs.VERSION }}"
+        gh release upload "v${VERSION}" "${MCPB_FILE}" --clobber
+        echo "✅ Uploaded ${MCPB_FILE} to release v${VERSION}"
 
     - name: Install mcp-publisher
       run: |
