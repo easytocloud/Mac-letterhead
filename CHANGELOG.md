@@ -1,3 +1,10 @@
+## [0.15.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.1...v0.15.2) (2026-03-02)
+
+
+### Bug Fixes
+
+* convert mcp-name to hidden HTML comment for registry verification ([51373c3](https://github.com/easytocloud/Mac-letterhead/commit/51373c32aa79fd2f6ac787e1932e86aaed014a55))
+
 ## [0.15.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.0...v0.15.1) (2026-03-02)
 
 
