@@ -78,10 +78,10 @@ jobs:
 
     - name: Login to MCP Registry
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        MCP_PUBLISHER_TOKEN: ${{ secrets.MCP_PUBLISHER_TOKEN }}
       run: |
         echo "Logging in to MCP Registry via GitHub..."
-        ./mcp-publisher login github --token "$GITHUB_TOKEN"
+        ./mcp-publisher login github --token "$MCP_PUBLISHER_TOKEN"
 
     - name: Validate server.json
       run: |
