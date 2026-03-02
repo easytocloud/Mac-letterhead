@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 0.15.1)'
+        description: 'Version to publish (e.g., 0.15.6)'
         required: true
         type: string
 
 jobs:
   publish-mcp:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
@@ -60,13 +60,18 @@ jobs:
         echo "✅ Uploaded ${MCPB_FILE} to release v${VERSION}"
 
     - name: Install mcp-publisher
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         echo "Installing mcp-publisher..."
         RELEASE_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/latest"
-        DOWNLOAD_URL=$(curl -s $RELEASE_URL | grep -m1 "browser_download_url.*mcp-publisher.*darwin_arm64\.tar\.gz\"" | cut -d '"' -f 4)
+        DOWNLOAD_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$RELEASE_URL" \
+          | grep -m1 "browser_download_url.*mcp-publisher.*linux_amd64\.tar\.gz\"" \
+          | cut -d '"' -f 4)
 
         if [ -z "$DOWNLOAD_URL" ]; then
-          echo "Failed to find mcp-publisher download URL"
+          echo "Failed to find mcp-publisher download URL. API response:"
+          curl -s -H "Authorization: token $GITHUB_TOKEN" "$RELEASE_URL" | grep browser_download_url
           exit 1
         fi
 
