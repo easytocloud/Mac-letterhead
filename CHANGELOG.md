@@ -1,3 +1,10 @@
+## [0.15.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.2...v0.15.3) (2026-03-02)
+
+
+### Bug Fixes
+
+* trigger publish-mcp-registry via workflow_run instead of tag push ([2810472](https://github.com/easytocloud/Mac-letterhead/commit/281047284cd84ed94dc206fd82881cd9f2c580cb))
+
 ## [0.15.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.1...v0.15.2) (2026-03-02)
 
 
