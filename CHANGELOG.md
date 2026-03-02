@@ -1,3 +1,10 @@
+## [0.15.7](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.6...v0.15.7) (2026-03-02)
+
+
+### Bug Fixes
+
+* use MCP_PUBLISHER_TOKEN PAT for mcp-publisher login ([e4eeae7](https://github.com/easytocloud/Mac-letterhead/commit/e4eeae74c95a42e5909aebeeae742526452df67d))
+
 ## [0.15.6](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.5...v0.15.6) (2026-03-02)
 
 
