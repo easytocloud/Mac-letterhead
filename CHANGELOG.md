@@ -1,3 +1,10 @@
+## [0.15.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.3...v0.15.4) (2026-03-02)
+
+
+### Bug Fixes
+
+* use gh release list instead of unsupported --latest flag ([a7ad14a](https://github.com/easytocloud/Mac-letterhead/commit/a7ad14a2e39b3e08b84d03a2b5ee07b01ba0795e))
+
 ## [0.15.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.2...v0.15.3) (2026-03-02)
 
 
