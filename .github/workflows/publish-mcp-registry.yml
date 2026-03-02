@@ -63,7 +63,7 @@ jobs:
       run: |
         echo "Installing mcp-publisher..."
         RELEASE_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/latest"
-        DOWNLOAD_URL=$(curl -s $RELEASE_URL | grep "browser_download_url.*darwin.*tar.gz" | cut -d '"' -f 4)
+        DOWNLOAD_URL=$(curl -s $RELEASE_URL | grep -m1 "browser_download_url.*mcp-publisher.*darwin_arm64\.tar\.gz\"" | cut -d '"' -f 4)
 
         if [ -z "$DOWNLOAD_URL" ]; then
           echo "Failed to find mcp-publisher download URL"
