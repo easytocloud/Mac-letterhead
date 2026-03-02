@@ -96,8 +96,17 @@ jobs:
     - name: Publish to MCP Registry
       run: |
         echo "Publishing to MCP Registry..."
-        ./mcp-publisher publish
-        echo "✅ Successfully published to MCP Registry"
+        PUBLISH_OUTPUT=$(./mcp-publisher publish 2>&1) && {
+          echo "$PUBLISH_OUTPUT"
+          echo "✅ Successfully published to MCP Registry"
+        } || {
+          echo "$PUBLISH_OUTPUT"
+          if echo "$PUBLISH_OUTPUT" | grep -q "cannot publish duplicate version"; then
+            echo "⚠️ Version already registered in MCP Registry — OK"
+          else
+            exit 1
+          fi
+        }
 
     - name: Create summary
       env:
