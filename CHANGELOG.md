@@ -1,3 +1,10 @@
+## [0.15.5](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.4...v0.15.5) (2026-03-02)
+
+
+### Bug Fixes
+
+* target arm64 mcp-publisher binary for macos-latest runners ([3dd1a3f](https://github.com/easytocloud/Mac-letterhead/commit/3dd1a3f875319d2afaa813cb7686dcede71815ce))
+
 ## [0.15.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.3...v0.15.4) (2026-03-02)
 
 
