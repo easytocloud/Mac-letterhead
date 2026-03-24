@@ -43,6 +43,7 @@ mcp = [
     "mcp>=1.23.0",
     "starlette>=0.49.1",         # CVE-2025-62727
     "python-multipart>=0.0.22",  # CVE-2026-24486
+    "pyjwt>=2.12.0",             # CVE-2026-32597: crit header bypass (patched in 2.12.0)
     "cryptography>=46.0.5",      # CVE via pyjwt[crypto] transitive dep
 ]
 dev = [
