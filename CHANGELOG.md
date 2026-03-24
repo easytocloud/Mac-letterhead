@@ -1,3 +1,10 @@
+## [0.15.8](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.7...v0.15.8) (2026-03-24)
+
+
+### Bug Fixes
+
+* **deps:** pin pyjwt>=2.12.0 to address CVE-2026-32597 ([a7ca2f8](https://github.com/easytocloud/Mac-letterhead/commit/a7ca2f834d34a4b93594100425e6eef368f69d2c))
+
 ## [0.15.7](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.6...v0.15.7) (2026-03-02)
 
 
