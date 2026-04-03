@@ -1,3 +1,10 @@
+## [0.15.10](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.9...v0.15.10) (2026-04-03)
+
+
+### Bug Fixes
+
+* **mcp:** suppress logging and defer AppKit imports for MCP server ([470a0f8](https://github.com/easytocloud/Mac-letterhead/commit/470a0f81d4d2ed4741ba59177081c292007459a6))
+
 ## [0.15.9](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.8...v0.15.9) (2026-04-03)
 
 
