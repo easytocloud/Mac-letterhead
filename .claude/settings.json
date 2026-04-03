@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:pillow.readthedocs.io)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Read(//tmp/**)",
+      "Bash(gtimeout 5 uv run --project dxt dxt/server.py)",
+      "Bash(echo \"exit:$?\")",
+      "Read(//Users/erik/Library/Logs/Mac-letterhead/**)",
+      "Read(//Users/erik/.npm/_npx/**)",
+      "Read(//private/tmp/**)",
+      "Bash(git stash)",
+      "Bash(git pull --rebase)",
+      "Bash(git stash pop)",
+      "Bash(gh run list --workflow=197281517 --limit 5)",
+      "Bash(gh api repos/easytocloud/Mac-letterhead/actions/runs --jq '.workflow_runs[] | {id, name, status, conclusion, event, head_branch, created_at}')"
+    ]
+  },
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "anthropic/claude-sonnet-4.6",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "anthropic/claude-haiku-4.5",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "anthropic/claude-opus-4.6"
+  },
+  "apiKeyHelper": "op read 'op://Generic/openrouter.ai/credential'"
+}

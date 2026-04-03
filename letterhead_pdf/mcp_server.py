@@ -292,8 +292,8 @@ def register_handlers():
                 text=f"Error: {str(e)}"
             )]
 
-# Setup server configuration
-setup_server_config()
+# Don't call setup_server_config() here - it needs to be called with proper arguments
+# after run_mcp_server() is invoked. This avoids premature server initialization.
 
 # Legacy templates directory - kept for backwards compatibility only
 LEGACY_TEMPLATES_DIR = os.path.expanduser("~/Documents/letterhead-templates")
