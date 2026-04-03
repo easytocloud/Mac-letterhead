@@ -1,3 +1,10 @@
+## [0.15.9](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.8...v0.15.9) (2026-04-03)
+
+
+### Bug Fixes
+
+* **mcp:** defer server initialization until run_mcp_server is called ([87b138f](https://github.com/easytocloud/Mac-letterhead/commit/87b138fd76f11eb4017cd906914095ea0a2412da))
+
 ## [0.15.8](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.7...v0.15.8) (2026-03-24)
 
 
