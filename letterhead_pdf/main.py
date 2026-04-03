@@ -6,9 +6,18 @@ import argparse
 import logging
 import tempfile
 from typing import Optional, Dict, Any
-from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
-from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
-                      NSRunLoop, NSDate, NSDefaultRunLoopMode)
+
+# Only import AppKit/Quartz if not running MCP command (check sys.argv early)
+_IS_MCP_COMMAND = any(arg == 'mcp' for arg in sys.argv[1:])
+
+if not _IS_MCP_COMMAND:
+    from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
+    from Foundation import (NSURL, kCFAllocatorDefault, NSObject, NSApplication,
+                          NSRunLoop, NSDate, NSDefaultRunLoopMode)
+    from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
+                       NSModalResponseOK, NSModalResponseCancel,
+                       NSApplicationActivationPolicyRegular)
+
 # Import markdown processor - simplified import logic
 try:
     from letterhead_pdf.markdown_processor import MarkdownProcessor, MARKDOWN_AVAILABLE
@@ -16,9 +25,6 @@ except ImportError as e:
     print(f"Error importing markdown processor: {e}")
     MARKDOWN_AVAILABLE = False
     MarkdownProcessor = None
-from AppKit import (NSSavePanel, NSApp, NSFloatingWindowLevel,
-                   NSModalResponseOK, NSModalResponseCancel,
-                   NSApplicationActivationPolicyRegular)
 
 from letterhead_pdf import __version__
 from letterhead_pdf.pdf_merger import PDFMerger
@@ -28,12 +34,13 @@ from letterhead_pdf.exceptions import InstallerError, PDFMergeError, PDFCreation
 # Import logging configuration
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging, get_logger
 
-class AppDelegate(NSObject):
-    def applicationDidFinishLaunching_(self, notification):
-        logging.info("Application finished launching")
+if not _IS_MCP_COMMAND:
+    class AppDelegate(NSObject):
+        def applicationDidFinishLaunching_(self, notification):
+            logging.info("Application finished launching")
 
-    def applicationWillTerminate_(self, notification):
-        logging.info("Application will terminate")
+        def applicationWillTerminate_(self, notification):
+            logging.info("Application will terminate")
 
 class LetterheadPDF:
     """Main class for letterhead PDF processing operations."""
@@ -441,8 +448,10 @@ def install_command(args: argparse.Namespace) -> int:
 def mcp_command(args: argparse.Namespace) -> int:
     """Handle the MCP server command"""
     try:
-        logging.info(f"Starting MCP server with args: {args}")
-        
+        # Suppress logging before starting MCP server to avoid stdout interference with JSON-RPC protocol
+        # MCP server will configure its own logging
+        logging.getLogger().setLevel(logging.CRITICAL + 1)
+
         # Import and run the MCP server
         from letterhead_pdf.mcp_server import run_mcp_server
         
@@ -529,7 +538,9 @@ def main(args: Optional[list] = None) -> int:
         log_level = getattr(logging, args.log_level)
     else:
         # Default log levels per command
-        if args.command == 'install':
+        if args.command == 'mcp':
+            log_level = logging.CRITICAL + 1  # Suppress all logging for MCP server (MCP configures its own)
+        elif args.command == 'install':
             log_level = logging.WARNING  # Less verbose for install command
         else:
             log_level = logging.INFO  # More verbose for other commands
