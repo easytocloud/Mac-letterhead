@@ -187,3 +187,4 @@ tmp/
 
 # Node tooling
 node_modules/
+.claude/
