@@ -111,7 +111,7 @@ class TestGitHubFlavoredMarkdown(unittest.TestCase):
         self.assertFalse(std_processor.use_gfm)
         
         # Test impossible mode (GFM requested but not available)
-        with unittest.mock.patch('letterhead_pdf.markdown_processor.PYCMARKGFM_AVAILABLE', False):
+        with unittest.mock.patch('letterhead_pdf.markdown.processor.PYCMARKGFM_AVAILABLE', False):
             fallback_processor = MarkdownProcessor(use_gfm=True)
             self.assertFalse(fallback_processor.use_gfm)
     

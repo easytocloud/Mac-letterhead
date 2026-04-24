@@ -6,6 +6,7 @@ import argparse
 import logging
 import tempfile
 from typing import Optional, Dict, Any
+from letterhead_pdf import __version__
 
 # Only import AppKit/Quartz if not running MCP command (check sys.argv early)
 _IS_MCP_COMMAND = any(arg == 'mcp' for arg in sys.argv[1:])
@@ -113,8 +114,6 @@ class LetterheadPDF:
             self.logger.error(f"Error in save dialog: {str(e)}", exc_info=True)
             raise PDFMergeError(f"Save dialog error: {str(e)}")
 
-    # The PDF utility methods have been moved to pdf_utils.py
-
     def merge_pdfs(self, input_path: str, output_path: str, strategy: str = "all") -> None:
         """
         Merge letterhead with input PDF
@@ -170,7 +169,7 @@ def merge_md_command(args: argparse.Namespace) -> int:
         if not MARKDOWN_AVAILABLE:
             error_msg = (
                 "Markdown module not available. For Markdown processing, please install the required dependencies:\n"
-                "Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@0.8.0\n\n"
+                f"Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@{__version__}\n\n"
                 "For more information, see the installation instructions in the README."
             )
             logging.error("Markdown module not available for Markdown processing")

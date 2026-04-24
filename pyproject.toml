@@ -13,27 +13,26 @@ authors = [
     { name = "Erik", email = "" }
 ]
 dependencies = [
-    "pyobjc-framework-Quartz==11.1",
-    "pyobjc-framework-Cocoa==11.1",
-    "pyobjc-core==11.1",
-    "importlib-resources; python_version < '3.9'",  # For accessing package resources
-    "pymupdf==1.25.4",   # For PDF analysis and margin detection
-    "reportlab>=3.6.0",  # For PDF generation (fallback when WeasyPrint is not available)
-    "markdown>=3.7",     # For parsing markdown to HTML (fallback)
-    "pycmarkgfm>=1.2.0", # For GitHub Flavored Markdown support
-    "html5lib==1.1",     # For HTML parsing
-    "weasyprint>=68.1",  # For converting markdown/HTML to PDF
-    "pillow>=12.1.1",    # For image handling
-    "six==1.16.0",       # Required by html5lib
-    "webencodings==0.5.1", # Required by html5lib
-    "cffi>=1.15.0",      # Required by WeasyPrint
-    "cssselect2>=0.7.0", # Required by WeasyPrint
-    "fonttools>=4.59.2", # Required by WeasyPrint
-    "pydyf>=0.5.0",      # Required by WeasyPrint
-    "pyphen>=0.13.0",    # Required by WeasyPrint
-    "tinycss2>=1.5.0",   # Required by WeasyPrint
-    "pygments>=2.16.0",  # For syntax highlighting in code blocks
-    "brotli>=1.2.0",     # Required by WeasyPrint (CVE-2025-6176)
+    "pyobjc-framework-Quartz>=11.1,<12",
+    "pyobjc-framework-Cocoa>=11.1,<12",
+    "pyobjc-core>=11.1,<12",
+    "importlib-resources; python_version < '3.9'",
+    "pymupdf>=1.25.4,<2",
+    "reportlab>=3.6.0",
+    "markdown>=3.7",
+    "pycmarkgfm>=1.2.0",
+    "html5lib>=1.1,<2",
+    "weasyprint>=68.1",
+    "pillow>=12.2.0",    # CVE-2026-40192: FITS decompression bomb
+    "webencodings>=0.5.1,<2",
+    "cffi>=1.15.0",
+    "cssselect2>=0.7.0",
+    "fonttools>=4.59.2",
+    "pydyf>=0.5.0",
+    "pyphen>=0.13.0",
+    "tinycss2>=1.5.0",
+    "pygments>=2.20.0",  # CVE-2026-4539: ReDoS in GUID lexer
+    "brotli>=1.2.0",     # CVE-2025-6176
 ]
 
 # Keep empty optional dependencies section for backward compatibility
@@ -42,12 +41,13 @@ markdown = []
 mcp = [
     "mcp>=1.23.0",
     "starlette>=0.49.1",         # CVE-2025-62727
-    "python-multipart>=0.0.22",  # CVE-2026-24486
+    "python-multipart>=0.0.26",  # CVE-2026-24486, CVE-2026-40347: multipart DoS
     "pyjwt>=2.12.0",             # CVE-2026-32597: crit header bypass (patched in 2.12.0)
-    "cryptography>=46.0.5",      # CVE via pyjwt[crypto] transitive dep
+    "cryptography>=46.0.7",      # CVE-2026-39892: buffer overflow; CVE-2026-34073: DNS cert bypass
+    "python-dotenv>=1.2.2",      # CVE-2026-28684: symlink file overwrite (transitive via pydantic-settings)
 ]
 dev = [
-    "pytest>=7.0.0",
+    "pytest>=9.0.3",             # CVE-2025-71176: insecure tmpdir creation
     "pytest-cov>=4.0.0",
 ]
 

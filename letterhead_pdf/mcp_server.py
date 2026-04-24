@@ -20,6 +20,7 @@ import mcp.types as types
 
 from letterhead_pdf.main import LetterheadPDF
 from letterhead_pdf.markdown_processor import MarkdownProcessor, MARKDOWN_AVAILABLE
+from letterhead_pdf.markdown.pdf_analyzer import analyze_letterhead as _analyze_letterhead_margins
 from letterhead_pdf.pdf_merger import PDFMerger
 from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, MarkdownProcessingError
 from letterhead_pdf.log_config import configure_logging, get_logger
@@ -433,7 +434,14 @@ async def create_letterhead_pdf(
     style: Optional[str] = None
 ) -> List[types.TextContent]:
     """Create a letterheaded PDF from Markdown content"""
-    
+
+    _MAX_MARKDOWN_BYTES = 10 * 1024 * 1024  # 10 MB
+    if len(markdown_content.encode()) > _MAX_MARKDOWN_BYTES:
+        return [types.TextContent(
+            type="text",
+            text=f"Error: markdown_content exceeds the 10 MB limit ({len(markdown_content.encode()):,} bytes)."
+        )]
+
     if not MARKDOWN_AVAILABLE:
         return [types.TextContent(
             type="text",
@@ -448,58 +456,51 @@ async def create_letterhead_pdf(
         # Resolve letterhead template path
         letterhead_path = resolve_letterhead_path(style_or_template)
         
-        # Create temporary markdown file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as md_file:
-            md_file.write(markdown_content)
-            md_file_path = md_file.name
-        
         # Generate output path
         letterhead_name = style or letterhead_template or SERVER_NAME
         output_path = generate_output_path(output_path, output_filename, title, letterhead_name)
-        
-        try:
-            # Create the letterheaded PDF
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Convert markdown to PDF
-                md_processor = MarkdownProcessor()
-                temp_pdf = os.path.join(temp_dir, "converted.pdf")
-                
-                # Convert with proper CSS path handling - use style CSS, custom CSS, or default CSS
-                if css_path:
-                    css_to_use = css_path
-                elif style and not DEFAULT_CSS:
-                    # If style is provided but no server-level CSS, try to find style-specific CSS
-                    style_css_path = os.path.join(LETTERHEAD_DIR, f"{style}.css")
-                    css_to_use = style_css_path if os.path.exists(style_css_path) else None
-                else:
-                    css_to_use = DEFAULT_CSS
-                
-                css_path_expanded = os.path.expanduser(css_to_use) if css_to_use else None
-                md_processor.md_to_pdf(md_file_path, temp_pdf, letterhead_path, css_path_expanded)
-                
-                # Merge with letterhead
-                letterhead_pdf = LetterheadPDF(letterhead_path)
-                letterhead_pdf.merge_pdfs(temp_pdf, output_path, strategy)
-            
-            result_text = f"Successfully created letterheaded PDF: {output_path}"
-            if title:
-                result_text += f"\nDocument title: {title}"
-            if style:
-                result_text += f"\nStyle used: {style}"
+
+        # TemporaryDirectory covers both the markdown temp file and the converted PDF;
+        # cleanup is guaranteed even if an exception is raised during conversion.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            md_file_path = os.path.join(temp_dir, "input.md")
+            with open(md_file_path, 'w', encoding='utf-8') as md_file:
+                md_file.write(markdown_content)
+
+            # Convert markdown to PDF
+            md_processor = MarkdownProcessor()
+            temp_pdf = os.path.join(temp_dir, "converted.pdf")
+
+            # CSS resolution: explicit > style-specific > server default
+            if css_path:
+                css_to_use = css_path
+            elif style and not DEFAULT_CSS:
+                style_css_path = os.path.join(LETTERHEAD_DIR, f"{style}.css")
+                css_to_use = style_css_path if os.path.exists(style_css_path) else None
             else:
-                result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
-            if css_to_use:
-                result_text += f"\nCSS used: {css_to_use}"
-            result_text += f"\nMerge strategy: {strategy}"
-            
-            logger.info(f"Created letterheaded PDF: {output_path}")
-            
-            return [types.TextContent(type="text", text=result_text)]
-            
-        finally:
-            # Clean up temporary markdown file
-            if os.path.exists(md_file_path):
-                os.unlink(md_file_path)
+                css_to_use = DEFAULT_CSS
+
+            css_path_expanded = os.path.expanduser(css_to_use) if css_to_use else None
+            md_processor.md_to_pdf(md_file_path, temp_pdf, letterhead_path, css_path_expanded)
+
+            # Merge with letterhead
+            letterhead_pdf = LetterheadPDF(letterhead_path)
+            letterhead_pdf.merge_pdfs(temp_pdf, output_path, strategy)
+
+        result_text = f"Successfully created letterheaded PDF: {output_path}"
+        if title:
+            result_text += f"\nDocument title: {title}"
+        if style:
+            result_text += f"\nStyle used: {style}"
+        else:
+            result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
+        if css_to_use:
+            result_text += f"\nCSS used: {css_to_use}"
+        result_text += f"\nMerge strategy: {strategy}"
+
+        logger.info(f"Created letterheaded PDF: {output_path}")
+
+        return [types.TextContent(type="text", text=result_text)]
                 
     except FileNotFoundError as e:
         return [types.TextContent(type="text", text=f"File not found: {str(e)}")]
@@ -577,10 +578,9 @@ async def analyze_letterhead(letterhead_template: Optional[str] = None, style: O
         # Resolve letterhead template path
         letterhead_path = resolve_letterhead_path(style_or_template)
         
-        # Analyze letterhead margins
-        if MARKDOWN_AVAILABLE:
-            md_processor = MarkdownProcessor()
-            margins = md_processor.analyze_letterhead(letterhead_path)
+        # Analyze letterhead margins — uses pdf_analyzer directly, no markdown stack needed
+        if True:
+            margins = _analyze_letterhead_margins(letterhead_path)
             
             result = {
                 "letterhead_template": style_or_template,
@@ -608,7 +608,6 @@ async def analyze_letterhead(letterhead_template: Optional[str] = None, style: O
             
         else:
             result_text = f"Letterhead template found: {letterhead_path}\n"
-            result_text += "Note: Detailed margin analysis requires Markdown support to be installed."
         
         logger.info(f"Analyzed letterhead template: {letterhead_path}")
         
