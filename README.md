@@ -254,12 +254,14 @@ Mac-letterhead features a sophisticated dual-backend rendering system that autom
 - **Advantages**: Superior CSS support, advanced typography, precise layout control
 - **Features**: Full HTML5/CSS3 support, web fonts, complex layouts, print-specific CSS
 - **Requirements**: System libraries (`brew install pango cairo fontconfig freetype harfbuzz`)
+- **Security**: Custom CSS files must reside within your home directory
 - **Use Case**: High-quality documents requiring advanced styling and typography
 
 **ReportLab** (Reliable fallback):
 - **Advantages**: Pure Python implementation, no system dependencies, consistent rendering
 - **Features**: Professional PDF generation, basic HTML support, reliable cross-platform operation
 - **Requirements**: None (included with Python installation)
+- **Automatic fallback**: If WeasyPrint fails, Mac-letterhead silently retries with ReportLab
 - **Use Case**: Simple documents, environments without system library access
 
 #### Markdown Processing Backends

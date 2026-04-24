@@ -23,16 +23,28 @@ This installs the package in development mode, allowing you to make changes to t
 Mac-letterhead/
 ├── letterhead_pdf/          # Main package code
 │   ├── main.py             # CLI interface and command handlers
-│   ├── pdf_merger.py       # Core PDF merging functionality  
-│   ├── markdown_processor.py # Markdown to PDF conversion
+│   ├── pdf_merger.py       # Core PDF merging functionality
+│   ├── markdown_processor.py # Backwards-compat shim → re-exports from markdown/
+│   ├── markdown/           # Markdown-to-PDF pipeline (modular)
+│   │   ├── processor.py    # MarkdownProcessor orchestrator, capability flags
+│   │   ├── pdf_analyzer.py # Letterhead margin analysis
+│   │   ├── html_cleaner.py # HTML preprocessing for ReportLab
+│   │   ├── flowable_builder.py # ReportLab flowable construction
+│   │   └── backends/       # PDF rendering backends
+│   │       ├── weasyprint_backend.py
+│   │       └── reportlab_backend.py
 │   ├── pdf_utils.py        # Low-level PDF operations
 │   ├── mcp_server.py       # MCP server for AI tool integration
 │   ├── installation/       # Droplet creation system
 │   └── resources/          # Default CSS, icons, and assets
+├── tests/                  # Unit tests
+│   ├── test_security.py    # Security regression tests
+│   ├── test_gfm_features.py
+│   └── test_list_rendering.py
 ├── tools/                  # Development utilities
-├── test-input/            # Test input files (user-managed)
-├── test-output/           # Generated test outputs
-└── Makefile              # Development and testing commands
+├── test-input/             # Test input files (user-managed)
+├── test-output/            # Generated test outputs
+└── Makefile               # Development and testing commands
 ```
 
 ## Testing Your Changes
@@ -52,15 +64,20 @@ This runs tests for Python 3.10, 3.11, and 3.12 with different configurations:
 ### Individual Test Commands
 
 ```bash
-# Test specific Python version and configuration
-make test-py3.10-basic      # Python 3.10 basic functionality
-make test-py3.11-full       # Python 3.11 with Markdown support
-make test-py3.12-weasyprint # Python 3.12 with WeasyPrint
+# Unit tests
+make test-unit              # Unit tests with default Python version
+make test-unit-py3.11       # Unit tests with specific Python version
+make test-all-unit          # Unit tests across Python 3.10, 3.11, 3.12
 
-# Test all versions with specific configuration
-make test-basic             # Basic tests across all Python versions
-make test-full              # Full tests across all Python versions  
-make test-weasyprint        # WeasyPrint tests across all Python versions
+# Rendering tests (document generation validation)
+make rendering-reportlab-basic      # Basic ReportLab rendering
+make rendering-reportlab-enhanced   # Enhanced ReportLab with full features
+make rendering-weasyprint           # WeasyPrint rendering (requires system deps)
+make rendering-backend-matrix       # All backend/markdown combinations
+make test-all-rendering             # All rendering tests
+
+# Direct pytest run (fastest for development)
+uv run --with pytest pytest tests/ -v
 ```
 
 ### Test Input Files
@@ -99,7 +116,12 @@ These are required for WeasyPrint functionality and high-quality PDF generation.
 
 - **`letterhead_pdf/main.py`**: CLI interface, argument parsing, command routing
 - **`letterhead_pdf/pdf_merger.py`**: Core PDF blending and merging logic
-- **`letterhead_pdf/markdown_processor.py`**: Markdown to PDF conversion with smart margins
+- **`letterhead_pdf/markdown/processor.py`**: `MarkdownProcessor` orchestrator — backend selection, WeasyPrint→ReportLab fallback, capability flags
+- **`letterhead_pdf/markdown/pdf_analyzer.py`**: Letterhead margin analysis (`analyze_letterhead`, `analyze_page_regions`)
+- **`letterhead_pdf/markdown/html_cleaner.py`**: HTML preprocessing for ReportLab
+- **`letterhead_pdf/markdown/flowable_builder.py`**: ReportLab flowable construction and list parsing
+- **`letterhead_pdf/markdown/backends/`**: WeasyPrint and ReportLab rendering backends
+- **`letterhead_pdf/markdown_processor.py`**: Backwards-compatibility shim — do not add logic here
 - **`letterhead_pdf/pdf_utils.py`**: Low-level PDF operations using macOS Quartz
 - **`letterhead_pdf/mcp_server.py`**: MCP server for AI tool integration, dynamic tool schemas
 - **`letterhead_pdf/installation/`**: Droplet creation, AppleScript generation, macOS integration
@@ -207,13 +229,16 @@ python tools/test_parser_comparison.py
 
 ## Release Process
 
-Releases are handled automatically via GitHub Actions when tags are pushed. The workflow:
+Releases are automated via [semantic-release](https://semantic-release.gitbook.io/) and GitHub Actions:
 
-1. Code changes are merged to `main`
-2. Version is updated in `Makefile` and `letterhead_pdf/__init__.py`
-3. Tag is created: `git tag v0.x.x`
-4. Tag is pushed: `git push origin v0.x.x`
-5. GitHub Actions builds and publishes to PyPI
+1. Merge Conventional Commit messages to `main` (e.g. `feat:`, `fix:`, `chore:`)
+2. GitHub Actions detects the commit type, bumps the version, updates `CHANGELOG.md` and `letterhead_pdf/__init__.py`, and publishes to PyPI
+3. No manual tagging required — the version is inferred from commit prefixes
+
+**Local preview** (without publishing):
+```bash
+make release-dry-run
+```
 
 ## Getting Help
 

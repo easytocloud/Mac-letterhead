@@ -59,10 +59,10 @@ make clean-droplets     # Remove test droplets only
 make clean-test-output  # Remove test output files (PDFs, HTMLs)
 ```
 
-**Release:**
+**Release (semantic-release via CI):**
 ```bash
-make release-version    # Update version numbers in source files  
-make release-publish    # Run tests, update version, and publish to PyPI
+make release-dry-run    # Preview next version without publishing
+make publish            # Run tests then publish (requires TWINE_PASSWORD)
 ```
 
 ### System Dependencies
@@ -144,8 +144,17 @@ make test-all → make release-publish
 
 **PDF Processing Pipeline**
 - `PDFMerger` (pdf_merger.py): Core PDF merging with multiple blend strategies
-- `MarkdownProcessor` (markdown_processor.py): Markdown to PDF conversion with smart margin detection
+- `MarkdownProcessor` (markdown/processor.py): Markdown to PDF conversion with smart margin detection
 - `pdf_utils.py`: Low-level PDF operations using Quartz/CoreGraphics
+
+**Markdown Pipeline (`letterhead_pdf/markdown/`)**
+- `processor.py`: `MarkdownProcessor` orchestrator — capability flags, backend selection, WeasyPrint→ReportLab fallback
+- `pdf_analyzer.py`: `analyze_letterhead`, `analyze_page_regions`, margin calculation helpers
+- `html_cleaner.py`: `clean_html_for_reportlab`, `preprocess_markdown_indentation`, list item processing
+- `flowable_builder.py`: `build_styles`, `markdown_to_flowables`, nested list parsing
+- `backends/weasyprint_backend.py`: WeasyPrint renderer with CSS path validation
+- `backends/reportlab_backend.py`: ReportLab renderer
+- `letterhead_pdf/markdown_processor.py`: backwards-compatibility shim (imports from `markdown/`)
 
 **Droplet Creation System (`letterhead_pdf/installation/`)**
 - `DropletBuilder`: Main orchestrator for droplet creation
@@ -212,12 +221,14 @@ make test-all → make release-publish
 ### File Structure Patterns
 
 **Package Structure**
-- Main entry point: `letterhead_pdf/main.py` 
-- Core logic: `pdf_merger.py`, `markdown_processor.py`, `pdf_utils.py`
+- Main entry point: `letterhead_pdf/main.py`
+- Core logic: `pdf_merger.py`, `pdf_utils.py`
+- Markdown pipeline: `letterhead_pdf/markdown/` (processor, pdf_analyzer, html_cleaner, flowable_builder, backends)
+- Backwards-compat shim: `letterhead_pdf/markdown_processor.py` → re-exports from `letterhead_pdf/markdown/`
 - MCP server: `letterhead_pdf/mcp_server.py` (AI tool integration)
 - Installation system: `letterhead_pdf/installation/` (modular components)
 - Resources: `letterhead_pdf/resources/` (defaults.css, icons)
-- Tests: `tests/` with generated test files and utilities
+- Tests: `tests/` with unit tests (`test_security.py`, `test_gfm_features.py`, `test_list_rendering.py`) and fixtures
 - Documentation: `README_MCP.md`, `sample_mcp_config.json`, `setup_letterheads.sh`
 
 **Configuration**
@@ -228,16 +239,15 @@ make test-all → make release-publish
 ### Development Workflow
 
 **Testing Strategy**
+- Unit tests via `uv run --with pytest pytest tests/ -v` — covers security, GFM features, list rendering
 - Test droplets created on Desktop for manual testing
-- Automated tests for multiple Python versions
+- Automated rendering tests for multiple Python versions and backend combinations
 - Separate test environments for basic/full/WeasyPrint functionality
-- Generated test files in `tests/files/` for validation
 
 **Release Process**
-1. Update VERSION in Makefile
-2. `make release-publish` runs tests and updates version
-3. Commits and tags automatically
-4. GitHub Actions handles PyPI publication
+1. Commit with Conventional Commit messages (`feat:`, `fix:`, `chore:`) to `main`
+2. GitHub Actions runs semantic-release: bumps version, updates CHANGELOG, publishes to PyPI
+3. Local preview: `make release-dry-run`; manual publish: `make publish` (requires TWINE_PASSWORD)
 
 ### macOS Integration Details
 
