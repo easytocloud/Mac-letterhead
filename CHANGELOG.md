@@ -1,3 +1,10 @@
+# [0.16.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.10...v0.16.0) (2026-04-24)
+
+
+### Features
+
+* **security:** fix temp file leaks, CSS path traversal, and markdown size limit ([0289401](https://github.com/easytocloud/Mac-letterhead/commit/02894017460df2cd231b1930423994f51b2fdc4b))
+
 ## [0.15.10](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.9...v0.15.10) (2026-04-03)
 
 
