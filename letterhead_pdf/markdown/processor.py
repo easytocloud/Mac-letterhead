@@ -34,14 +34,23 @@ if PYCMARKGFM_AVAILABLE:
 
 WEASYPRINT_AVAILABLE = False
 if importlib.util.find_spec("weasyprint") is not None:
+    # Probe whether WeasyPrint actually works at runtime. On systems missing the
+    # native libs (pango, cairo, harfbuzz — common on macOS 27 beta without Homebrew
+    # libs installed), `from weasyprint import HTML` or the smoke-test instantiation
+    # below prints diagnostic URLs to stdout/stderr BEFORE we can catch the exception.
+    # That output reaches uvx callers and pollutes anything that scrapes our output
+    # (e.g. the droplet's `--version` probe). Silence both streams for the probe.
+    import contextlib as _contextlib
+    import io as _io
     try:
         dyld = os.environ.get('DYLD_FALLBACK_LIBRARY_PATH', '')
         homebrew_lib = '/opt/homebrew/lib'
         if homebrew_lib not in dyld:
             os.environ['DYLD_FALLBACK_LIBRARY_PATH'] = f"{homebrew_lib}:{dyld}" if dyld else homebrew_lib
 
-        from weasyprint import HTML as _WP_HTML
-        _WP_HTML(string="<html><body>Test</body></html>")
+        with _contextlib.redirect_stdout(_io.StringIO()), _contextlib.redirect_stderr(_io.StringIO()):
+            from weasyprint import HTML as _WP_HTML
+            _WP_HTML(string="<html><body>Test</body></html>")
         WEASYPRINT_AVAILABLE = True
         logging.info("WeasyPrint is available and functional")
     except Exception as e:

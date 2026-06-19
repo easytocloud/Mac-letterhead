@@ -191,11 +191,15 @@ on run
         set info_line to "Drag and drop PDF or Markdown files to apply letterhead." & return & return & "To update: rerun `uvx mac-letterhead install --name \"{{NAME}}\"` in Terminal," & return & "or rebuild this droplet with --unpinned for auto-updates."
     else
         set dialog_buttons to {"Show Letterhead", "Refresh", "OK"}
+        -- Probe live version via uvx. Strict regex against `mac-letterhead X.Y.Z[...]`
+        -- so any other stdout noise (e.g. WeasyPrint diagnostics on macOS 27 beta when
+        -- pango/cairo aren't installed) cannot leak into the dialog title.
         set live_version to "unknown"
         try
             set uvx_probe to do shell script "PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\" command -v uvx 2>/dev/null || true"
             if uvx_probe is not "" then
-                set live_version to do shell script quoted form of uvx_probe & " mac-letterhead --version 2>/dev/null | awk '{print $NF}'"
+                set live_version to do shell script quoted form of uvx_probe & " mac-letterhead --version 2>/dev/null | /usr/bin/sed -nE 's/^mac-letterhead ([0-9][0-9.a-z-]*).*/\\1/p' | head -1"
+                if live_version is "" then set live_version to "unknown"
             end if
         end try
         set version_line to "Mac-letterhead Droplet (unpinned) — currently v" & live_version
@@ -236,12 +240,13 @@ on refresh_unpinned()
         display alert "uvx not found" message "Mac-letterhead requires uv/uvx. Install with:" & return & return & "curl -LsSf https://astral.sh/uv/install.sh | sh" as critical
         return
     end if
+    -- Same strict regex as the dialog probe: only accept the canonical "mac-letterhead X.Y.Z" line.
     set before_version to ""
     try
-        set before_version to do shell script quoted form of uvx_bin & " mac-letterhead --version 2>/dev/null | awk '{print $NF}'"
+        set before_version to do shell script quoted form of uvx_bin & " mac-letterhead --version 2>/dev/null | /usr/bin/sed -nE 's/^mac-letterhead ([0-9][0-9.a-z-]*).*/\\1/p' | head -1"
     end try
     try
-        set after_version to do shell script quoted form of uvx_bin & " --refresh mac-letterhead --version 2>&1 | awk '/^mac-letterhead/ {print $NF}'"
+        set after_version to do shell script quoted form of uvx_bin & " --refresh mac-letterhead --version 2>/dev/null | /usr/bin/sed -nE 's/^mac-letterhead ([0-9][0-9.a-z-]*).*/\\1/p' | head -1"
     on error refresh_error
         display alert "Refresh failed" message "Could not refresh mac-letterhead:" & return & return & refresh_error as critical
         return
