@@ -47,7 +47,8 @@ class DropletBuilder:
         letterhead_path: str,
         app_name: str = "Letterhead Applier",
         output_dir: str = None,
-        css_path: str = None
+        css_path: str = None,
+        name: str = None,
     ) -> str:
         """
         Create a droplet application.
@@ -83,9 +84,11 @@ class DropletBuilder:
             with tempfile.TemporaryDirectory() as temp_dir:
                 temp_app_path = os.path.join(temp_dir, f"{app_name}.app")
                 
-                # Step 1: Generate AppleScript
+                # Step 1: Generate AppleScript. The `name` is baked in so the droplet's
+                # self-update flow can run `mac-letterhead install --name <name>` without
+                # having to guess it from the .app filename (which the user may rename).
                 applescript_content = self.applescript_generator.generate_script(
-                    letterhead_path, self.python_path
+                    letterhead_path, self.python_path, name or app_name
                 )
                 
                 # Step 2: Compile AppleScript to app bundle

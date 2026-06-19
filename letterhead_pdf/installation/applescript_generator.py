@@ -28,46 +28,48 @@ class AppleScriptGenerator:
         self.development_mode = development_mode
         self.logger = logging.getLogger(__name__)
     
-    def generate_script(self, letterhead_path: str, python_path: str = None) -> str:
+    def generate_script(self, letterhead_path: str, python_path: str = None, name: str = "") -> str:
         """
         Generate AppleScript content for the droplet using unified template.
-        
+
         Args:
             letterhead_path: Path to the letterhead PDF file
             python_path: Path to Python interpreter (for development mode)
-            
+            name: Style/app name used by the in-droplet self-update flow
+
         Returns:
             str: Generated AppleScript content
-            
+
         Raises:
             InstallerError: If script generation fails
         """
         self.logger.info(f"Generating unified AppleScript (dev_mode={self.development_mode})")
-        
+
         try:
-            return self._generate_unified_script(letterhead_path, python_path)
-                
+            return self._generate_unified_script(letterhead_path, python_path, name)
+
         except Exception as e:
             error_msg = f"Failed to generate AppleScript: {str(e)}"
             self.logger.error(error_msg)
             raise InstallerError(error_msg) from e
-    
-    def _generate_unified_script(self, letterhead_path: str, python_path: str = None) -> str:
+
+    def _generate_unified_script(self, letterhead_path: str, python_path: str = None, name: str = "") -> str:
         """Generate unified AppleScript that handles both development and production modes."""
         template_path = self._get_template_path("unified_droplet.applescript")
-        
+
         if not os.path.exists(template_path):
             # Fall back to legacy methods if unified template doesn't exist
             if self.development_mode:
                 return self._generate_development_script(letterhead_path, python_path)
             else:
                 return self._generate_production_script(letterhead_path)
-        
+
         template_content = self._load_template(template_path)
-        
+
         # Substitute variables
         script_content = template_content.replace("{{VERSION}}", __version__)
-        
+        script_content = script_content.replace("{{NAME}}", name or "")
+
         return script_content
     
     def _generate_development_script(self, letterhead_path: str, python_path: str) -> str:

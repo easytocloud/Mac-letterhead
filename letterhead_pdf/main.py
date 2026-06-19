@@ -421,7 +421,8 @@ def install_command(args: argparse.Namespace) -> int:
             letterhead_path=letterhead_path,
             app_name=app_name,
             output_dir=args.output_dir if hasattr(args, 'output_dir') else None,
-            css_path=css_path
+            css_path=css_path,
+            name=args.name,
         )
         
         logging.info(f"Install command completed successfully: {app_path}")
