@@ -260,36 +260,63 @@ on check_for_updates(app_path)
     set log_path to "/tmp/mac-letterhead-update.log"
     set app_basename to do shell script "basename " & quoted form of app_posix_clean
 
-    -- Stage the rebuild in a temp dir so we don't fight the running .app for the same path.
-    -- The launcher then waits for the droplet's applet process to exit (we `quit` ourselves
-    -- right after launching this), removes the old .app, moves the new one into place,
-    -- and re-opens it.
-    set stage_cmd to "set -e; STAGE=$(mktemp -d -t mac-letterhead-update); " & ¬
-        quoted form of uvx_bin & " mac-letterhead@" & latest_version & " install" & ¬
+    -- Write the entire update procedure to a standalone shell script. This avoids fragile
+    -- multi-level shell quoting through AppleScript and gives us a forensic artifact at
+    -- /tmp/mac-letterhead-update.sh that we can inspect after a failed run.
+    -- Launcher script: waits for the running droplet to exit (via pgrep loop), uses
+    -- `uvx --refresh` to bypass any stale tool-env cache, then swaps bundles and re-opens.
+    set launcher_path to "/tmp/mac-letterhead-update.sh"
+    set launcher_body to "#!/bin/bash" & linefeed & ¬
+        "exec >\"" & log_path & "\" 2>&1" & linefeed & ¬
+        "set -x" & linefeed & ¬
+        "echo \"[$(date)] Mac-letterhead self-update starting\"" & linefeed & ¬
+        "for i in $(seq 1 60); do" & linefeed & ¬
+        "    if ! pgrep -f " & quoted form of (app_posix_clean & "/Contents/MacOS/") & " >/dev/null; then break; fi" & linefeed & ¬
+        "    sleep 0.5" & linefeed & ¬
+        "done" & linefeed & ¬
+        "echo \"[$(date)] Old droplet exited; building new bundle\"" & linefeed & ¬
+        "STAGE=$(mktemp -d -t mac-letterhead-update)" & linefeed & ¬
+        "cd \"$STAGE\" || exit 1" & linefeed & ¬
+        quoted form of uvx_bin & " --refresh mac-letterhead@" & latest_version & " install" & ¬
         " --name " & quoted form of droplet_name & ¬
         " --letterhead " & quoted form of letterhead_posix & ¬
         " --output-dir \"$STAGE\""
     if css_exists then
-        set stage_cmd to stage_cmd & " --css " & quoted form of css_posix
+        set launcher_body to launcher_body & " --css " & quoted form of css_posix
     end if
-    -- After build: verify the new .app exists, wait up to 15s for the running droplet to exit
-    -- (pgrep matches anything running from inside the bundle), swap the bundles, re-open.
-    set stage_cmd to stage_cmd & "; NEW_APP=\"$STAGE/" & app_basename & "\"; " & ¬
-        "if [ ! -d \"$NEW_APP\" ]; then echo \"build did not produce $NEW_APP\" >&2; exit 1; fi; " & ¬
-        "for i in $(seq 1 30); do pgrep -f " & quoted form of (app_posix_clean & "/Contents/MacOS/") & " >/dev/null || break; sleep 0.5; done; " & ¬
-        "rm -rf " & quoted form of app_posix_clean & "; " & ¬
-        "mv \"$NEW_APP\" " & quoted form of app_posix_clean & "; " & ¬
-        "rm -rf \"$STAGE\"; " & ¬
-        "open " & quoted form of app_posix_clean
+    set launcher_body to launcher_body & linefeed & ¬
+        "build_status=$?" & linefeed & ¬
+        "echo \"[$(date)] uvx exit=$build_status\"" & linefeed & ¬
+        "NEW_APP=\"$STAGE/" & app_basename & "\"" & linefeed & ¬
+        "if [ ! -d \"$NEW_APP\" ]; then echo \"FAIL: build did not produce $NEW_APP\"; exit 1; fi" & linefeed & ¬
+        "echo \"[$(date)] Swapping bundles\"" & linefeed & ¬
+        "rm -rf " & quoted form of app_posix_clean & linefeed & ¬
+        "mv \"$NEW_APP\" " & quoted form of app_posix_clean & linefeed & ¬
+        "rm -rf \"$STAGE\"" & linefeed & ¬
+        "echo \"[$(date)] Re-opening droplet\"" & linefeed & ¬
+        "open " & quoted form of app_posix_clean & linefeed & ¬
+        "echo \"[$(date)] Self-update done\"" & linefeed
 
+    -- Write launcher and make it executable.
+    set launcher_writer to "cat > " & quoted form of launcher_path & " <<'MAC_LETTERHEAD_LAUNCHER_EOF'" & linefeed & ¬
+        launcher_body & "MAC_LETTERHEAD_LAUNCHER_EOF" & linefeed & ¬
+        "chmod +x " & quoted form of launcher_path
+    do shell script launcher_writer
+
+    -- Detach the launcher fully from our process group. The double-subshell with explicit
+    -- FD redirection is necessary because plain `nohup ... &` from inside `do shell script`
+    -- still gets killed when the running droplet (and its osascript child) exit.
     try
-        do shell script "nohup sh -c " & quoted form of (stage_cmd & " > " & quoted form of log_path & " 2>&1") & " >/dev/null 2>&1 &"
+        do shell script "( ( " & quoted form of launcher_path & " </dev/null >/dev/null 2>&1 & ) & ) ; disown -a 2>/dev/null || true"
     on error rebuild_error
-        display alert "Update failed" message "Could not start the update: " & rebuild_error & return & return & "See " & log_path & " for details." as critical
+        display alert "Update failed" message "Could not launch the updater: " & rebuild_error & return & return & "See " & log_path & " for details." as critical
         return
     end try
 
-    -- Quit so the running .app's bundle is free to be replaced. The launcher will re-open
-    -- the new droplet automatically once we've exited.
+    -- Give the grandchild time to fully reparent to launchd before we quit.
+    delay 2
+
+    -- Quit so the running .app's bundle is free to be replaced. The launcher is waiting
+    -- for us to exit (via pgrep loop) and will re-open the new droplet automatically.
     tell me to quit
 end check_for_updates
