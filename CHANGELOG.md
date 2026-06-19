@@ -1,3 +1,10 @@
+## [0.16.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.1...v0.16.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* detach droplet self-updater from parent process group ([ccddf62](https://github.com/easytocloud/Mac-letterhead/commit/ccddf62806a70164d1517cd3e18470192da88035))
+
 ## [0.16.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.0...v0.16.1) (2026-06-19)
 
 
