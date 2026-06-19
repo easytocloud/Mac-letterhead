@@ -375,8 +375,16 @@ def install_command(args: argparse.Namespace) -> int:
         if not os.path.exists(letterhead_path):
             error_msg = f"Letterhead PDF not found: {letterhead_path}"
             if not args.letterhead:
-                error_msg += f"\nExpected file based on --name '{args.name}': {letterhead_path}"
-                error_msg += f"\nEither create this file or use --letterhead to specify a different path"
+                if not os.path.isdir(letterhead_dir):
+                    error_msg += (
+                        f"\nThe directory {letterhead_dir} does not exist yet."
+                        f"\nCreate it and add {args.name}.pdf, or pass --letterhead to point at a file elsewhere."
+                    )
+                else:
+                    error_msg += (
+                        f"\nResolved from --name '{args.name}'. Create this file,"
+                        f" or pass --letterhead to point at a file elsewhere."
+                    )
             logging.error(error_msg)
             print(error_msg)
             return 1
