@@ -176,6 +176,21 @@ class TestCSSPathValidation(unittest.TestCase):
         except Exception:
             pass  # Other errors (missing file, PDF generation) are fine
 
+    def test_accepts_system_tempdir_css(self):
+        # Droplets stage their bundled CSS to mktemp before invoking mac-letterhead;
+        # that path lands in $TMPDIR (/private/var/folders/.../T/...) and must be allowed.
+        with tempfile.NamedTemporaryFile(suffix=".css", delete=False) as f:
+            temp_css = f.name
+        try:
+            self._attempt_css(temp_css)
+        except ValueError as e:
+            self.fail(f"ValueError raised for a system tempdir path: {e}")
+        except Exception:
+            pass  # Other errors (PDF generation) are fine
+        finally:
+            if os.path.exists(temp_css):
+                os.unlink(temp_css)
+
 
 # ---------------------------------------------------------------------------
 # 3. Markdown content size limit (MCP tool)

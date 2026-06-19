@@ -165,12 +165,22 @@ class MarkdownProcessor:
                 doc.close()
 
             # Validate css_path before any backend dispatch so ValueError propagates clearly.
+            # Allow $HOME and the per-user temp directory (NSTemporaryDirectory(), exposed as
+            # tempfile.gettempdir() on macOS) — droplets copy their bundled CSS to mktemp for
+            # sandbox compatibility, and that lands under /private/var/folders/.../T/.
             if css_path is not None:
-                home = os.path.realpath(os.path.expanduser("~"))
+                import tempfile as _tempfile
+                allowed_roots = [
+                    os.path.realpath(os.path.expanduser("~")),
+                    os.path.realpath(_tempfile.gettempdir()),
+                ]
                 resolved = os.path.realpath(os.path.abspath(css_path))
-                if not resolved.startswith(home + os.sep) and resolved != home:
+                if not any(
+                    resolved == root or resolved.startswith(root + os.sep)
+                    for root in allowed_roots
+                ):
                     raise ValueError(
-                        f"CSS path must be within the home directory: "
+                        f"CSS path must be within the home directory or system temp dir: "
                         f"'{css_path}' resolves to '{resolved}'"
                     )
 

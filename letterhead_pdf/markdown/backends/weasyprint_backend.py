@@ -75,14 +75,23 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
 
     defaults_css = _load_default_css()
 
-    # Load and validate custom CSS
+    # Load and validate custom CSS. Allow $HOME and the per-user temp directory; see
+    # processor.py for the rationale (droplets stage their bundled CSS into mktemp).
     custom_css = ""
     if css_path:
+        import tempfile as _tempfile
         css_abs = os.path.realpath(os.path.expanduser(css_path))
-        home = os.path.realpath(os.path.expanduser("~"))
-        if not css_abs.startswith(home + os.sep) and css_abs != home:
+        allowed_roots = [
+            os.path.realpath(os.path.expanduser("~")),
+            os.path.realpath(_tempfile.gettempdir()),
+        ]
+        if not any(
+            css_abs == root or css_abs.startswith(root + os.sep)
+            for root in allowed_roots
+        ):
             raise ValueError(
-                f"CSS path must be within the home directory: {css_path!r} resolves to {css_abs!r}"
+                f"CSS path must be within the home directory or system temp dir: "
+                f"{css_path!r} resolves to {css_abs!r}"
             )
         if os.path.exists(css_abs):
             try:
