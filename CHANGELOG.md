@@ -1,3 +1,10 @@
+## [0.16.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.3...v0.16.4) (2026-06-19)
+
+
+### Bug Fixes
+
+* keep destructive Desktop ops inside droplet's TCC scope ([8ead77a](https://github.com/easytocloud/Mac-letterhead/commit/8ead77af5d7c54f67c7ddfa2dcc51c6f78fe351d))
+
 ## [0.16.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.2...v0.16.3) (2026-06-19)
 
 
