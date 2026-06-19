@@ -1,3 +1,10 @@
+## [0.18.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.0...v0.18.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* **droplet:** keep --version clean when WeasyPrint can't initialize ([6b7f2a4](https://github.com/easytocloud/Mac-letterhead/commit/6b7f2a4e478306b3d191fa19ca6f4516658acb99))
+
 # [0.18.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.17.0...v0.18.0) (2026-06-19)
 
 
