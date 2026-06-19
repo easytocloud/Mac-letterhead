@@ -238,8 +238,25 @@ on check_for_updates(app_path)
         return
     end if
 
-    if latest_version is current_version then
+    -- Compare versions using Python's packaging.version so 0.16.10 > 0.16.2 and pre-releases
+    -- like 0.17.0-test sort correctly. Returns "newer", "same", or "older" for the dialog
+    -- to branch on. Falls back to "same" on any parse error so we never falsely prompt.
+    set compare_cmd to "/usr/bin/python3 - <<'PYEOF' 2>/dev/null || echo same" & linefeed & ¬
+        "try:" & linefeed & ¬
+        "    from packaging.version import Version" & linefeed & ¬
+        "except Exception:" & linefeed & ¬
+        "    from distutils.version import LooseVersion as Version" & linefeed & ¬
+        "c = Version('" & current_version & "')" & linefeed & ¬
+        "l = Version('" & latest_version & "')" & linefeed & ¬
+        "print('newer' if l > c else ('same' if l == c else 'older'))" & linefeed & ¬
+        "PYEOF"
+    set version_cmp to do shell script compare_cmd
+
+    if version_cmp is "same" then
         display dialog "You're up to date." & return & return & "Mac-letterhead v" & current_version buttons {"OK"} default button "OK" with icon note
+        return
+    else if version_cmp is "older" then
+        display dialog "You're running a newer build than what's on PyPI." & return & return & "Current: v" & current_version & return & "Latest on PyPI:  v" & latest_version & return & return & "No update needed." buttons {"OK"} default button "OK" with icon note
         return
     end if
 
