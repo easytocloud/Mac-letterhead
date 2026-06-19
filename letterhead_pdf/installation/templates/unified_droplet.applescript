@@ -175,25 +175,23 @@ on run
         end if
     end try
 
-    -- Dialog text + button labels depend on droplet mode:
-    --  - Dev: no update mechanism (uses local code).
-    --  - Production pinned: shows baked-in version; reinstall via Terminal to update.
-    --    (We do NOT offer in-app self-update: macOS 26+ App Management restrictions
-    --    prevent the droplet from rewriting its own .app bundle on Desktop reliably.)
-    --  - Production unpinned: shows live uvx-resolved version + Refresh button.
+    -- About-dialog: bold title from the droplet name+version, short plain-language
+    -- message body, mode line only when not Production. Using `display alert` so the
+    -- droplet's bundled Mac-letterhead.icns is used as the dialog icon (rather than
+    -- AppleScript's default generic note icon).
     if is_dev_mode then
+        set dialog_title to "Mac-letterhead Droplet v{{VERSION}}"
         set dialog_buttons to {"Show Letterhead", "OK"}
-        set version_line to "Mac-letterhead Droplet v{{VERSION}}"
-        set info_line to "Drag and drop PDF or Markdown files to apply letterhead."
+        set dialog_body to "Mode: Development" & return & return & "Drop PDF or Markdown files onto the droplet to apply your letterhead."
     else if {{PINNED}} then
+        set dialog_title to "Mac-letterhead Droplet v{{VERSION}}"
         set dialog_buttons to {"Show Letterhead", "OK"}
-        set version_line to "Mac-letterhead Droplet v{{VERSION}}"
-        set info_line to "Drag and drop PDF or Markdown files to apply letterhead." & return & return & "To update: rerun `uvx mac-letterhead install --name \"{{NAME}}\"` in Terminal," & return & "or rebuild this droplet with --unpinned for auto-updates."
+        set dialog_body to "Drop PDF or Markdown files onto the droplet to apply your letterhead."
     else
         set dialog_buttons to {"Show Letterhead", "Refresh", "OK"}
         -- Probe live version via uvx. Strict regex against `mac-letterhead X.Y.Z[...]`
         -- so any other stdout noise (e.g. WeasyPrint diagnostics on macOS 27 beta when
-        -- pango/cairo aren't installed) cannot leak into the dialog title.
+        -- pango/cairo aren't installed) cannot leak into the title.
         set live_version to "unknown"
         try
             set uvx_probe to do shell script "PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\" command -v uvx 2>/dev/null || true"
@@ -202,10 +200,11 @@ on run
                 if live_version is "" then set live_version to "unknown"
             end if
         end try
-        set version_line to "Mac-letterhead Droplet (unpinned) — currently v" & live_version
-        set info_line to "Drag and drop PDF or Markdown files to apply letterhead." & return & return & "This droplet auto-fetches the latest mac-letterhead on each drop." & return & "Click Refresh to force uvx to re-resolve right now."
+        set dialog_title to "Mac-letterhead Droplet v" & live_version & " (unpinned)"
+        set dialog_body to "Drop PDF or Markdown files onto the droplet to apply your letterhead." & return & return & "Updates arrive automatically on every drop. Click Refresh to update right now."
     end if
-    set dialog_result to display dialog version_line & return & "Mode: " & mode_text & return & return & info_line buttons dialog_buttons default button "OK" with icon note
+
+    set dialog_result to display alert dialog_title message dialog_body buttons dialog_buttons default button "OK"
 
     set chosen_button to button returned of dialog_result
 
