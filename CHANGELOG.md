@@ -1,3 +1,10 @@
+## [0.18.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.1...v0.18.2) (2026-06-19)
+
+
+### Bug Fixes
+
+* **install:** clearer error when letterhead PDF or directory is missing ([5ada677](https://github.com/easytocloud/Mac-letterhead/commit/5ada677d10b2b1eaf07f436073788a45d8be9057))
+
 ## [0.18.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.0...v0.18.1) (2026-06-19)
 
 
