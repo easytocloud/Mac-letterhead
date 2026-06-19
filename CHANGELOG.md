@@ -1,3 +1,10 @@
+## [0.16.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.2...v0.16.3) (2026-06-19)
+
+
+### Bug Fixes
+
+* use semver comparison in droplet self-update version check ([0b5f2db](https://github.com/easytocloud/Mac-letterhead/commit/0b5f2db10867bf027649b01f693118e0ccc99710))
+
 ## [0.16.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.1...v0.16.2) (2026-06-19)
 
 
