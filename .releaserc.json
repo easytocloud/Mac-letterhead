@@ -14,8 +14,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "node tools/version-manager.mjs set ${nextRelease.version} && rm -rf dist && python -m build",
-        "publishCmd": "twine upload dist/*"
+        "prepareCmd": "node tools/version-manager.mjs set ${nextRelease.version} && rm -rf dist && python -m build"
       }
     ],
     [

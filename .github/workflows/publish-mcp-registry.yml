@@ -1,120 +1,110 @@
 name: Publish to MCP Registry
 
 on:
-  workflow_run:
-    workflows: ["Semantic Release"]
-    types: [completed]
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
         description: 'Version to publish (e.g., 0.15.6)'
         required: true
         type: string
+      mcp_publisher_version:
+        description: 'mcp-publisher version to use (e.g., v1.2.0). Defaults to latest.'
+        required: false
+        type: string
 
 jobs:
   publish-mcp:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        ref: main
-        fetch-depth: 0
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-
-    - name: Extract version from latest release
-      id: version
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          VERSION="${{ inputs.version }}"
-        else
-          VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' | sed 's/^v//')
-        fi
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Publishing version: $VERSION"
-
-    - name: Build Desktop Extension (.mcpb)
-      run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
-        echo "Building Desktop Extension for version $VERSION..."
-        make build-dxt
-        echo "MCPB_FILE=dxt/mac-letterhead-${VERSION}.mcpb" >> $GITHUB_ENV
-        echo "✅ Built dxt/mac-letterhead-${VERSION}.mcpb"
-
-    - name: Upload .mcpb to GitHub release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
-        gh release upload "v${VERSION}" "${MCPB_FILE}" --clobber
-        echo "✅ Uploaded ${MCPB_FILE} to release v${VERSION}"
-
-    - name: Install mcp-publisher
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        echo "Installing mcp-publisher..."
-        RELEASE_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/latest"
-        DOWNLOAD_URL=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "$RELEASE_URL" \
-          | grep -m1 "browser_download_url.*mcp-publisher.*linux_amd64\.tar\.gz\"" \
-          | cut -d '"' -f 4)
-
-        if [ -z "$DOWNLOAD_URL" ]; then
-          echo "Failed to find mcp-publisher download URL. API response:"
-          curl -s -H "Authorization: token $GITHUB_TOKEN" "$RELEASE_URL" | grep browser_download_url
-          exit 1
-        fi
-
-        echo "Downloading from: $DOWNLOAD_URL"
-        curl -L -o mcp-publisher.tar.gz "$DOWNLOAD_URL"
-        tar -xzf mcp-publisher.tar.gz
-        chmod +x mcp-publisher
-        ./mcp-publisher --version
-
-    - name: Login to MCP Registry
-      env:
-        MCP_PUBLISHER_TOKEN: ${{ secrets.MCP_PUBLISHER_TOKEN }}
-      run: |
-        echo "Logging in to MCP Registry via GitHub..."
-        ./mcp-publisher login github --token "$MCP_PUBLISHER_TOKEN"
-
-    - name: Publish to MCP Registry
-      run: |
-        echo "Publishing to MCP Registry..."
-        PUBLISH_OUTPUT=$(./mcp-publisher publish 2>&1) && {
-          echo "$PUBLISH_OUTPUT"
-          echo "✅ Successfully published to MCP Registry"
-        } || {
-          echo "$PUBLISH_OUTPUT"
-          if echo "$PUBLISH_OUTPUT" | grep -q "cannot publish duplicate version"; then
-            echo "⚠️ Version already registered in MCP Registry — OK"
+      - name: Resolve version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
           else
+            VERSION="${GITHUB_REF_NAME#v}"
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing version: $VERSION"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: v${{ steps.version.outputs.VERSION }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Download .mcpb from release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          gh release download "v${VERSION}" \
+            --pattern "mac-letterhead-${VERSION}.mcpb" \
+            --dir dxt
+
+      - name: Install mcp-publisher
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PIN_VERSION: ${{ inputs.mcp_publisher_version }}
+        run: |
+          if [ -n "$PIN_VERSION" ]; then
+            API_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/tags/${PIN_VERSION}"
+          else
+            API_URL="https://api.github.com/repos/modelcontextprotocol/registry/releases/latest"
+          fi
+
+          DOWNLOAD_URL=$(curl -fsSL -H "Authorization: token $GITHUB_TOKEN" "$API_URL" \
+            | grep -m1 'browser_download_url.*mcp-publisher.*linux_amd64\.tar\.gz"' \
+            | cut -d '"' -f 4)
+
+          if [ -z "$DOWNLOAD_URL" ]; then
+            echo "Failed to find mcp-publisher download URL"
             exit 1
           fi
-        }
 
-    - name: Create summary
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        VERSION="${{ steps.version.outputs.VERSION }}"
-        cat >> $GITHUB_STEP_SUMMARY <<EOF
-        ## MCP Registry Publication
+          echo "Downloading from: $DOWNLOAD_URL"
+          curl -fsSL -o mcp-publisher.tar.gz "$DOWNLOAD_URL"
+          tar -xzf mcp-publisher.tar.gz
+          chmod +x mcp-publisher
+          ./mcp-publisher --version
 
-        Successfully published Mac-letterhead MCP server to the official registry.
+      - name: Login to MCP Registry
+        env:
+          MCP_PUBLISHER_TOKEN: ${{ secrets.MCP_PUBLISHER_TOKEN }}
+        run: ./mcp-publisher login github --token "$MCP_PUBLISHER_TOKEN"
 
-        **Version**: $VERSION
-        **Namespace**: io.github.easytocloud/mac-letterhead
-        **Registry URL**: https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead
-        **Release**: https://github.com/easytocloud/Mac-letterhead/releases/tag/v${VERSION}
-        EOF
+      - name: Publish to MCP Registry
+        run: |
+          PUBLISH_OUTPUT=$(./mcp-publisher publish 2>&1) && {
+            echo "$PUBLISH_OUTPUT"
+            echo "Successfully published to MCP Registry"
+          } || {
+            echo "$PUBLISH_OUTPUT"
+            if echo "$PUBLISH_OUTPUT" | grep -q "cannot publish duplicate version"; then
+              echo "Version already registered in MCP Registry - OK"
+            else
+              exit 1
+            fi
+          }
+
+      - name: Create summary
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## MCP Registry Publication
+
+          **Version**: $VERSION
+          **Namespace**: io.github.easytocloud/mac-letterhead
+          **Registry**: https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead
+          **Release**: https://github.com/easytocloud/Mac-letterhead/releases/tag/v${VERSION}
+          EOF

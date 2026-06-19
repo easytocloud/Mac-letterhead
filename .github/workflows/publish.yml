@@ -5,14 +5,48 @@ on:
     branches:
       - main
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   issues: write
   pull-requests: write
 
 jobs:
-  release:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Run unit tests
+        run: make test-unit-py${{ matrix.python-version }}
+
+  release:
+    name: Release
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write  # for PyPI Trusted Publishing (OIDC)
+    outputs:
+      released: ${{ steps.semrel.outputs.new_release_published }}
+      version: ${{ steps.semrel.outputs.new_release_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,10 +72,27 @@ jobs:
           pip install build twine
 
       - name: Run semantic-release
+        id: semrel
         uses: cycjimmy/semantic-release-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYPI_USERNAME: __token__
-          PYPI_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Verify built distributions
+        if: steps.semrel.outputs.new_release_published == 'true'
+        run: twine check dist/*
+
+      - name: Publish to PyPI (Trusted Publishing)
+        if: steps.semrel.outputs.new_release_published == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Build Desktop Extension (.mcpb)
+        if: steps.semrel.outputs.new_release_published == 'true'
+        run: make build-dxt
+
+      - name: Attach .mcpb to GitHub release
+        if: steps.semrel.outputs.new_release_published == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.semrel.outputs.new_release_version }}"
+          gh release upload "v${VERSION}" "dxt/mac-letterhead-${VERSION}.mcpb" --clobber
