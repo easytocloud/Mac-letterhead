@@ -87,7 +87,9 @@ jobs:
 
       - name: Build Desktop Extension (.mcpb)
         if: steps.semrel.outputs.new_release_published == 'true'
-        run: make build-dxt
+        run: |
+          cp letterhead_pdf/resources/icon.png dxt/icon.png
+          cd dxt && npx --yes @anthropic-ai/mcpb pack
 
       - name: Attach .mcpb to GitHub release
         if: steps.semrel.outputs.new_release_published == 'true'
@@ -95,4 +97,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.semrel.outputs.new_release_version }}"
-          gh release upload "v${VERSION}" "dxt/mac-letterhead-${VERSION}.mcpb" --clobber
+          MCPB_FILE="dxt/mac-letterhead-${VERSION}.mcpb"
+          # mcpb pack emits dxt/dxt.mcpb on some versions, mac-letterhead-<v>.mcpb on others
+          if [ ! -f "$MCPB_FILE" ] && [ -f dxt/dxt.mcpb ]; then
+            mv dxt/dxt.mcpb "$MCPB_FILE"
+          fi
+          gh release upload "v${VERSION}" "$MCPB_FILE" --clobber
