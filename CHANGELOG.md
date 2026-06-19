@@ -1,3 +1,10 @@
+## [0.16.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.0...v0.16.1) (2026-06-19)
+
+
+### Bug Fixes
+
+* resolve uvx dynamically and harden droplet runtime for macOS 27 ([b561033](https://github.com/easytocloud/Mac-letterhead/commit/b561033cd4b0c84005fee36be08396b68f5346f2))
+
 # [0.16.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.15.10...v0.16.0) (2026-04-24)
 
 
