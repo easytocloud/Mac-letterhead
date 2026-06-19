@@ -177,15 +177,18 @@ on run
 
     -- Dialog text + button labels depend on droplet mode:
     --  - Dev: no update mechanism (uses local code).
-    --  - Production pinned: "Check for Updates" rebuilds the .app to a new version.
-    --  - Production unpinned: shows live uvx-resolved version and offers "Refresh" to
-    --    re-resolve uv's cache (the .app itself is never mutated).
+    --  - Production pinned: shows baked-in version; reinstall via Terminal to update.
+    --    (We do NOT offer in-app self-update: macOS 26+ App Management restrictions
+    --    prevent the droplet from rewriting its own .app bundle on Desktop reliably.)
+    --  - Production unpinned: shows live uvx-resolved version + Refresh button.
     if is_dev_mode then
         set dialog_buttons to {"Show Letterhead", "OK"}
         set version_line to "Mac-letterhead Droplet v{{VERSION}}"
+        set info_line to "Drag and drop PDF or Markdown files to apply letterhead."
     else if {{PINNED}} then
-        set dialog_buttons to {"Show Letterhead", "Check for Updates", "OK"}
+        set dialog_buttons to {"Show Letterhead", "OK"}
         set version_line to "Mac-letterhead Droplet v{{VERSION}}"
+        set info_line to "Drag and drop PDF or Markdown files to apply letterhead." & return & return & "To update: rerun `uvx mac-letterhead install --name \"{{NAME}}\"` in Terminal," & return & "or rebuild this droplet with --unpinned for auto-updates."
     else
         set dialog_buttons to {"Show Letterhead", "Refresh", "OK"}
         set live_version to "unknown"
@@ -196,8 +199,9 @@ on run
             end if
         end try
         set version_line to "Mac-letterhead Droplet (unpinned) — currently v" & live_version
+        set info_line to "Drag and drop PDF or Markdown files to apply letterhead." & return & return & "This droplet auto-fetches the latest mac-letterhead on each drop." & return & "Click Refresh to force uvx to re-resolve right now."
     end if
-    set dialog_result to display dialog version_line & return & "Mode: " & mode_text & return & return & "Drag and drop PDF or Markdown files to apply letterhead." buttons dialog_buttons default button "OK" with icon note
+    set dialog_result to display dialog version_line & return & "Mode: " & mode_text & return & return & info_line buttons dialog_buttons default button "OK" with icon note
 
     set chosen_button to button returned of dialog_result
 
@@ -219,8 +223,6 @@ on run
         on error error_message
             display alert "Error Opening Letterhead" message "Could not open letterhead file: " & error_message as critical
         end try
-    else if chosen_button is "Check for Updates" then
-        my check_for_updates(app_path)
     else if chosen_button is "Refresh" then
         my refresh_unpinned()
     end if
@@ -264,126 +266,10 @@ on resolve_uvx()
     end try
 end resolve_uvx
 
--- In-place self-update. Compares the baked-in version to PyPI's latest, asks the user,
--- then re-runs `mac-letterhead install` with the same name + letterhead + CSS so the
--- droplet is rebuilt at the new version with all of its current resources preserved.
-on check_for_updates(app_path)
-    set uvx_bin to my resolve_uvx()
-    if uvx_bin is "" then
-        display alert "uvx not found" message "Mac-letterhead requires uv/uvx to check for updates. Install it with:" & return & return & "curl -LsSf https://astral.sh/uv/install.sh | sh" as critical
-        return
-    end if
-
-    set current_version to "{{VERSION}}"
-    set droplet_name to "{{NAME}}"
-    if droplet_name is "" then
-        display alert "Cannot self-update" message "This droplet was built without a name and cannot self-update. Re-run `mac-letterhead install --name <name>` to enable updates." as warning
-        return
-    end if
-
-    -- Ask PyPI for the latest version. 15s timeout so a slow/missing network doesn't hang the dialog.
-    set latest_version to ""
-    try
-        set latest_version to do shell script "/usr/bin/curl --max-time 15 -fsSL https://pypi.org/pypi/Mac-letterhead/json 2>/dev/null | /usr/bin/python3 -c 'import json,sys; print(json.load(sys.stdin)[\"info\"][\"version\"])' 2>/dev/null || true"
-    end try
-
-    if latest_version is "" then
-        display alert "Update check failed" message "Could not reach PyPI to check for the latest version. Check your internet connection and try again." as warning
-        return
-    end if
-
-    -- Compare versions using Python's packaging.version so 0.16.10 > 0.16.2 and pre-releases
-    -- like 0.17.0-test sort correctly. Returns "newer", "same", or "older" for the dialog
-    -- to branch on. Falls back to "same" on any parse error so we never falsely prompt.
-    set compare_cmd to "/usr/bin/python3 - <<'PYEOF' 2>/dev/null || echo same" & linefeed & ¬
-        "try:" & linefeed & ¬
-        "    from packaging.version import Version" & linefeed & ¬
-        "except Exception:" & linefeed & ¬
-        "    from distutils.version import LooseVersion as Version" & linefeed & ¬
-        "c = Version('" & current_version & "')" & linefeed & ¬
-        "l = Version('" & latest_version & "')" & linefeed & ¬
-        "print('newer' if l > c else ('same' if l == c else 'older'))" & linefeed & ¬
-        "PYEOF"
-    set version_cmp to do shell script compare_cmd
-
-    if version_cmp is "same" then
-        display dialog "You're up to date." & return & return & "Mac-letterhead v" & current_version buttons {"OK"} default button "OK" with icon note
-        return
-    else if version_cmp is "older" then
-        display dialog "You're running a newer build than what's on PyPI." & return & return & "Current: v" & current_version & return & "Latest on PyPI:  v" & latest_version & return & return & "No update needed." buttons {"OK"} default button "OK" with icon note
-        return
-    end if
-
-    set confirm to display dialog "A new version is available." & return & return & "Current: v" & current_version & return & "Latest:  v" & latest_version & return & return & "Update this droplet now? The droplet will close and re-open automatically." buttons {"Cancel", "Update"} default button "Update" with icon note
-    if button returned of confirm is not "Update" then return
-
-    -- Resolve letterhead + CSS paths inside the bundle so the rebuild preserves them.
-    set letterhead_posix to POSIX path of (app_path & "Contents:Resources:letterhead.pdf")
-    set css_posix to POSIX path of (app_path & "Contents:Resources:style.css")
-    set css_exists to (do shell script "test -f " & quoted form of css_posix & " && echo 'true' || echo 'false'") is "true"
-
-    -- Final destination = parent of the running .app
-    set app_posix to POSIX path of app_path
-    set app_posix_clean to do shell script "echo " & quoted form of app_posix & " | sed 's:/$::'"
-    set app_basename to do shell script "basename " & quoted form of app_posix_clean
-
-    set log_path to "/tmp/mac-letterhead-update.log"
-
-    -- TCC reality: a backgrounded grandchild bash script does NOT inherit the droplet's
-    -- "Files and Folders > Desktop" permission, so `rm -rf` and `mv` against the Desktop
-    -- bundle fail with "Operation not permitted". We do the destructive Desktop ops
-    -- synchronously here (the droplet has the user-granted TCC scope) and only delegate
-    -- the post-quit `open` to a detached helper.
-
-    -- Step 1: Build the new bundle into a temp dir (synchronous, no TCC needed for /tmp).
-    -- This blocks the droplet briefly but the user just clicked "Update" so the wait is OK.
-    set stage_dir to do shell script "mktemp -d -t mac-letterhead-update"
-    set build_cmd to "exec >\"" & log_path & "\" 2>&1; set -x; echo \"[$(date)] Build phase starting in $0\"; " & ¬
-        quoted form of uvx_bin & " --refresh mac-letterhead@" & latest_version & " install" & ¬
-        " --name " & quoted form of droplet_name & ¬
-        " --letterhead " & quoted form of letterhead_posix & ¬
-        " --output-dir " & quoted form of stage_dir
-    if css_exists then
-        set build_cmd to build_cmd & " --css " & quoted form of css_posix
-    end if
-    set build_cmd to build_cmd & "; echo \"[$(date)] uvx exit=$?\""
-    try
-        do shell script "/bin/bash -c " & quoted form of build_cmd
-    on error build_error
-        display alert "Update failed (build)" message "uvx could not build the new droplet:" & return & return & build_error & return & return & "See " & log_path & " for details." as critical
-        do shell script "rm -rf " & quoted form of stage_dir
-        return
-    end try
-
-    set new_app to stage_dir & "/" & app_basename
-    set new_app_exists to (do shell script "test -d " & quoted form of new_app & " && echo 'true' || echo 'false'") is "true"
-    if not new_app_exists then
-        display alert "Update failed" message "Build completed but the new droplet was not at the expected path:" & return & new_app & return & return & "See " & log_path & " for details." as critical
-        do shell script "rm -rf " & quoted form of stage_dir
-        return
-    end if
-
-    -- Step 2: Swap bundles. We're still inside the droplet with full TCC scope, so
-    -- rm and mv against Desktop are allowed. The running droplet's binary stays mapped
-    -- in memory after we delete its files on disk (Unix unlink semantics).
-    set swap_cmd to "exec >>\"" & log_path & "\" 2>&1; set -x; echo \"[$(date)] Swap phase starting\"; " & ¬
-        "rm -rf " & quoted form of app_posix_clean & "; " & ¬
-        "mv " & quoted form of new_app & " " & quoted form of app_posix_clean & "; " & ¬
-        "rm -rf " & quoted form of stage_dir & "; " & ¬
-        "echo \"[$(date)] Swap done\""
-    try
-        do shell script "/bin/bash -c " & quoted form of swap_cmd
-    on error swap_error
-        display alert "Update failed (swap)" message "Could not replace the droplet on disk:" & return & return & swap_error & return & return & "See " & log_path & " for details." as critical
-        return
-    end try
-
-    -- Step 3: Schedule the re-launch. This is the ONLY thing we delegate to a background
-    -- process. `open` of a .app doesn't need TCC for the bundle path itself — it's launchd
-    -- starting a new app, which the user implicitly grants by having the bundle on Desktop.
-    set relaunch_cmd to "( ( sleep 1; open " & quoted form of app_posix_clean & " >>" & quoted form of log_path & " 2>&1 ) & ) ; disown -a 2>/dev/null || true"
-    do shell script relaunch_cmd
-
-    -- Step 4: Quit. The detached `open` fires 1s from now, well after we're gone.
-    tell me to quit
-end check_for_updates
+-- Self-update was previously implemented here, but macOS 26+ App Management
+-- restrictions prevent a droplet from rewriting its own .app bundle on Desktop
+-- (every approach we tried — backgrounded helper, synchronous `do shell script`,
+-- nohup, double-fork — hit "Operation not permitted" on `rm -rf` of the bundle).
+-- Pinned droplets are now updated by re-running `mac-letterhead install` from
+-- Terminal; unpinned droplets auto-update via uvx on every drop. The Refresh
+-- button (unpinned only) pokes uv's cache without touching the .app.
