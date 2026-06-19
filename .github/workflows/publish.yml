@@ -22,10 +22,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
@@ -38,10 +38,7 @@ jobs:
           pip install build twine
 
       - name: Run semantic-release
-        uses: cycjimmy/semantic-release-action@v4
-        with:
-          branch: main
-          install_dependencies: false
+        uses: cycjimmy/semantic-release-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYPI_USERNAME: __token__
