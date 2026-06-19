@@ -1,3 +1,10 @@
+## [0.18.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.2...v0.18.3) (2026-06-19)
+
+
+### Bug Fixes
+
+* **ci:** build .mcpb inline in release job to avoid dash incompatibility ([6d1135a](https://github.com/easytocloud/Mac-letterhead/commit/6d1135a9bbb1bd2ae6d3881b706528588667669c))
+
 ## [0.18.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.1...v0.18.2) (2026-06-19)
 
 
