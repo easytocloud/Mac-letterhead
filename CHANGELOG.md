@@ -1,3 +1,10 @@
+## [0.16.5](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.4...v0.16.5) (2026-06-19)
+
+
+### Bug Fixes
+
+* **security:** allow CSS from system temp dir, not just $HOME ([52be998](https://github.com/easytocloud/Mac-letterhead/commit/52be998cb213216e283251267403a4c0c440217b))
+
 ## [0.16.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.3...v0.16.4) (2026-06-19)
 
 
