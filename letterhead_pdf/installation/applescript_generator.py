@@ -18,14 +18,17 @@ from letterhead_pdf.exceptions import InstallerError
 class AppleScriptGenerator:
     """Generates AppleScript code for droplets."""
     
-    def __init__(self, development_mode: bool = False):
+    def __init__(self, development_mode: bool = False, unpinned: bool = False):
         """
         Initialize the AppleScriptGenerator.
-        
+
         Args:
             development_mode: If True, generate development script
+            unpinned: If True, generated droplet runs `uvx mac-letterhead` without a
+                version pin so every drop picks up the latest uvx-cached version.
         """
         self.development_mode = development_mode
+        self.unpinned = unpinned
         self.logger = logging.getLogger(__name__)
     
     def generate_script(self, letterhead_path: str, python_path: str = None, name: str = "") -> str:
@@ -69,6 +72,7 @@ class AppleScriptGenerator:
         # Substitute variables
         script_content = template_content.replace("{{VERSION}}", __version__)
         script_content = script_content.replace("{{NAME}}", name or "")
+        script_content = script_content.replace("{{PINNED}}", "false" if self.unpinned else "true")
 
         return script_content
     

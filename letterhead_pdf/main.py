@@ -406,17 +406,21 @@ def install_command(args: argparse.Namespace) -> int:
         # Check for development mode
         is_dev = hasattr(args, 'dev') and args.dev
         python_path = getattr(args, 'python_path', None) if is_dev else None
-        
+        unpinned = getattr(args, 'unpinned', False)
+
         if is_dev:
             app_name += " (Dev)"
             logging.info("Creating development droplet")
-        
+        if unpinned:
+            logging.info("Creating unpinned droplet (auto-updates via uvx cache)")
+
         # Create the droplet builder and build the droplet
         builder = DropletBuilder(
             development_mode=is_dev,
-            python_path=python_path
+            python_path=python_path,
+            unpinned=unpinned,
         )
-        
+
         app_path = builder.create_droplet(
             letterhead_path=letterhead_path,
             app_name=app_name,
@@ -495,6 +499,7 @@ def main(args: Optional[list] = None) -> int:
     install_parser.add_argument('--output-dir', help='Directory to save the app (default: Desktop)')
     install_parser.add_argument('--dev', action='store_true', help='Create a development droplet using local code')
     install_parser.add_argument('--python-path', help='Path to Python interpreter for development mode (default: current interpreter)')
+    install_parser.add_argument('--unpinned', action='store_true', help='Build a droplet that always runs the latest mac-letterhead (no @VERSION pin). Trades reproducibility for auto-update; the in-droplet button refreshes uvx cache instead of rebuilding the .app.')
     
     # Merge commands
     merge_parser = subparsers.add_parser('merge', help='Merge letterhead with PDF document')

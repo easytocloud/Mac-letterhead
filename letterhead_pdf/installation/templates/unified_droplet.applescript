@@ -107,11 +107,18 @@ on open dropped_items
                         end if
                     end if
                 else
-                    -- Production mode: use the resolved uvx binary
-                    if file_extension is "pdf" then
-                        set cmd to quoted form of uvx_bin & " mac-letterhead@{{VERSION}} merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                    -- Production mode: use the resolved uvx binary. Pinned droplets always
+                    -- run the version they were built with; unpinned droplets run whatever
+                    -- uvx considers current (auto-update at the cost of reproducibility).
+                    if {{PINNED}} then
+                        set pkg_spec to "mac-letterhead@{{VERSION}}"
                     else
-                        set cmd to quoted form of uvx_bin & " mac-letterhead@{{VERSION}} merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                        set pkg_spec to "mac-letterhead"
+                    end if
+                    if file_extension is "pdf" then
+                        set cmd to quoted form of uvx_bin & " " & pkg_spec & " merge " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
+                    else
+                        set cmd to quoted form of uvx_bin & " " & pkg_spec & " merge-md " & quoted form of letterhead_posix & " " & quoted form of file_name & " " & quoted form of file_dir & " " & quoted form of posix_path
                         -- Add CSS parameter for Markdown processing if CSS file exists
                         if css_exists then
                             set cmd to cmd & " --css " & quoted form of css_posix
@@ -168,13 +175,29 @@ on run
         end if
     end try
 
-    -- Show dialog. Dev droplets get no "Check for Updates" button — they run from local code.
+    -- Dialog text + button labels depend on droplet mode:
+    --  - Dev: no update mechanism (uses local code).
+    --  - Production pinned: "Check for Updates" rebuilds the .app to a new version.
+    --  - Production unpinned: shows live uvx-resolved version and offers "Refresh" to
+    --    re-resolve uv's cache (the .app itself is never mutated).
     if is_dev_mode then
         set dialog_buttons to {"Show Letterhead", "OK"}
-    else
+        set version_line to "Mac-letterhead Droplet v{{VERSION}}"
+    else if {{PINNED}} then
         set dialog_buttons to {"Show Letterhead", "Check for Updates", "OK"}
+        set version_line to "Mac-letterhead Droplet v{{VERSION}}"
+    else
+        set dialog_buttons to {"Show Letterhead", "Refresh", "OK"}
+        set live_version to "unknown"
+        try
+            set uvx_probe to do shell script "PATH=\"$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH\" command -v uvx 2>/dev/null || true"
+            if uvx_probe is not "" then
+                set live_version to do shell script quoted form of uvx_probe & " mac-letterhead --version 2>/dev/null | awk '{print $NF}'"
+            end if
+        end try
+        set version_line to "Mac-letterhead Droplet (unpinned) — currently v" & live_version
     end if
-    set dialog_result to display dialog "Mac-letterhead Droplet v{{VERSION}}" & return & "Mode: " & mode_text & return & return & "Drag and drop PDF or Markdown files to apply letterhead." buttons dialog_buttons default button "OK" with icon note
+    set dialog_result to display dialog version_line & return & "Mode: " & mode_text & return & return & "Drag and drop PDF or Markdown files to apply letterhead." buttons dialog_buttons default button "OK" with icon note
 
     set chosen_button to button returned of dialog_result
 
@@ -198,8 +221,39 @@ on run
         end try
     else if chosen_button is "Check for Updates" then
         my check_for_updates(app_path)
+    else if chosen_button is "Refresh" then
+        my refresh_unpinned()
     end if
 end run
+
+-- Unpinned-droplet refresh: re-resolves uv's tool env so the next drop runs the
+-- newest published mac-letterhead. The .app on disk is not modified — no TCC dance.
+on refresh_unpinned()
+    set uvx_bin to my resolve_uvx()
+    if uvx_bin is "" then
+        display alert "uvx not found" message "Mac-letterhead requires uv/uvx. Install with:" & return & return & "curl -LsSf https://astral.sh/uv/install.sh | sh" as critical
+        return
+    end if
+    set before_version to ""
+    try
+        set before_version to do shell script quoted form of uvx_bin & " mac-letterhead --version 2>/dev/null | awk '{print $NF}'"
+    end try
+    try
+        set after_version to do shell script quoted form of uvx_bin & " --refresh mac-letterhead --version 2>&1 | awk '/^mac-letterhead/ {print $NF}'"
+    on error refresh_error
+        display alert "Refresh failed" message "Could not refresh mac-letterhead:" & return & return & refresh_error as critical
+        return
+    end try
+    if after_version is "" then
+        display alert "Refresh failed" message "uvx did not return a version after refresh." as critical
+        return
+    end if
+    if before_version is after_version then
+        display dialog "You're up to date." & return & return & "Mac-letterhead v" & after_version & " is the latest published version." buttons {"OK"} default button "OK" with icon note
+    else
+        display dialog "Refreshed." & return & return & "Was: v" & before_version & return & "Now: v" & after_version & return & return & "Next drop will use the new version." buttons {"OK"} default button "OK" with icon note
+    end if
+end refresh_unpinned
 
 -- Resolve the uvx binary by probing the install locations uv supports. Returns "" if missing.
 on resolve_uvx()

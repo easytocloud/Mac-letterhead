@@ -22,25 +22,27 @@ from .validator import DropletValidator
 class DropletBuilder:
     """Main orchestrator for creating Mac-letterhead droplets."""
     
-    def __init__(self, development_mode: bool = False, python_path: str = None):
+    def __init__(self, development_mode: bool = False, python_path: str = None, unpinned: bool = False):
         """
         Initialize the DropletBuilder.
-        
+
         Args:
             development_mode: If True, create a development droplet using local code
             python_path: Path to Python interpreter (for development mode)
+            unpinned: If True, omit the @VERSION pin so every drop auto-updates via uvx.
         """
         self.development_mode = development_mode
         self.python_path = python_path or (os.sys.executable if development_mode else None)
+        self.unpinned = unpinned
         self.logger = logging.getLogger(__name__)
-        
+
         # Initialize components
         self.resource_manager = ResourceManager()
-        self.applescript_generator = AppleScriptGenerator(development_mode)
+        self.applescript_generator = AppleScriptGenerator(development_mode, unpinned=unpinned)
         self.macos_integration = MacOSIntegration()
         self.validator = DropletValidator()
-        
-        self.logger.info(f"DropletBuilder initialized (dev_mode={development_mode})")
+
+        self.logger.info(f"DropletBuilder initialized (dev_mode={development_mode}, unpinned={unpinned})")
     
     def create_droplet(
         self,
