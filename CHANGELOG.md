@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.17.0...v0.18.0) (2026-06-19)
+
+
+### Features
+
+* **droplet:** remove in-app self-update; document reinstall and --unpinned ([4c11f6b](https://github.com/easytocloud/Mac-letterhead/commit/4c11f6b60960ba1c136343bf6cc8711e66b84a4d))
+
 # [0.17.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.5...v0.17.0) (2026-06-19)
 
 
