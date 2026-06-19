@@ -1,3 +1,10 @@
+# [0.17.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.5...v0.17.0) (2026-06-19)
+
+
+### Features
+
+* **install:** add --unpinned flag for auto-updating droplets ([3980a33](https://github.com/easytocloud/Mac-letterhead/commit/3980a33de79b4b4e50cfabf46b0813cb9ca586b5))
+
 ## [0.16.5](https://github.com/easytocloud/Mac-letterhead/compare/v0.16.4...v0.16.5) (2026-06-19)
 
 
