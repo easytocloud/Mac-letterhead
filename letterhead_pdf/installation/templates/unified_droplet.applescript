@@ -270,70 +270,66 @@ on check_for_updates(app_path)
 
     -- Final destination = parent of the running .app
     set app_posix to POSIX path of app_path
-    set final_dir to do shell script "dirname " & quoted form of app_posix
-    -- Strip trailing slash that POSIX path of a folder leaves behind
     set app_posix_clean to do shell script "echo " & quoted form of app_posix & " | sed 's:/$::'"
-
-    set log_path to "/tmp/mac-letterhead-update.log"
     set app_basename to do shell script "basename " & quoted form of app_posix_clean
 
-    -- Write the entire update procedure to a standalone shell script. This avoids fragile
-    -- multi-level shell quoting through AppleScript and gives us a forensic artifact at
-    -- /tmp/mac-letterhead-update.sh that we can inspect after a failed run.
-    -- Launcher script: waits for the running droplet to exit (via pgrep loop), uses
-    -- `uvx --refresh` to bypass any stale tool-env cache, then swaps bundles and re-opens.
-    set launcher_path to "/tmp/mac-letterhead-update.sh"
-    set launcher_body to "#!/bin/bash" & linefeed & ¬
-        "exec >\"" & log_path & "\" 2>&1" & linefeed & ¬
-        "set -x" & linefeed & ¬
-        "echo \"[$(date)] Mac-letterhead self-update starting\"" & linefeed & ¬
-        "for i in $(seq 1 60); do" & linefeed & ¬
-        "    if ! pgrep -f " & quoted form of (app_posix_clean & "/Contents/MacOS/") & " >/dev/null; then break; fi" & linefeed & ¬
-        "    sleep 0.5" & linefeed & ¬
-        "done" & linefeed & ¬
-        "echo \"[$(date)] Old droplet exited; building new bundle\"" & linefeed & ¬
-        "STAGE=$(mktemp -d -t mac-letterhead-update)" & linefeed & ¬
-        "cd \"$STAGE\" || exit 1" & linefeed & ¬
+    set log_path to "/tmp/mac-letterhead-update.log"
+
+    -- TCC reality: a backgrounded grandchild bash script does NOT inherit the droplet's
+    -- "Files and Folders > Desktop" permission, so `rm -rf` and `mv` against the Desktop
+    -- bundle fail with "Operation not permitted". We do the destructive Desktop ops
+    -- synchronously here (the droplet has the user-granted TCC scope) and only delegate
+    -- the post-quit `open` to a detached helper.
+
+    -- Step 1: Build the new bundle into a temp dir (synchronous, no TCC needed for /tmp).
+    -- This blocks the droplet briefly but the user just clicked "Update" so the wait is OK.
+    set stage_dir to do shell script "mktemp -d -t mac-letterhead-update"
+    set build_cmd to "exec >\"" & log_path & "\" 2>&1; set -x; echo \"[$(date)] Build phase starting in $0\"; " & ¬
         quoted form of uvx_bin & " --refresh mac-letterhead@" & latest_version & " install" & ¬
         " --name " & quoted form of droplet_name & ¬
         " --letterhead " & quoted form of letterhead_posix & ¬
-        " --output-dir \"$STAGE\""
+        " --output-dir " & quoted form of stage_dir
     if css_exists then
-        set launcher_body to launcher_body & " --css " & quoted form of css_posix
+        set build_cmd to build_cmd & " --css " & quoted form of css_posix
     end if
-    set launcher_body to launcher_body & linefeed & ¬
-        "build_status=$?" & linefeed & ¬
-        "echo \"[$(date)] uvx exit=$build_status\"" & linefeed & ¬
-        "NEW_APP=\"$STAGE/" & app_basename & "\"" & linefeed & ¬
-        "if [ ! -d \"$NEW_APP\" ]; then echo \"FAIL: build did not produce $NEW_APP\"; exit 1; fi" & linefeed & ¬
-        "echo \"[$(date)] Swapping bundles\"" & linefeed & ¬
-        "rm -rf " & quoted form of app_posix_clean & linefeed & ¬
-        "mv \"$NEW_APP\" " & quoted form of app_posix_clean & linefeed & ¬
-        "rm -rf \"$STAGE\"" & linefeed & ¬
-        "echo \"[$(date)] Re-opening droplet\"" & linefeed & ¬
-        "open " & quoted form of app_posix_clean & linefeed & ¬
-        "echo \"[$(date)] Self-update done\"" & linefeed
-
-    -- Write launcher and make it executable.
-    set launcher_writer to "cat > " & quoted form of launcher_path & " <<'MAC_LETTERHEAD_LAUNCHER_EOF'" & linefeed & ¬
-        launcher_body & "MAC_LETTERHEAD_LAUNCHER_EOF" & linefeed & ¬
-        "chmod +x " & quoted form of launcher_path
-    do shell script launcher_writer
-
-    -- Detach the launcher fully from our process group. The double-subshell with explicit
-    -- FD redirection is necessary because plain `nohup ... &` from inside `do shell script`
-    -- still gets killed when the running droplet (and its osascript child) exit.
+    set build_cmd to build_cmd & "; echo \"[$(date)] uvx exit=$?\""
     try
-        do shell script "( ( " & quoted form of launcher_path & " </dev/null >/dev/null 2>&1 & ) & ) ; disown -a 2>/dev/null || true"
-    on error rebuild_error
-        display alert "Update failed" message "Could not launch the updater: " & rebuild_error & return & return & "See " & log_path & " for details." as critical
+        do shell script "/bin/bash -c " & quoted form of build_cmd
+    on error build_error
+        display alert "Update failed (build)" message "uvx could not build the new droplet:" & return & return & build_error & return & return & "See " & log_path & " for details." as critical
+        do shell script "rm -rf " & quoted form of stage_dir
         return
     end try
 
-    -- Give the grandchild time to fully reparent to launchd before we quit.
-    delay 2
+    set new_app to stage_dir & "/" & app_basename
+    set new_app_exists to (do shell script "test -d " & quoted form of new_app & " && echo 'true' || echo 'false'") is "true"
+    if not new_app_exists then
+        display alert "Update failed" message "Build completed but the new droplet was not at the expected path:" & return & new_app & return & return & "See " & log_path & " for details." as critical
+        do shell script "rm -rf " & quoted form of stage_dir
+        return
+    end if
 
-    -- Quit so the running .app's bundle is free to be replaced. The launcher is waiting
-    -- for us to exit (via pgrep loop) and will re-open the new droplet automatically.
+    -- Step 2: Swap bundles. We're still inside the droplet with full TCC scope, so
+    -- rm and mv against Desktop are allowed. The running droplet's binary stays mapped
+    -- in memory after we delete its files on disk (Unix unlink semantics).
+    set swap_cmd to "exec >>\"" & log_path & "\" 2>&1; set -x; echo \"[$(date)] Swap phase starting\"; " & ¬
+        "rm -rf " & quoted form of app_posix_clean & "; " & ¬
+        "mv " & quoted form of new_app & " " & quoted form of app_posix_clean & "; " & ¬
+        "rm -rf " & quoted form of stage_dir & "; " & ¬
+        "echo \"[$(date)] Swap done\""
+    try
+        do shell script "/bin/bash -c " & quoted form of swap_cmd
+    on error swap_error
+        display alert "Update failed (swap)" message "Could not replace the droplet on disk:" & return & return & swap_error & return & return & "See " & log_path & " for details." as critical
+        return
+    end try
+
+    -- Step 3: Schedule the re-launch. This is the ONLY thing we delegate to a background
+    -- process. `open` of a .app doesn't need TCC for the bundle path itself — it's launchd
+    -- starting a new app, which the user implicitly grants by having the bundle on Desktop.
+    set relaunch_cmd to "( ( sleep 1; open " & quoted form of app_posix_clean & " >>" & quoted form of log_path & " 2>&1 ) & ) ; disown -a 2>/dev/null || true"
+    do shell script relaunch_cmd
+
+    -- Step 4: Quit. The detached `open` fires 1s from now, well after we're gone.
     tell me to quit
 end check_for_updates
