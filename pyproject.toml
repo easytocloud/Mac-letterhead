@@ -15,7 +15,7 @@ authors = [
 dependencies = [
     "pyobjc-framework-Quartz>=11.1,<12",
     "pyobjc-framework-Cocoa>=11.1,<12",
-    "pyobjc-core>=11.1,<12",
+    "pyobjc-core>=11.1,<13",
     "importlib-resources; python_version < '3.9'",
     "pymupdf>=1.25.4,<2",
     "reportlab>=3.6.0",
