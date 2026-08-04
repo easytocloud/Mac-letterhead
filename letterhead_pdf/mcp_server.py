@@ -13,8 +13,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from mcp.server import Server, NotificationOptions
-from mcp.server.models import InitializationOptions
+from mcp.server import Server
 import mcp.server.stdio
 import mcp.types as types
 
@@ -112,186 +111,174 @@ def setup_server_config(server_args=None):
         else:
             logger.info(f"No CSS file found at: {css_path} (optional)")
 
-    # Initialize the MCP server with the parsed name
+    # Initialize the MCP server with the parsed name and handlers (MCP 2.0 constructor API)
     global server
-    server = Server(SERVER_NAME)
-    
-    # Re-register handlers with the new server instance
-    register_handlers()
+    server = Server(
+        SERVER_NAME,
+        on_list_tools=handle_list_tools,
+        on_call_tool=handle_call_tool,
+    )
 
-def register_handlers():
-    """Register MCP server handlers"""
-    global server
-    if not server:
-        return
-    
-    @server.list_tools()
-    async def handle_list_tools() -> List[types.Tool]:
-        """List available tools"""
-        # Determine if style parameter should be required based on server configuration
-        has_server_style = SERVER_NAME != "mcp-letterhead"
-        
-        # Base properties for create_letterhead_pdf - ordered with mandatory parameters first
-        create_pdf_properties = {
-            "markdown_content": {
-                "type": "string",
-                "description": "Markdown content to convert to PDF"
-            }
+async def handle_list_tools(ctx, params) -> types.ListToolsResult:
+    """List available tools"""
+    tools = _build_tools()
+    return types.ListToolsResult(tools=tools)
+
+
+def _build_tools() -> List[types.Tool]:
+    """Build the tool schemas based on current server configuration."""
+    # Determine if style parameter should be required based on server configuration
+    has_server_style = SERVER_NAME != "mcp-letterhead"
+
+    # Base properties for create_letterhead_pdf - ordered with mandatory parameters first
+    create_pdf_properties = {
+        "markdown_content": {
+            "type": "string",
+            "description": "Markdown content to convert to PDF"
         }
-        
-        # Add style parameter as second parameter if no server style is configured (mandatory)
-        if not has_server_style:
-            create_pdf_properties["style"] = {
-                "type": "string",
-                "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
+    }
+
+    if not has_server_style:
+        create_pdf_properties["style"] = {
+            "type": "string",
+            "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
+        }
+
+    create_pdf_properties.update({
+        "output_path": {
+            "type": "string",
+            "description": "Output path for the generated PDF (optional, defaults to configured output directory)"
+        },
+        "output_filename": {
+            "type": "string",
+            "description": "Output filename (optional, auto-generated if not provided)"
+        },
+        "title": {
+            "type": "string",
+            "description": "Document title for metadata (optional)"
+        },
+        "css_path": {
+            "type": "string",
+            "description": "Path to custom CSS file for styling (optional, uses style CSS if available)"
+        },
+        "strategy": {
+            "type": "string",
+            "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
+            "description": "PDF merge strategy (optional, defaults to 'darken')"
+        }
+    })
+
+    if has_server_style:
+        create_pdf_properties["letterhead_template"] = {
+            "type": "string",
+            "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
+        }
+
+    create_pdf_required = ["markdown_content"]
+    if not has_server_style:
+        create_pdf_required.append("style")
+
+    return [
+        types.Tool(
+            name="create_letterhead_pdf",
+            description=f"Create a letterheaded PDF from Markdown content{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
+            inputSchema={
+                "type": "object",
+                "properties": create_pdf_properties,
+                "required": create_pdf_required
             }
-        else:
-            # For style-specific servers, letterhead_template is optional so add after optional params
-            pass
-        
-        # Add optional parameters
-        create_pdf_properties.update({
-            "output_path": {
-                "type": "string",
-                "description": "Output path for the generated PDF (optional, defaults to configured output directory)"
-            },
-            "output_filename": {
-                "type": "string",
-                "description": "Output filename (optional, auto-generated if not provided)"
-            },
-            "title": {
-                "type": "string",
-                "description": "Document title for metadata (optional)"
-            },
-            "css_path": {
-                "type": "string",
-                "description": "Path to custom CSS file for styling (optional, uses style CSS if available)"
-            },
-            "strategy": {
-                "type": "string",
-                "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
-                "description": "PDF merge strategy (optional, defaults to 'darken')"
-            }
-        })
-        
-        # For style-specific servers, add letterhead_template as optional parameter at the end
-        if has_server_style:
-            create_pdf_properties["letterhead_template"] = {
-                "type": "string", 
-                "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
-            }
-        
-        # Determine required fields
-        create_pdf_required = ["markdown_content"]
-        if not has_server_style:
-            create_pdf_required.append("style")
-        
-        return [
-            types.Tool(
-                name="create_letterhead_pdf",
-                description=f"Create a letterheaded PDF from Markdown content{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
-                inputSchema={
-                    "type": "object",
-                    "properties": create_pdf_properties,
-                    "required": create_pdf_required
-                }
-            ),
-            types.Tool(
-                name="merge_letterhead_pdf", 
-                description=f"Merge an existing PDF with a letterhead template{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
-                inputSchema={
-                    "type": "object",
-                    "properties": {
-                        **{
-                            # Mandatory parameters first
-                            "input_pdf_path": {
-                                "type": "string",
-                                "description": "Path to the input PDF file"
-                            }
-                        },
-                        **({
-                            # Style parameter as second mandatory parameter for generic servers
-                            "style": {
-                                "type": "string",
-                                "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
-                            }
-                        } if not has_server_style else {}),
-                        **{
-                            # Optional parameters
-                            "output_path": {
-                                "type": "string", 
-                                "description": "Output path for the merged PDF (optional, defaults to configured output directory)"
-                            },
-                            "output_filename": {
-                                "type": "string",
-                                "description": "Output filename (optional, auto-generated if not provided)"
-                            },
-                            "strategy": {
-                                "type": "string",
-                                "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
-                                "description": "PDF merge strategy (optional, defaults to 'darken')"
-                            }
-                        },
-                        **({
-                            # For style-specific servers, letterhead_template is optional so add at the end
-                            "letterhead_template": {
-                                "type": "string",
-                                "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
-                            }
-                        } if has_server_style else {})
+        ),
+        types.Tool(
+            name="merge_letterhead_pdf",
+            description=f"Merge an existing PDF with a letterhead template{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "input_pdf_path": {
+                        "type": "string",
+                        "description": "Path to the input PDF file"
                     },
-                    "required": ["input_pdf_path"] + (["style"] if not has_server_style else [])
-                }
-            ),
-            types.Tool(
-                name="analyze_letterhead",
-                description=f"Analyze a letterhead template to determine margins and printable areas{' for the configured ' + SERVER_NAME + ' style' if has_server_style else ' for specified style'}",
-                inputSchema={
-                    "type": "object", 
-                    "properties": ({
+                    **({
                         "style": {
                             "type": "string",
-                            "description": "Style name (resolves ~/.letterhead/<style>.pdf) to analyze"
+                            "description": "Style name (resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)"
                         }
-                    } if not has_server_style else {
+                    } if not has_server_style else {}),
+                    "output_path": {
+                        "type": "string",
+                        "description": "Output path for the merged PDF (optional, defaults to configured output directory)"
+                    },
+                    "output_filename": {
+                        "type": "string",
+                        "description": "Output filename (optional, auto-generated if not provided)"
+                    },
+                    "strategy": {
+                        "type": "string",
+                        "enum": ["multiply", "reverse", "overlay", "transparency", "darken"],
+                        "description": "PDF merge strategy (optional, defaults to 'darken')"
+                    },
+                    **({
                         "letterhead_template": {
                             "type": "string",
                             "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
                         }
-                    }),
-                    "required": ["style"] if not has_server_style else []
-                }
-            ),
-            types.Tool(
-                name="list_letterhead_templates",
-                description="List all available letterhead templates in the templates directory",
-                inputSchema={
-                    "type": "object",
-                    "properties": {}
-                }
-            )
-        ]
+                    } if has_server_style else {})
+                },
+                "required": ["input_pdf_path"] + (["style"] if not has_server_style else [])
+            }
+        ),
+        types.Tool(
+            name="analyze_letterhead",
+            description=f"Analyze a letterhead template to determine margins and printable areas{' for the configured ' + SERVER_NAME + ' style' if has_server_style else ' for specified style'}",
+            inputSchema={
+                "type": "object",
+                "properties": ({
+                    "style": {
+                        "type": "string",
+                        "description": "Style name (resolves ~/.letterhead/<style>.pdf) to analyze"
+                    }
+                } if not has_server_style else {
+                    "letterhead_template": {
+                        "type": "string",
+                        "description": "Letterhead template name (without .pdf) or full path to template PDF (optional, uses configured style if not provided)"
+                    }
+                }),
+                "required": ["style"] if not has_server_style else []
+            }
+        ),
+        types.Tool(
+            name="list_letterhead_templates",
+            description="List all available letterhead templates in the templates directory",
+            inputSchema={
+                "type": "object",
+                "properties": {}
+            }
+        )
+    ]
 
-    @server.call_tool()
-    async def handle_call_tool(name: str, arguments: Dict[str, Any]) -> List[types.TextContent]:
-        """Handle tool calls"""
-        try:
-            if name == "create_letterhead_pdf":
-                return await create_letterhead_pdf(**arguments)
-            elif name == "merge_letterhead_pdf":
-                return await merge_letterhead_pdf(**arguments)
-            elif name == "analyze_letterhead":
-                return await analyze_letterhead(**arguments)
-            elif name == "list_letterhead_templates":
-                return await list_letterhead_templates(**arguments)
-            else:
-                raise ValueError(f"Unknown tool: {name}")
-        except Exception as e:
-            logger.error(f"Error in tool {name}: {str(e)}", exc_info=True)
-            return [types.TextContent(
-                type="text",
-                text=f"Error: {str(e)}"
-            )]
+
+async def handle_call_tool(ctx, params) -> types.CallToolResult:
+    """Handle tool calls (MCP 2.0 constructor-based dispatcher)"""
+    name = params.name
+    arguments = params.arguments or {}
+    try:
+        if name == "create_letterhead_pdf":
+            content = await create_letterhead_pdf(**arguments)
+        elif name == "merge_letterhead_pdf":
+            content = await merge_letterhead_pdf(**arguments)
+        elif name == "analyze_letterhead":
+            content = await analyze_letterhead(**arguments)
+        elif name == "list_letterhead_templates":
+            content = await list_letterhead_templates(**arguments)
+        else:
+            raise ValueError(f"Unknown tool: {name}")
+        return types.CallToolResult(content=content)
+    except Exception as e:
+        logger.error(f"Error in tool {name}: {str(e)}", exc_info=True)
+        return types.CallToolResult(
+            content=[types.TextContent(type="text", text=f"Error: {str(e)}")],
+            is_error=True,
+        )
 
 # Don't call setup_server_config() here - it needs to be called with proper arguments
 # after run_mcp_server() is invoked. This avoids premature server initialization.
@@ -649,19 +636,11 @@ async def list_letterhead_templates(**kwargs) -> List[types.TextContent]:
 
 async def main():
     """Main function to run the MCP server"""
-    # Initialize the server
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
         await server.run(
             read_stream,
             write_stream,
-            InitializationOptions(
-                server_name=SERVER_NAME,
-                server_version="1.0.0",
-                capabilities=server.get_capabilities(
-                    notification_options=NotificationOptions(),
-                    experimental_capabilities={}
-                )
-            )
+            server.create_initialization_options(),
         )
 
 def run_mcp_server(server_args=None):
