@@ -1,3 +1,10 @@
+## [0.18.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.3...v0.18.4) (2026-08-04)
+
+
+### Bug Fixes
+
+* **mcp:** migrate to MCP SDK 2.0 constructor-based handler API ([#24](https://github.com/easytocloud/Mac-letterhead/issues/24)) ([da07fdb](https://github.com/easytocloud/Mac-letterhead/commit/da07fdb9d2dc1488722c53ceab2f9a6c3b592881))
+
 ## [0.18.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.2...v0.18.3) (2026-06-19)
 
 
