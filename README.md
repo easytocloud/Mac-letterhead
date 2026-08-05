@@ -111,6 +111,8 @@ mac-letterhead install --name "client-acme"    # one droplet per client / brand
 
 Each droplet is a full macOS `.app` bundle you can drag around, put in the Dock, or Automator-chain. Dropping a file on it opens a save dialog for the output location.
 
+**Double-click the droplet** (without dropping anything) to see the safe-area preview for that droplet's letterhead — cut marks, colour-coded tint, source label, all in one PDF that opens in your default viewer. Handy for verifying "will Markdown land where I expect it" before committing to a merge.
+
 ### ⌨️ Command line
 
 Best for scripting, CI, or one-shot conversions. No droplet needed.

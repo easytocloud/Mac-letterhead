@@ -175,20 +175,31 @@ on run
         end if
     end try
 
+    -- In production mode we may need uvx to invoke the preview command. Also
+    -- read the python path if we're in development mode (dev droplets embed
+    -- an absolute python interpreter path in the dev_mode marker file).
+    set python_path to ""
+    if is_dev_mode then
+        try
+            set python_path to do shell script "cat " & quoted form of dev_mode_posix & " | tr -d '\\n'"
+        end try
+    end if
+
     -- About-dialog: bold title from the droplet name+version, short plain-language
     -- message body, mode line only when not Production. Using `display alert` so the
     -- droplet's bundled Mac-letterhead.icns is used as the dialog icon (rather than
-    -- AppleScript's default generic note icon).
+    -- AppleScript's default generic note icon). "Preview Safe Area" is the default
+    -- button so double-click + Enter goes straight to the visualization.
     if is_dev_mode then
         set dialog_title to "Mac-letterhead Droplet v{{VERSION}}"
-        set dialog_buttons to {"Show Letterhead", "OK"}
+        set dialog_buttons to {"OK", "Preview Safe Area"}
         set dialog_body to "Mode: Development" & return & return & "Drop PDF or Markdown files onto the droplet to apply your letterhead."
     else if {{PINNED}} then
         set dialog_title to "Mac-letterhead Droplet v{{VERSION}}"
-        set dialog_buttons to {"Show Letterhead", "OK"}
+        set dialog_buttons to {"OK", "Preview Safe Area"}
         set dialog_body to "Drop PDF or Markdown files onto the droplet to apply your letterhead."
     else
-        set dialog_buttons to {"Show Letterhead", "Refresh", "OK"}
+        set dialog_buttons to {"Refresh", "OK", "Preview Safe Area"}
         -- Probe live version via uvx. Strict regex against `mac-letterhead X.Y.Z[...]`
         -- so any other stdout noise (e.g. WeasyPrint diagnostics on macOS 27 beta when
         -- pango/cairo aren't installed) cannot leak into the title.
@@ -204,27 +215,68 @@ on run
         set dialog_body to "Drop PDF or Markdown files onto the droplet to apply your letterhead." & return & return & "Updates arrive automatically on every drop. Click Refresh to update right now."
     end if
 
-    set dialog_result to display alert dialog_title message dialog_body buttons dialog_buttons default button "OK"
+    -- "Preview Safe Area" is the default button so double-click + Enter jumps
+    -- straight into the visualization — the primary reason someone double-clicks
+    -- the droplet with no file attached.
+    set dialog_result to display alert dialog_title message dialog_body buttons dialog_buttons default button "Preview Safe Area"
 
     set chosen_button to button returned of dialog_result
 
-    if chosen_button is "Show Letterhead" then
-        -- Get letterhead path from app bundle
+    if chosen_button is "Preview Safe Area" then
+        -- Generate a safe-area preview PDF for this droplet's letterhead and open
+        -- it in the user's default PDF viewer. Same three-tier resolution the
+        -- merge pipeline uses (annotation → heuristic → fallback), colour-coded
+        -- cut marks + tint + source label.
         set letterhead_path to app_path & "Contents:Resources:letterhead.pdf"
-
-        -- Check if letterhead exists and open it using shell command instead of System Events
         try
             set letterhead_posix to POSIX path of letterhead_path
             set letterhead_exists to (do shell script "test -f " & quoted form of letterhead_posix & " && echo 'true' || echo 'false'") is "true"
 
-            if letterhead_exists then
-                do shell script "open " & quoted form of letterhead_posix
-            else
-                -- Critical error - app bundle is corrupted
+            if not letterhead_exists then
                 display alert "Missing Letterhead File" message "The letterhead file is missing from the app bundle. This droplet may be corrupted and should be reinstalled." as critical
+                return
             end if
+
+            -- Temporary output path. mktemp -t on macOS (BSD) treats the argument
+            -- as a prefix and appends a random suffix — so `mktemp -t foo.pdf`
+            -- produces `.../foo.pdf.XXXX`, and the real extension becomes the
+            -- gibberish, which Launch Services refuses to open. Solve by
+            -- creating a directory instead and placing preview.pdf inside it,
+            -- guaranteeing a real `.pdf` suffix.
+            set preview_dir to do shell script "mktemp -d -t mac-letterhead-preview"
+            set preview_output to preview_dir & "/preview.pdf"
+
+            -- Build the preview command. Dev droplets shell out to a local python;
+            -- production droplets go through uvx with the same version-pinning rules
+            -- the `on open` handler uses.
+            if is_dev_mode then
+                if python_path is "" then
+                    display alert "Development mode misconfigured" message "Cannot find the Python interpreter recorded in the dev_mode marker file. Rebuild the droplet with --dev." as critical
+                    return
+                end if
+                set preview_cmd to quoted form of python_path & " -m letterhead_pdf preview " & quoted form of letterhead_posix & " --output " & quoted form of preview_output
+            else
+                set uvx_bin to my resolve_uvx()
+                if uvx_bin is "" then
+                    display alert "uvx not found" message "Mac-letterhead requires uv/uvx to run. Install it with:" & return & return & "curl -LsSf https://astral.sh/uv/install.sh | sh" & return & return & "Then re-open this droplet." as critical
+                    return
+                end if
+                if {{PINNED}} then
+                    set pkg_spec to "mac-letterhead@{{VERSION}}"
+                else
+                    set pkg_spec to "mac-letterhead"
+                end if
+                set preview_cmd to quoted form of uvx_bin & " " & pkg_spec & " preview " & quoted form of letterhead_posix & " --output " & quoted form of preview_output
+            end if
+
+            try
+                do shell script preview_cmd
+                do shell script "open " & quoted form of preview_output
+            on error preview_error
+                display alert "Preview failed" message ("Could not render the safe-area preview:" & return & return & preview_error) as critical
+            end try
         on error error_message
-            display alert "Error Opening Letterhead" message "Could not open letterhead file: " & error_message as critical
+            display alert "Error generating preview" message error_message as critical
         end try
     else if chosen_button is "Refresh" then
         my refresh_unpinned()
