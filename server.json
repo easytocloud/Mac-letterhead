@@ -1,8 +1,9 @@
 {
-  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.easytocloud/mac-letterhead",
   "title": "Mac-letterhead",
   "description": "Professional letterhead PDF generator for macOS with Markdown support and smart margin detection",
+  "websiteUrl": "https://github.com/easytocloud/Mac-letterhead",
   "repository": {
     "url": "https://github.com/easytocloud/Mac-letterhead",
     "source": "github"
@@ -20,6 +21,7 @@
       },
       "packageArguments": [
         {
+          "type": "positional",
           "value": "mcp"
         }
       ],
@@ -27,7 +29,7 @@
     }
   ],
   "_meta": {
-    "io.github.easytocloud/mac-letterhead": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
       "license": "MIT",
       "author": {
         "name": "Erik",
