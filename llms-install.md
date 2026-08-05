@@ -1,6 +1,6 @@
 # LLM Installation Guide for Mac-letterhead
 
-This guide provides installation instructions for using Mac-letterhead with various Large Language Models (LLMs) and AI assistants that support the Model Context Protocol (MCP).
+Mac-letterhead turns any letterhead PDF into digital stationery: it prints Markdown onto the letterhead without overprinting your header, footer, or logo, and drives the typography (fonts and colors) from CSS. This guide shows how to wire it up with Large Language Models and AI assistants that support the Model Context Protocol (MCP).
 
 ## Supported LLMs and AI Assistants
 
@@ -19,10 +19,15 @@ Mac-letterhead's MCP server works with any AI assistant that supports the Model 
 - **uv package manager**: Install with `pip install uv` if not available
 
 ### Install Mac-letterhead with MCP Support
+
+You don't need to install anything ahead of time — the client configs below invoke `uvx`, which fetches Mac-letterhead on demand and runs it in an ephemeral environment. If you'd rather install once and pin the version, use:
+
 ```bash
-# Install Mac-letterhead with MCP server capabilities
-uvx install "mac-letterhead[mcp]"
+# One-time install (permanent) — optional
+uv tool install "Mac-letterhead[mcp]"
 ```
+
+Note: `uvx install` is not a valid subcommand; `uvx` is short for `uv tool run` (ephemeral). Use `uv tool install` for a permanent install.
 
 ### Optional: System Dependencies for Enhanced Rendering
 For optimal Markdown-to-PDF conversion quality:
@@ -33,7 +38,7 @@ brew install pango cairo fontconfig freetype harfbuzz
 ## Setup Your Letterhead Files
 
 ### Organize Letterhead Templates
-Create and organize your letterhead files in the standard directory:
+Each brand identity is a pair: `<name>.pdf` supplies the stationery artwork (logo, header, footer) and the optional `<name>.css` supplies the typography (fonts, colors, table/code styling). Both live in `~/.letterhead/`:
 
 ```bash
 # Create the letterhead directory
@@ -42,12 +47,14 @@ mkdir -p ~/.letterhead
 # Example organization:
 ~/.letterhead/
 ├── company.pdf        # Corporate letterhead template
-├── company.css        # Optional custom styling for company docs
+├── company.css        # Corporate typography (fonts, colors, spacing)
 ├── personal.pdf       # Personal letterhead template
-├── personal.css       # Optional styling for personal docs
+├── personal.css       # Personal typography
 ├── client-acme.pdf    # Client-specific letterhead
 └── technical.pdf      # Technical documentation letterhead
 ```
+
+The CSS is optional — without it, sensible defaults apply. With it, you get a full brand identity from a plain Markdown file. See the [Brand Styling with CSS](README.md#brand-styling-with-css) section of the README for a worked example.
 
 ### Quick Setup Script
 Use the provided setup script to create sample letterhead files:
