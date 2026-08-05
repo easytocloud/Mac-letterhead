@@ -1,3 +1,10 @@
+# [0.19.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.9...v0.19.0) (2026-08-05)
+
+
+### Features
+
+* **mcp:** add ToolAnnotations to every MCP tool ([fec0036](https://github.com/easytocloud/Mac-letterhead/commit/fec0036da7719eff6c7df2507c423fe534bf3c75))
+
 ## [0.18.9](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.8...v0.18.9) (2026-08-05)
 
 
