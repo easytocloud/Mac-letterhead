@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.20.1...v0.21.0) (2026-08-05)
+
+
+### Features
+
+* **safe-area:** three-tier safe-area detection + preview visualization ([5dcc683](https://github.com/easytocloud/Mac-letterhead/commit/5dcc6834afecaefdac96a5a158179cb7f3d71863))
+
 ## [0.20.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.20.0...v0.20.1) (2026-08-05)
 
 
