@@ -112,6 +112,6 @@ jobs:
 
           **Version**: $VERSION
           **Namespace**: io.github.easytocloud/mac-letterhead
-          **Registry**: https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead
+          **Registry**: https://registry.modelcontextprotocol.io/v0.1/servers/io.github.easytocloud%2Fmac-letterhead/versions/latest
           **Release**: https://github.com/easytocloud/Mac-letterhead/releases/tag/v${VERSION}
           EOF

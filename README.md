@@ -14,6 +14,16 @@
 
 A professional macOS utility that applies letterhead templates to PDF and Markdown documents. Mac-letterhead creates drag-and-drop applications that automatically merge your company letterhead with documents while preserving formatting and ensuring professional presentation.
 
+## Three ways to use it
+
+Same engine, three interfaces — pick whichever fits your workflow.
+
+- **🖱️  Drag-and-drop droplet (Mac-native).** `uvx mac-letterhead install --name "Company"` creates a droplet application on your Desktop. Drop any PDF or `.md` file onto it and get back a letterheaded PDF. This is the intended workflow for humans on a Mac — no terminal required after install.
+- **⌨️  Command line.** `uvx mac-letterhead merge-md letterhead.pdf "Output" ~/Desktop document.md` — same engine, scriptable and headless. Suitable for Makefiles, CI, or ad-hoc shell use.
+- **🤖 MCP server for AI assistants.** `uvx mac-letterhead[mcp] mcp` runs a Model Context Protocol server that Claude Desktop, Claude Code, and other MCP clients can call directly. Published on the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.easytocloud/mac-letterhead`, and browsable on [Glama](https://glama.ai/mcp/servers/easytocloud/mac-letterhead) and [PulseMCP](https://www.pulsemcp.com/servers/easytocloud).
+
+All three read the same `~/.letterhead/<name>.pdf` + `<name>.css` brand-identity pair, so a droplet you build for yourself and an MCP call Claude makes produce identical output.
+
 ## What Mac-letterhead Does
 
 Mac-letterhead transforms your letterhead PDF into a powerful document processing tool:
@@ -64,7 +74,7 @@ For complete Desktop Extension details, see [README_MCP.md](README_MCP.md).
 
 ### MCP Registry
 
-Mac-letterhead is published in the [official MCP Registry](https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead), making it easily discoverable by AI assistants and MCP clients.
+Mac-letterhead is published in the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.easytocloud/mac-letterhead`, making it easily discoverable by AI assistants and MCP clients.
 
 **Find Mac-letterhead in**:
 - **Official MCP Registry**: https://registry.modelcontextprotocol.io

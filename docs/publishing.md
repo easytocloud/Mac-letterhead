@@ -10,7 +10,7 @@ For the internal mechanics of the pipeline (workflow file layout, commit-type â†
 
 | Registry | URL | How we appear there |
 |---|---|---|
-| **Official MCP Registry** | https://registry.modelcontextprotocol.io/servers/io.github.easytocloud/mac-letterhead | Automated: `publish-mcp-registry.yml` fires on every `publish.yml` success and calls `mcp-publisher publish`. |
+| **Official MCP Registry** | https://registry.modelcontextprotocol.io (API-only; latest JSON at [`/v0.1/servers/io.github.easytocloud%2Fmac-letterhead/versions/latest`](https://registry.modelcontextprotocol.io/v0.1/servers/io.github.easytocloud%2Fmac-letterhead/versions/latest)) | Automated: `publish-mcp-registry.yml` fires on every `publish.yml` success and calls `mcp-publisher publish`. |
 | **PyPI** | https://pypi.org/project/Mac-letterhead/ | Automated: `publish.yml` uses PyPI Trusted Publishing (OIDC). |
 | **GitHub Releases** | https://github.com/easytocloud/Mac-letterhead/releases | Automated: `publish.yml` (via semantic-release) cuts the release and attaches the `.mcpb` bundle. |
 
