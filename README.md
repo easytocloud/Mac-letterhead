@@ -2,10 +2,14 @@
 
 <!-- mcp-name: io.github.easytocloud/mac-letterhead -->
 
-![PyPI Version](https://img.shields.io/pypi/v/Mac-letterhead.svg)
-![Build Status](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml/badge.svg)
-![License](https://img.shields.io/github/license/easytocloud/Mac-letterhead.svg)
-![MCP Registry](https://img.shields.io/badge/MCP-Registry-blue?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMyA3TDEyIDEyTDIxIDdMMTIgMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zIDdWMTdMMTIgMjJWMTJMMyA3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTIxIDdWMTdMMTIgMjJWMTJMMjEgN1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=)
+[![PyPI Version](https://img.shields.io/pypi/v/Mac-letterhead?logo=pypi&logoColor=white)](https://pypi.org/project/Mac-letterhead/)
+[![Homebrew](https://img.shields.io/badge/homebrew-easytocloud%2Ftap-fbb040?logo=homebrew&logoColor=white)](https://github.com/easytocloud/homebrew-tap)
+[![Python](https://img.shields.io/pypi/pyversions/Mac-letterhead?logo=python&logoColor=white)](https://pypi.org/project/Mac-letterhead/)
+![macOS](https://img.shields.io/badge/macOS-only-000000?logo=apple&logoColor=white)
+[![Build](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml/badge.svg)](https://github.com/easytocloud/Mac-letterhead/actions/workflows/publish.yml)
+[![License](https://img.shields.io/github/license/easytocloud/Mac-letterhead?color=blue)](LICENSE)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-6366f1?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMyA3TDEyIDEyTDIxIDdMMTIgMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zIDdWMTdMMTIgMjJWMTJMMyA3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTIxIDdWMTdMMTIgMjJWMTJMMjEgN1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=)](https://registry.modelcontextprotocol.io)
+[![Downloads](https://img.shields.io/pypi/dm/Mac-letterhead?logo=pypi&logoColor=white&color=blueviolet)](https://pypi.org/project/Mac-letterhead/)
 
 <!-- GitHub can't render .icns files directly, so we use HTML to link the icon badge -->
 <a href="https://pypi.org/project/Mac-letterhead/" title="Mac-letterhead on PyPI">
