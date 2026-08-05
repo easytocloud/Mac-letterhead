@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.19.0...v0.20.0) (2026-08-05)
+
+
+### Features
+
+* **brew:** add Homebrew formula publication via easytocloud/tap ([56749e8](https://github.com/easytocloud/Mac-letterhead/commit/56749e8a87fa7527b76e27188574b810cbb3329e))
+
 # [0.19.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.9...v0.19.0) (2026-08-05)
 
 
