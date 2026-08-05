@@ -341,45 +341,73 @@ def analyze_page_safe_area(page) -> Dict:
 
 def analyze_letterhead_detailed(letterhead_path: str) -> Dict[str, Dict]:
     """
-    Rich variant of analyze_letterhead. Returns:
-        {'first_page':  {'source', 'rect', 'margins'},
-         'other_pages': {'source', 'rect', 'margins'}}
+    Rich variant of analyze_letterhead. Returns one entry per applicable page
+    position, each with `{'source', 'rect', 'margins'}`.
+
+    Multi-page letterhead template semantics (matches the feature documented in
+    the README):
+
+      1-page letterhead → every document page uses the letterhead's page-1
+        safe area. Result: `{'first_page': X, 'other_pages': X (copy)}`.
+      2-page letterhead → document page 1 uses letterhead page 1, all others
+        use letterhead page 2. Result: `{'first_page': X, 'other_pages': Y}`.
+      3-page letterhead → document page 1 uses letterhead page 1 (title),
+        even document pages (2, 4, 6…) use letterhead page 2, odd document
+        pages (3, 5, 7…) use letterhead page 3. Result:
+        `{'first_page': X, 'other_pages': Y  (== even_pages, for legacy
+          callers), 'even_pages': Y, 'odd_pages': Z}`.
+
+    `other_pages` is always populated for back-compat with the legacy
+    `analyze_letterhead()` shape — legacy callers that only understand
+    first/other pages will apply the page-2-of-letterhead margins to
+    everything after page 1, which is the right degradation.
 
     'margins' has the same shape as analyze_letterhead()'s return value.
     'rect' is a fitz.Rect for the safe area on the page.
     'source' is one of SafeAreaSource values: 'annotation' | 'heuristic' | 'fallback'.
-
-    For annotation-sourced safe areas, no top/bottom padding is added — the
-    user's drawn rectangle is treated as exact intent. For heuristic-sourced,
-    a 20-pt top/bottom pad is added (matching legacy behavior). For fallback,
-    the 1-inch defaults are already generous, so no additional padding.
     """
     logging.info(f"Analyzing letterhead safe areas: {letterhead_path}")
     doc = None
     try:
         doc = fitz.open(letterhead_path)
-        result = {
-            'first_page':  {'source': SafeAreaSource.FALLBACK.value,
-                            'rect': fitz.Rect(0, 0, 0, 0),
-                            'margins': {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}},
-            'other_pages': {'source': SafeAreaSource.FALLBACK.value,
-                            'rect': fitz.Rect(0, 0, 0, 0),
-                            'margins': {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}},
-        }
-        if doc.page_count == 0:
-            return result
 
-        result['first_page'] = analyze_page_safe_area(doc[0])
-        if doc.page_count > 1:
+        # Empty-doc fallback — an all-zero safe area on both positions, so
+        # calling code doesn't crash.
+        def _zero():
+            return {'source': SafeAreaSource.FALLBACK.value,
+                    'rect':   fitz.Rect(0, 0, 0, 0),
+                    'margins': {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}}
+
+        if doc.page_count == 0:
+            return {'first_page': _zero(), 'other_pages': _zero()}
+
+        # Deep-copy helper — the rect and margins dict are mutable; sharing
+        # the same objects across page-type keys is a subtle-bug generator.
+        def _dup(info):
+            return {'source':  info['source'],
+                    'rect':    fitz.Rect(info['rect']),
+                    'margins': dict(info['margins'])}
+
+        first = analyze_page_safe_area(doc[0])
+        result = {'first_page': first}
+
+        if doc.page_count == 1:
+            # single-page template — everything mirrors page 1
+            result['other_pages'] = _dup(first)
+        elif doc.page_count == 2:
+            # two-page template — page 2 of the template applies to all
+            # non-first document pages
             result['other_pages'] = analyze_page_safe_area(doc[1])
         else:
-            # Deep-copy — same fitz.Rect object would be mutated by the padding below
-            fp = result['first_page']
-            result['other_pages'] = {
-                'source':  fp['source'],
-                'rect':    fitz.Rect(fp['rect']),
-                'margins': dict(fp['margins']),
-            }
+            # three-or-more-page template — page 2 → even document pages,
+            # page 3 → odd document pages (page 1 handled by `first_page`).
+            # Any pages beyond the third in the letterhead template are
+            # ignored (we've never advertised support for that).
+            even = analyze_page_safe_area(doc[1])
+            odd  = analyze_page_safe_area(doc[2])
+            result['other_pages'] = _dup(even)   # legacy back-compat: use page 2 as the "everything after first" bucket
+            result['even_pages']  = even
+            result['odd_pages']   = odd
 
         # analyze_page_safe_area already applies HEURISTIC_TOP_BOTTOM_PADDING —
         # no aggregate-level adjustment needed here anymore.

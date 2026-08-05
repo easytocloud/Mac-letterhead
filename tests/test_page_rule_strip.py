@@ -15,8 +15,91 @@ accidentally regress if the sanitiser gets rewritten.
 """
 
 from letterhead_pdf.markdown.backends.weasyprint_backend import (
+    _build_page_margin_css,
     _strip_page_rules_with_margins,
 )
+
+
+# ---- multi-page margin emission ----------------------------------------
+
+
+def test_build_page_margin_css_two_page_template_emits_first_and_default():
+    """
+    2-page letterhead → CSS must map document page 1 to letterhead page 1's
+    safe area and every subsequent document page to letterhead page 2's.
+    Regression: through 0.24.1 the backend only emitted margins for
+    `first_page`, so continuation pages inherited page-1 margins and content
+    overflowed the real safe area. Especially visible when a user drew a
+    tight Preview.app rectangle on page 2 of the letterhead.
+    """
+    margins = {
+        'first_page':  {'top': 100, 'right': 50, 'bottom': 120, 'left': 60},
+        'other_pages': {'top': 40,  'right': 70, 'bottom': 90,  'left': 200},
+    }
+    css = _build_page_margin_css(margins)
+
+    # Four blocks now: :first, :left, :right, and default @page fallback.
+    assert "@page :first" in css
+    assert "@page :left"  in css
+    assert "@page :right" in css
+    # Default block matches the last "@page {" (no selector between @page and {).
+    # For 2-page templates :left/:right also carry other_pages margins so
+    # WeasyPrint applies page 2's margins to every non-first page regardless
+    # of even/odd.
+    first_section  = css.split("@page :left")[0]
+    left_section   = css.split("@page :left")[1].split("@page :right")[0]
+    right_section  = css.split("@page :right")[1].split("@page {")[0]
+    assert "margin-top: 100pt" in first_section
+    assert "margin-left: 60pt" in first_section
+    for section, name in [(left_section, "left"), (right_section, "right")]:
+        assert "margin-top: 40pt" in section, f"{name} block should use other_pages top"
+        assert "margin-left: 200pt" in section, f"{name} block should use other_pages left"
+
+
+def test_build_page_margin_css_three_page_template_uses_left_right_split():
+    """
+    3-page letterhead → letterhead page 1 goes to `:first`, page 2 to `:left`
+    (even document pages), page 3 to `:right` (odd document pages > 1).
+    """
+    margins = {
+        'first_page':  {'top': 100, 'right': 50, 'bottom': 120, 'left': 60},
+        'other_pages': {'top': 40,  'right': 70, 'bottom': 90,  'left': 200},   # legacy back-compat
+        'even_pages':  {'top': 40,  'right': 70, 'bottom': 90,  'left': 200},
+        'odd_pages':   {'top': 55,  'right': 85, 'bottom': 65,  'left': 45},
+    }
+    css = _build_page_margin_css(margins)
+
+    left_section  = css.split("@page :left")[1].split("@page :right")[0]
+    right_section = css.split("@page :right")[1].split("@page {")[0]
+
+    # :left carries even_pages margins
+    assert "margin-top: 40pt"  in left_section
+    assert "margin-left: 200pt" in left_section
+
+    # :right carries odd_pages margins (distinct from :left)
+    assert "margin-top: 55pt"  in right_section
+    assert "margin-left: 45pt" in right_section
+
+
+def test_build_page_margin_css_single_page_all_selectors_share_margins():
+    """1-page letterhead → every selector applies the same margins so all
+    document pages get consistent letterhead treatment."""
+    margins = {
+        'first_page':  {'top': 80, 'right': 60, 'bottom': 80, 'left': 60},
+        'other_pages': {'top': 80, 'right': 60, 'bottom': 80, 'left': 60},
+    }
+    css = _build_page_margin_css(margins)
+    # 4 blocks × 4 margin lines = 16 occurrences of "80pt" / "60pt" combined
+    assert css.count("margin-top: 80pt") == 4
+    assert css.count("margin-left: 60pt") == 4
+
+
+def test_build_page_margin_css_uses_important():
+    """Margins must win over any user @page rules that survived sanitisation."""
+    margins = {'first_page': {'top': 100, 'right': 50, 'bottom': 100, 'left': 50}}
+    css = _build_page_margin_css(margins)
+    # 4 margins per block × 4 blocks (:first, :left, :right, default) = 16
+    assert css.count("!important") == 16
 
 
 def test_page_with_margin_declaration_is_stripped():

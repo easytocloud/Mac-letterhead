@@ -32,6 +32,58 @@ def enhance_gfm_task_lists(html_content: str) -> str:
     return html_content
 
 
+def _build_page_margin_css(margins: dict) -> str:
+    """
+    Emit the `@page` blocks that pin the letterhead-derived margins.
+
+    Multi-page letterheads carry a different safe area per page position —
+    the whole point of the 2-page and 3-page letterhead feature. CSS Paged
+    Media selectors let us map each position to a WeasyPrint rule:
+
+        @page :first  → document page 1              (letterhead page 1)
+        @page :left   → document even pages (2,4,…)  (letterhead page 2)
+        @page :right  → document odd pages (3,5,…)   (letterhead page 3)
+        @page         → everything else / fallback
+
+    Emitted in that order so more-specific selectors override the fallback.
+    `analyze_letterhead_detailed` populates `other_pages` unconditionally
+    (for legacy callers) and adds `even_pages`/`odd_pages` only for 3-page
+    templates, so:
+
+      - 1-page template → all four rules use the same margins
+      - 2-page template → :first uses page 1, everything else uses page 2
+      - 3-page template → :first uses page 1, :left uses page 2, :right uses
+        page 3; the fallback @page (which shouldn't ever match) uses page 2
+
+    Page numbers are deliberately OFF here; users opt in per document via
+    front-matter `page-numbers:` (see the front_matter module).
+    """
+    fp = margins['first_page']
+    op = margins.get('other_pages') or fp
+    ep = margins.get('even_pages') or op
+    odp = margins.get('odd_pages') or op
+
+    def _block(selector: str, m: dict) -> str:
+        return (
+            f"@page {selector} {{\n"
+            f"    margin-top: {m['top']}pt !important;\n"
+            f"    margin-right: {m['right']}pt !important;\n"
+            f"    margin-bottom: {m['bottom']}pt !important;\n"
+            f"    margin-left: {m['left']}pt !important;\n"
+            "}\n"
+        )
+
+    return (
+        _block(":first", fp)
+        + "\n"
+        + _block(":left", ep)
+        + "\n"
+        + _block(":right", odp)
+        + "\n"
+        + _block("", op)
+    )
+
+
 def _strip_page_rules_with_margins(css: str) -> str:
     """
     Remove `@page { ... }` blocks that declare a `margin-*` property so the
@@ -196,7 +248,6 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
     except Exception:
         pass
 
-    fp = margins['first_page']
     combined_css = f"""
 {defaults_css}
 
@@ -204,14 +255,7 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
 
 {pygments_css}
 
-@page {{
-    margin-top: {fp['top']}pt !important;
-    margin-right: {fp['right']}pt !important;
-    margin-bottom: {fp['bottom']}pt !important;
-    margin-left: {fp['left']}pt !important;
-    /* Page numbers deliberately OFF here — opt in via front-matter
-     * `page-numbers:` (see letterhead_pdf.markdown.front_matter). */
-}}
+{_build_page_margin_css(margins)}
 """
 
     html_template = f"""<!DOCTYPE html>

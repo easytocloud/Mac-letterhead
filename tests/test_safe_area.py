@@ -274,6 +274,92 @@ def test_analyze_letterhead_detailed_surfaces_source_and_rect(tmp_path):
         assert set(info["margins"].keys()) == {"top", "right", "bottom", "left"}
 
 
+# ---- multi-page template semantics --------------------------------------
+
+
+def test_analyze_letterhead_detailed_single_page_mirrors_other_pages(tmp_path):
+    """1-page letterhead → other_pages is a copy of first_page. even/odd absent."""
+    pdf = _blank_page_pdf(str(tmp_path / "1p.pdf"), page_count=1, with_content=True)
+    result = analyze_letterhead_detailed(pdf)
+    assert set(result.keys()) == {"first_page", "other_pages"}
+    # Same values, but not the same object (deep-copied to avoid shared-mutation bugs).
+    assert result["first_page"]["margins"] == result["other_pages"]["margins"]
+    assert result["first_page"]["margins"] is not result["other_pages"]["margins"]
+
+
+def test_analyze_letterhead_detailed_two_page_uses_page_two_for_others(tmp_path):
+    """2-page letterhead → other_pages reflects letterhead page 2. No even/odd."""
+    doc = fitz.open()
+    doc.new_page(width=595, height=842)  # letterhead page 1 — blank
+    p2 = doc.new_page(width=595, height=842)
+    p2.insert_text(fitz.Point(72, 60), "HEADER on page 2 only", fontsize=14)
+    pdf_path = str(tmp_path / "2p.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    result = analyze_letterhead_detailed(pdf_path)
+    assert set(result.keys()) == {"first_page", "other_pages"}
+    # Page 1 has no content → fallback; page 2 has header → heuristic
+    assert result["first_page"]["source"] == SafeAreaSource.FALLBACK.value
+    assert result["other_pages"]["source"] == SafeAreaSource.HEURISTIC.value
+
+
+def test_analyze_letterhead_detailed_three_page_exposes_even_and_odd(tmp_path):
+    """
+    3-page letterhead → keys include first_page, other_pages (=even_pages,
+    for legacy callers), even_pages, and odd_pages. Letterhead page 2 becomes
+    even_pages (applied to document pages 2, 4, 6…), page 3 becomes odd_pages
+    (applied to 3, 5, 7…).
+    """
+    doc = fitz.open()
+    doc.new_page(width=595, height=842)   # letterhead page 1 (title)
+    p2 = doc.new_page(width=595, height=842)
+    p2.insert_text(fitz.Point(72, 60), "EVEN-PAGE header", fontsize=14)   # → shifts safe area down
+    p3 = doc.new_page(width=595, height=842)
+    p3.insert_text(fitz.Point(72, 60), "ODD-PAGE header", fontsize=14)
+    p3.insert_text(fitz.Point(72, 800), "odd footer", fontsize=8)          # → also shifts bottom
+    pdf_path = str(tmp_path / "3p.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    result = analyze_letterhead_detailed(pdf_path)
+    assert {"first_page", "other_pages", "even_pages", "odd_pages"} <= set(result.keys())
+
+    # other_pages is a copy of even_pages (letterhead page 2) for legacy callers
+    assert result["other_pages"]["margins"] == result["even_pages"]["margins"]
+    # But it's a distinct dict so downstream mutation on one doesn't leak into the other
+    assert result["other_pages"]["margins"] is not result["even_pages"]["margins"]
+
+    # odd_pages carries its own margins block — not identity-shared with even_pages
+    # (both may happen to produce the same numbers if the heuristic can't tell the
+    # pages apart, but the dict is a fresh instance).
+    assert result["odd_pages"]["margins"] is not result["even_pages"]["margins"]
+
+
+def test_analyze_letterhead_legacy_still_returns_two_keys_for_multipage(tmp_path):
+    """
+    The legacy analyze_letterhead() shim now returns whatever detailed produces.
+    For a 3-page letterhead the shim exposes 4 keys, but every dict is
+    `{top,right,bottom,left}` floats — the shape existing callers iterate over.
+    """
+    doc = fitz.open()
+    for i in range(3):
+        p = doc.new_page(width=595, height=842)
+        p.insert_text(fitz.Point(72, 60), f"HEAD {i}", fontsize=12)
+    pdf_path = str(tmp_path / "3p-legacy.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    from letterhead_pdf.markdown.pdf_analyzer import analyze_letterhead
+    result = analyze_letterhead(pdf_path)
+    assert "first_page" in result
+    assert "other_pages" in result
+    for key, m in result.items():
+        assert set(m.keys()) == {"top", "right", "bottom", "left"}
+        for v in m.values():
+            assert isinstance(v, (int, float))
+
+
 # ---------- preview renderer smoke test ---------------------------------
 
 
