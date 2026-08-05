@@ -1,3 +1,10 @@
+## [0.24.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.1...v0.24.2) (2026-08-05)
+
+
+### Bug Fixes
+
+* honour each page's safe area on multi-page letterheads (1/2/3-page templates) ([4a71b36](https://github.com/easytocloud/Mac-letterhead/commit/4a71b366ee1e79f0d4962a3326fda251e9abef00))
+
 ## [0.24.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.0...v0.24.1) (2026-08-05)
 
 
