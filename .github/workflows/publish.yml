@@ -136,3 +136,50 @@ jobs:
             mv dxt/dxt.mcpb "$MCPB_FILE"
           fi
           gh release upload "v${VERSION}" "$MCPB_FILE" --clobber
+
+      # Publishes/updates Formula/mac-letterhead.rb in easytocloud/homebrew-tap,
+      # so `brew install easytocloud/tap/mac-letterhead` picks up the new version.
+      # The formula's install step just drops distribution/bin/mac-letterhead in
+      # PATH; that shim delegates to uvx, which fetches Mac-letterhead from PyPI
+      # at first use.
+      #
+      # Auth: the tap lives in a different repo, so the default GITHUB_TOKEN
+      # (scoped to this repo only) can't commit there. We reuse the same
+      # 1Password pattern as easytocloud/ca-uvx and the rest of the tap:
+      # OP_SERVICE_ACCOUNT_TOKEN (org secret) unlocks the CICD vault, from
+      # which we pull github-easytocloud-brew — a PAT with repo write on
+      # easytocloud/homebrew-tap.
+      - name: Configure 1Password Service Account
+        if: steps.semrel.outputs.new_release_published == 'true'
+        uses: 1password/load-secrets-action/configure@v1
+        with:
+          service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+
+      - name: Load Homebrew tap GitHub token from 1Password
+        id: load-brew-token
+        if: steps.semrel.outputs.new_release_published == 'true'
+        uses: 1password/load-secrets-action@v2
+        with:
+          export-env: false
+        env:
+          HOMEBREW_TAP_GITHUB_TOKEN: op://CICD/github-easytocloud-brew/credential
+
+      - name: Publish Homebrew formula to easytocloud/homebrew-tap
+        # Kept tolerant: if 1Password auth or the tap repo hits a transient
+        # issue, we still want the release itself (PyPI + .mcpb + MCP registry)
+        # to complete. Manual retry via workflow_dispatch is straightforward.
+        continue-on-error: true
+        if: steps.semrel.outputs.new_release_published == 'true'
+        uses: Justintime50/homebrew-releaser@v1
+        with:
+          homebrew_owner: easytocloud
+          homebrew_tap: homebrew-tap
+          formula_folder: Formula
+          github_token: ${{ steps.load-brew-token.outputs.HOMEBREW_TAP_GITHUB_TOKEN }}
+          commit_owner: homebrew-releaser
+          commit_email: homebrew-releaser@easytocloud.com
+          depends_on: |
+            "uv"
+          install: 'bin.install "distribution/bin/mac-letterhead" => "mac-letterhead"'
+          test: 'assert_match("mac-letterhead", shell_output("#{bin}/mac-letterhead --version"))'
+          update_readme_table: true

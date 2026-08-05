@@ -1,0 +1,15 @@
+#!/bin/bash
+# Mac-letterhead — Homebrew wrapper.
+#
+# This script is what `brew install easytocloud/tap/mac-letterhead` puts in
+# your PATH. It delegates to `uvx`, which downloads Mac-letterhead from PyPI
+# and runs it in an ephemeral, cached environment. The first invocation
+# pulls the package (typically a few seconds); subsequent runs reuse uv's
+# cache and are near-instant.
+#
+# We include the [mcp] extra so the `mcp` subcommand is available out of
+# the box for Claude Desktop, Claude Code, and other MCP clients.
+#
+# Source: https://github.com/easytocloud/Mac-letterhead
+set -e
+exec uvx --from "Mac-letterhead[mcp]" mac-letterhead "$@"

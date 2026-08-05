@@ -188,3 +188,7 @@ tmp/
 # Node tooling
 node_modules/
 .claude/
+
+# DXT build artifacts (.mcpb files are attached to GH releases, not committed)
+dxt/*.mcpb
+
