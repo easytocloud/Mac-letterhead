@@ -1,3 +1,10 @@
+# [0.22.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.21.0...v0.22.0) (2026-08-05)
+
+
+### Features
+
+* **droplet:** preview safe area on double-click ([7902821](https://github.com/easytocloud/Mac-letterhead/commit/790282113e24fb786512654cfc3ae5057d12171a))
+
 # [0.21.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.20.1...v0.21.0) (2026-08-05)
 
 
