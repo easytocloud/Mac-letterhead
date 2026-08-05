@@ -1,15 +1,49 @@
 """
-PDF letterhead analysis — margin and printable-area detection.
+PDF letterhead analysis — safe-area detection.
 
 Extracted from MarkdownProcessor so the MCP server can call analyze_letterhead
 without importing the full markdown/ReportLab stack.
+
+Three-tier safe-area resolution (used by analyze_letterhead_detailed):
+
+1. **Annotation** — a Square annotation the user drew in Preview.app (or any
+   PDF editor) whose title/contents/subject contains one of SAFE_AREA_LABELS
+   (case-insensitive). Highest priority — treated as explicit user intent.
+2. **Heuristic** — the content-region layout analysis. Looks at text blocks,
+   drawings, and images to identify header/footer/logo zones and derive a
+   safe rectangle that avoids them.
+3. **Fallback** — 1-inch margins on every side. Used when the heuristic finds
+   no content regions at all (rare — a blank letterhead).
+
+analyze_letterhead() preserves its existing return shape (just margins) so
+existing callers (MCP server, merge command) keep working unchanged.
+analyze_letterhead_detailed() surfaces the extra info (source + rect) needed
+by the safe-area preview renderer.
 """
 
 import logging
-from typing import Dict
+from enum import Enum
+from typing import Dict, Optional
 
 import fitz  # PyMuPDF
 from reportlab.lib.pagesizes import A4, LETTER
+
+
+class SafeAreaSource(str, Enum):
+    """Where the safe-area rectangle came from."""
+    ANNOTATION = "annotation"
+    HEURISTIC = "heuristic"
+    FALLBACK = "fallback"
+
+
+# Substrings that identify a safe-area annotation. Case-insensitive; matched
+# against the annotation's title, contents, and subject. Users can label their
+# rectangle with any of these.
+SAFE_AREA_LABELS = (
+    "safe-area", "safe area",
+    "printable-area", "printable area", "printable",
+    "content-area", "content area",
+)
 
 
 def analyze_page_regions(page) -> Dict:
@@ -26,15 +60,19 @@ def analyze_page_regions(page) -> Dict:
         page_size = A4
         logging.info(f"Non-standard page size ({width}x{height}), defaulting to A4")
 
-    top_quarter = height / 4
-    bottom_quarter = height * 3 / 4
+    # Header/footer bands. Widened to top/bottom third (was quarter) so that
+    # wordmarks rendered *below* a logo — common on continuation-page
+    # letterheads that render text as vector paths — still get classified as
+    # header content rather than "middle" (i.e., inside the safe area).
+    top_third = height / 3
+    bottom_third = height * 2 / 3
     content_regions = []
 
     for block in page.get_text("dict")["blocks"]:
         if "lines" in block:
             rect = fitz.Rect(block["bbox"])
             cy = (rect.y0 + rect.y1) / 2
-            region = "header" if cy < top_quarter else ("footer" if cy > bottom_quarter else "middle")
+            region = "header" if cy < top_third else ("footer" if cy > bottom_third else "middle")
             content_regions.append((region, rect))
             logging.info(f"Text {region}: {rect}")
 
@@ -51,14 +89,14 @@ def analyze_page_regions(page) -> Dict:
             logging.info(f"Skipping full-page drawing: {rect}")
             continue
         cy = (rect.y0 + rect.y1) / 2
-        region = "header" if cy < top_quarter else ("footer" if cy > bottom_quarter else "middle")
+        region = "header" if cy < top_third else ("footer" if cy > bottom_third else "middle")
         content_regions.append((region, rect))
         logging.info(f"Drawing {region}: {rect}")
 
     for img in page.get_images():
         for image_rect in page.get_image_rects(img[0]):
             cy = (image_rect.y0 + image_rect.y1) / 2
-            region = "header" if cy < top_quarter else ("footer" if cy > bottom_quarter else "middle")
+            region = "header" if cy < top_third else ("footer" if cy > bottom_third else "middle")
             content_regions.append((region, image_rect))
             logging.info(f"Image {region}: {image_rect}")
 
@@ -159,37 +197,178 @@ def _calculate_smart_margins(regions: Dict, page_rect) -> Dict[str, float]:
     return {'top': top, 'right': right, 'bottom': bottom, 'left': left}
 
 
-def analyze_letterhead(letterhead_path: str) -> Dict[str, Dict[str, float]]:
-    """Analyze a letterhead PDF and return safe printable margins for first/other pages."""
-    logging.info(f"Analyzing letterhead margins: {letterhead_path}")
+def find_safe_area_annotation(page) -> Optional[fitz.Rect]:
+    """
+    Look for a Square annotation on this page whose label identifies it as the
+    user's explicit safe area. Returns the rect if found, else None.
+
+    A rectangle drawn in Preview.app appears as a Square annotation; the
+    "Description" field ends up in the annotation's `content` (and sometimes
+    `title` or `subject`, depending on the editor). We check all three,
+    case-insensitively, against SAFE_AREA_LABELS.
+    """
+    try:
+        annots = list(page.annots() or [])
+    except Exception:
+        annots = []
+
+    for annot in annots:
+        # annot.type is a tuple like (4, "Square"); [1] is the human-readable name
+        try:
+            type_name = annot.type[1] if isinstance(annot.type, tuple) else str(annot.type)
+        except Exception:
+            continue
+        if type_name.lower() != "square":
+            continue
+        info = annot.info or {}
+        label = " ".join(filter(None, [
+            info.get("title", ""),
+            info.get("content", ""),
+            info.get("subject", ""),
+        ])).lower()
+        if any(marker in label for marker in SAFE_AREA_LABELS):
+            logging.info(f"Found explicit safe-area annotation: {annot.rect}")
+            return fitz.Rect(annot.rect)
+    return None
+
+
+def _margins_from_rect(rect: fitz.Rect, page_rect: fitz.Rect) -> Dict[str, float]:
+    """Convert a safe-area rect into the {top,right,bottom,left} margin format."""
+    return {
+        'top':    max(0.0, rect.y0),
+        'left':   max(0.0, rect.x0),
+        'right':  max(0.0, page_rect.width - rect.x1),
+        'bottom': max(0.0, page_rect.height - rect.y1),
+    }
+
+
+def _rect_from_margins(margins: Dict[str, float], page_rect: fitz.Rect) -> fitz.Rect:
+    """Inverse of _margins_from_rect."""
+    return fitz.Rect(
+        margins['left'],
+        margins['top'],
+        page_rect.width - margins['right'],
+        page_rect.height - margins['bottom'],
+    )
+
+
+# Heuristic safety padding — added to top and bottom of the heuristic-detected
+# safe area. 40pt gives visible breathing room between letterhead content and
+# the safe area even when the boundary analysis under-corrects (e.g. on
+# continuation pages where wordmarks render as many tiny vector paths that
+# individually fall under the ≥5×5-pt content threshold). Annotation-sourced
+# areas are trusted verbatim — no padding applied.
+HEURISTIC_TOP_BOTTOM_PADDING = 40
+
+
+def analyze_page_safe_area(page) -> Dict:
+    """
+    Resolve the safe area for a single page. Returns:
+        {'source': SafeAreaSource value,
+         'rect':   fitz.Rect,
+         'margins': {'top', 'right', 'bottom', 'left'}}
+
+    Three tiers:
+      1. explicit annotation drawn by the user (highest priority, no padding)
+      2. heuristic layout analysis (with HEURISTIC_TOP_BOTTOM_PADDING applied)
+      3. fallback default margins (only if the heuristic finds no content at all)
+    """
+    page_rect = page.rect
+
+    # 1. Explicit annotation
+    annot_rect = find_safe_area_annotation(page)
+    if annot_rect is not None:
+        return {
+            'source': SafeAreaSource.ANNOTATION.value,
+            'rect':   annot_rect,
+            'margins': _margins_from_rect(annot_rect, page_rect),
+        }
+
+    # 2/3. Heuristic (or fallback if no content regions)
+    regions = analyze_page_regions(page)
+    margins = _calculate_smart_margins(regions, page_rect)
+    source = (SafeAreaSource.HEURISTIC
+              if regions.get('content_regions')
+              else SafeAreaSource.FALLBACK)
+
+    # Apply safety padding to heuristic results only. Fallback margins are the
+    # generous 1-inch defaults already; no further padding needed there.
+    if source == SafeAreaSource.HEURISTIC:
+        margins['top']    += HEURISTIC_TOP_BOTTOM_PADDING
+        margins['bottom'] += HEURISTIC_TOP_BOTTOM_PADDING
+
+    rect = _rect_from_margins(margins, page_rect)
+    return {
+        'source': source.value,
+        'rect':   rect,
+        'margins': margins,
+    }
+
+
+def analyze_letterhead_detailed(letterhead_path: str) -> Dict[str, Dict]:
+    """
+    Rich variant of analyze_letterhead. Returns:
+        {'first_page':  {'source', 'rect', 'margins'},
+         'other_pages': {'source', 'rect', 'margins'}}
+
+    'margins' has the same shape as analyze_letterhead()'s return value.
+    'rect' is a fitz.Rect for the safe area on the page.
+    'source' is one of SafeAreaSource values: 'annotation' | 'heuristic' | 'fallback'.
+
+    For annotation-sourced safe areas, no top/bottom padding is added — the
+    user's drawn rectangle is treated as exact intent. For heuristic-sourced,
+    a 20-pt top/bottom pad is added (matching legacy behavior). For fallback,
+    the 1-inch defaults are already generous, so no additional padding.
+    """
+    logging.info(f"Analyzing letterhead safe areas: {letterhead_path}")
     doc = None
     try:
         doc = fitz.open(letterhead_path)
-        margins = {
-            'first_page':  {'top': 0, 'right': 0, 'bottom': 0, 'left': 0},
-            'other_pages': {'top': 0, 'right': 0, 'bottom': 0, 'left': 0},
+        result = {
+            'first_page':  {'source': SafeAreaSource.FALLBACK.value,
+                            'rect': fitz.Rect(0, 0, 0, 0),
+                            'margins': {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}},
+            'other_pages': {'source': SafeAreaSource.FALLBACK.value,
+                            'rect': fitz.Rect(0, 0, 0, 0),
+                            'margins': {'top': 0, 'right': 0, 'bottom': 0, 'left': 0}},
         }
-        if doc.page_count > 0:
-            regions = analyze_page_regions(doc[0])
-            page_rect = regions['page_rect']
-            margins['first_page'] = _calculate_smart_margins(regions, page_rect)
-            if doc.page_count > 1:
-                regions2 = analyze_page_regions(doc[1])
-                margins['other_pages'] = _calculate_smart_margins(regions2, page_rect)
-            else:
-                margins['other_pages'] = margins['first_page'].copy()
+        if doc.page_count == 0:
+            return result
 
-        for page_type in margins:
-            margins[page_type]['top']    += 20
-            margins[page_type]['bottom'] += 20
+        result['first_page'] = analyze_page_safe_area(doc[0])
+        if doc.page_count > 1:
+            result['other_pages'] = analyze_page_safe_area(doc[1])
+        else:
+            # Deep-copy — same fitz.Rect object would be mutated by the padding below
+            fp = result['first_page']
+            result['other_pages'] = {
+                'source':  fp['source'],
+                'rect':    fitz.Rect(fp['rect']),
+                'margins': dict(fp['margins']),
+            }
 
-        logging.info(f"First-page margins: {margins['first_page']}")
-        logging.info(f"Other-page margins: {margins['other_pages']}")
-        return margins
+        # analyze_page_safe_area already applies HEURISTIC_TOP_BOTTOM_PADDING —
+        # no aggregate-level adjustment needed here anymore.
+        for page_type, info in result.items():
+            logging.info(f"{page_type}: source={info['source']} rect={info['rect']} margins={info['margins']}")
+        return result
 
     except Exception as e:
         from letterhead_pdf.exceptions import MarkdownProcessingError
-        raise MarkdownProcessingError(f"Error analyzing letterhead margins: {e}") from e
+        raise MarkdownProcessingError(f"Error analyzing letterhead safe areas: {e}") from e
     finally:
         if doc is not None:
             doc.close()
+
+
+def analyze_letterhead(letterhead_path: str) -> Dict[str, Dict[str, float]]:
+    """
+    Analyze a letterhead PDF and return safe printable margins for first/other pages.
+
+    Backwards-compatible shim over analyze_letterhead_detailed — returns only the
+    margin numbers so existing callers (MCP server, PDF merger) keep working
+    unchanged. New callers that need source info or the safe-area rect should
+    use analyze_letterhead_detailed() directly.
+    """
+    detailed = analyze_letterhead_detailed(letterhead_path)
+    return {page_type: info['margins'] for page_type, info in detailed.items()}

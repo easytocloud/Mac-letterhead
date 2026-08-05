@@ -487,6 +487,43 @@ def mcp_command(args: argparse.Namespace) -> int:
         print(f"Error starting MCP server: {str(e)}")
         return 1
 
+def preview_command(args: argparse.Namespace) -> int:
+    """Handle the preview command — render a safe-area visualization PDF."""
+    from pathlib import Path
+    try:
+        # Accept either a full path or a style name (resolves to ~/.letterhead/<name>.pdf).
+        candidate = Path(args.letterhead).expanduser()
+        if not candidate.exists():
+            style_candidate = Path("~/.letterhead").expanduser() / f"{args.letterhead}.pdf"
+            if style_candidate.exists():
+                candidate = style_candidate
+            else:
+                print(f"Error: letterhead not found: {args.letterhead}", file=sys.stderr)
+                print(f"Tried:\n  {Path(args.letterhead).expanduser()}\n  {style_candidate}", file=sys.stderr)
+                return 1
+
+        from letterhead_pdf.markdown.preview import render_safe_area_preview
+        from letterhead_pdf.markdown.pdf_analyzer import analyze_letterhead_detailed
+
+        output = render_safe_area_preview(candidate, args.output)
+        detailed = analyze_letterhead_detailed(str(candidate))
+
+        print(f"Wrote safe-area preview: {output}")
+        for page_type, info in detailed.items():
+            r = info['rect']
+            print(f"  {page_type:12s}  source={info['source']:11s}  "
+                  f"rect=({r.x0:.0f},{r.y0:.0f})-({r.x1:.0f},{r.y1:.0f})  "
+                  f"size={r.width:.0f}×{r.height:.0f}pt")
+        return 0
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        logging.error(f"Error rendering safe-area preview: {e}", exc_info=True)
+        print(f"Error rendering safe-area preview: {e}", file=sys.stderr)
+        return 1
+
+
 def main(args: Optional[list] = None) -> int:
     """Main entry point"""
     if args is None:
@@ -542,7 +579,15 @@ def main(args: Optional[list] = None) -> int:
     mcp_parser.add_argument('--style', help='Style name (auto-resolves ~/.letterhead/<style>.pdf and ~/.letterhead/<style>.css)')
     mcp_parser.add_argument('--output-dir', help='Default output directory for generated PDFs (default: ~/Desktop)')
     mcp_parser.add_argument('--output-prefix', help='Default prefix for output filenames')
-    
+
+    # Preview command — render a safe-area visualization for a letterhead PDF
+    preview_parser = subparsers.add_parser(
+        'preview',
+        help='Render a preview PDF that visualizes the letterhead safe area (cut marks + tint + source label)',
+    )
+    preview_parser.add_argument('letterhead', help='Path to the letterhead PDF (or a style name resolving to ~/.letterhead/<name>.pdf)')
+    preview_parser.add_argument('--output', '-o', help='Output PDF path (default: <letterhead>-preview.pdf next to the source)')
+
     args = parser.parse_args(args)
     
     # Set log level based on command and command-line arguments
@@ -573,6 +618,8 @@ def main(args: Optional[list] = None) -> int:
         return merge_md_command(args)
     elif args.command == 'mcp':
         return mcp_command(args)
+    elif args.command == 'preview':
+        return preview_command(args)
     elif args.command == 'print':  # Keep support for old print command for backward compatibility
         return print_command(args)
     else:

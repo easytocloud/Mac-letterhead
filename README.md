@@ -122,8 +122,8 @@ mac-letterhead merge-md ~/.letterhead/company.pdf "Q3 Report" ~/Desktop report.m
 # Existing PDF → letterheaded PDF
 mac-letterhead merge ~/.letterhead/company.pdf "Contract" ~/Desktop contract.pdf
 
-# Analyze a letterhead: where's the safe area?
-mac-letterhead analyze ~/.letterhead/company.pdf
+# Preview the safe area (cut marks + tint) as a PDF
+mac-letterhead preview ~/.letterhead/company.pdf
 ```
 
 Full reference: `mac-letterhead --help`.
@@ -150,6 +150,31 @@ Then in Claude: *"Draft a Q3 investor update on our company letterhead."* Mac-le
 Published on the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.easytocloud/mac-letterhead` — visible on [Glama](https://glama.ai/mcp/servers/easytocloud/mac-letterhead) and [PulseMCP](https://www.pulsemcp.com/servers/easytocloud). For full MCP configuration (style-specific servers, multiple brands from one client), see [README_MCP.md](README_MCP.md).
 
 ## Configure & fine-tune
+
+### Preview and mark the safe area
+
+Mac-letterhead needs to know where on your letterhead is *safe* to print content — the space between the header, footer, and any logos. It figures this out in three tiers:
+
+1. **You mark it explicitly.** Open your letterhead in Preview.app, use Markup → Rectangle to draw a box over the intended safe area, click the shape → sidebar → Description → type `safe-area` (or `printable-area` — case-insensitive; substring match). Save. Mac-letterhead treats your rectangle as exact intent.
+2. **Auto-detected.** No annotation → Mac-letterhead analyses the letterhead's layout (text, drawings, logos) and derives a safe rectangle that avoids them, with a ~40 pt safety pad.
+3. **Fallback default.** No content detected → 1-inch margins on every side.
+
+Preview the resolution any time:
+
+```bash
+mac-letterhead preview ~/.letterhead/company.pdf
+# writes ~/.letterhead/company-preview.pdf
+```
+
+Colour code in the preview PDF — glance to see how confident the tool is:
+
+| Colour | Source | What it means |
+|---|---|---|
+| **Green** | `annotation` | You marked it. Trusted verbatim. |
+| **Slate blue** | `auto-detected` | Heuristic derived it from the letterhead layout. |
+| **Amber** | `fallback default` | No content detected. Consider marking it. |
+
+Cut marks at each corner give print-native precision; a very subtle tint fills the region for gestalt. A tiny label at the bottom-left tells you which source drove the result and the safe area's exact dimensions.
 
 ### Brand your typography with CSS
 

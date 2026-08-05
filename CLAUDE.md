@@ -81,6 +81,10 @@ uvx mac-letterhead install --name "Company"
 uvx mac-letterhead merge letterhead.pdf "Output" ~/Desktop document.pdf
 uvx mac-letterhead merge-md letterhead.pdf "Output" ~/Desktop document.md
 
+# Visualize the safe area (cut marks + source-coded tint) — writes <name>-preview.pdf
+uvx mac-letterhead preview ~/.letterhead/company.pdf
+uvx mac-letterhead preview company              # style-name form (resolves ~/.letterhead/company.pdf)
+
 # MCP server for AI integration
 uvx mac-letterhead mcp --style easytocloud        # Style-specific server
 uvx mac-letterhead mcp                             # Generic server, style specified per tool call
@@ -150,7 +154,8 @@ make test-all → make publish
 
 **Markdown Pipeline (`letterhead_pdf/markdown/`)**
 - `processor.py`: `MarkdownProcessor` orchestrator — capability flags, backend selection, WeasyPrint→ReportLab fallback
-- `pdf_analyzer.py`: `analyze_letterhead`, `analyze_page_regions`, margin calculation helpers
+- `pdf_analyzer.py`: safe-area detection. `analyze_letterhead` (legacy, returns margins only), `analyze_letterhead_detailed` (returns `{source, rect, margins}`), `analyze_page_safe_area` (per-page), `find_safe_area_annotation` (annotation lookup), `SafeAreaSource` enum, `SAFE_AREA_LABELS`.
+- `preview.py`: `render_safe_area_preview(letterhead, output)` — visualization overlay (cut marks + tint + source label), colour-coded by source. Used by the `preview` CLI command; also called from droplet info dialogs.
 - `html_cleaner.py`: `clean_html_for_reportlab`, `preprocess_markdown_indentation`, list item processing
 - `flowable_builder.py`: `build_styles`, `markdown_to_flowables`, nested list parsing
 - `backends/weasyprint_backend.py`: WeasyPrint renderer with CSS path validation
@@ -173,11 +178,11 @@ make test-all → make publish
 
 ### Key Features
 
-**Smart Margin Detection**
-- Analyzes letterhead PDFs using PyMuPDF (fitz) to detect content regions
-- Automatically calculates safe printable areas for different letterhead positions
-- Supports left, right, and center-positioned letterheads
-- Maintains ~82% usable page width regardless of letterhead design
+**Safe-Area Detection (three-tier)**
+- **Annotation (highest priority)**: users mark a Square annotation on the letterhead PDF (in Preview.app or any PDF editor) labeled `safe-area`, `printable-area`, `content-area`, or similar (case-insensitive; substring; see `SAFE_AREA_LABELS`). Treated verbatim — no padding applied. Escape hatch for pixel-precise control when the heuristic misjudges.
+- **Heuristic**: layout analysis via PyMuPDF — text blocks, drawings, and images classified into header/middle/footer bands (top/bottom third of the page), then the safe rectangle is nudged to avoid detected content. `HEURISTIC_TOP_BOTTOM_PADDING = 40` pt is added on top and bottom for breathing room; without it, continuation-page wordmarks rendered as tiny vector paths can end up right against the safe-area edge.
+- **Fallback**: if the heuristic finds no content at all (blank letterhead), returns generous 1-inch defaults on every side.
+- Same resolution used by every interface — droplet, CLI, MCP — via `analyze_page_safe_area()` and `analyze_letterhead_detailed()`. Backwards-compatible `analyze_letterhead()` still returns margin dicts only.
 
 **Multi-Page Letterhead Support**
 - Single page: Applied to all document pages

@@ -1,0 +1,235 @@
+"""
+Tests for safe-area detection and preview rendering.
+
+Covers the three-tier resolution introduced by pdf_analyzer:
+  1. explicit annotation (highest priority)
+  2. heuristic layout analysis
+  3. fallback 1-inch margins
+
+Plus a smoke test for the preview PDF renderer.
+"""
+
+from __future__ import annotations
+
+import os
+import tempfile
+
+import fitz
+import pytest
+
+from letterhead_pdf.markdown.pdf_analyzer import (
+    SAFE_AREA_LABELS,
+    SafeAreaSource,
+    analyze_letterhead,
+    analyze_letterhead_detailed,
+    analyze_page_safe_area,
+    find_safe_area_annotation,
+)
+from letterhead_pdf.markdown.preview import render_safe_area_preview
+
+
+# ---------- helpers -------------------------------------------------------
+
+
+def _blank_page_pdf(path: str, page_count: int = 1, with_content: bool = False) -> str:
+    """A minimal A4 PDF, optionally with some text so the heuristic detects content."""
+    doc = fitz.open()
+    for i in range(page_count):
+        page = doc.new_page(width=595, height=842)
+        if with_content:
+            # Text near the top → treated as a header region by the heuristic
+            page.insert_text(fitz.Point(72, 60), f"COMPANY HEADER (page {i + 1})", fontsize=14)
+            # Text near the bottom → footer region
+            page.insert_text(fitz.Point(72, 800), f"footer line — page {i + 1}", fontsize=8)
+    doc.save(path)
+    doc.close()
+    return path
+
+
+def _annotated_page_pdf(path: str, label: str, rect: fitz.Rect) -> str:
+    """A minimal A4 PDF with a single Square annotation carrying `label` as its contents."""
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    annot = page.add_rect_annot(rect)
+    annot.set_info(content=label)
+    annot.update()
+    doc.save(path)
+    doc.close()
+    return path
+
+
+# ---------- annotation lookup --------------------------------------------
+
+
+@pytest.mark.parametrize("label", ["safe-area", "safe area", "Printable", "content area"])
+def test_find_safe_area_annotation_detects_labels(label, tmp_path):
+    """Any label from SAFE_AREA_LABELS (case-insensitive substring) is a match."""
+    target = fitz.Rect(100, 200, 400, 700)
+    pdf = _annotated_page_pdf(str(tmp_path / "annotated.pdf"), label, target)
+    doc = fitz.open(pdf)
+    try:
+        found = find_safe_area_annotation(doc[0])
+    finally:
+        doc.close()
+    assert found is not None
+    # PyMuPDF's add_rect_annot inflates the stored rect by the border width
+    # (defaults to ~1pt), so the readback differs by up to ~1pt in each direction.
+    assert abs(found.x0 - target.x0) <= 1.5
+    assert abs(found.y0 - target.y0) <= 1.5
+    assert abs(found.x1 - target.x1) <= 1.5
+    assert abs(found.y1 - target.y1) <= 1.5
+
+
+def test_find_safe_area_annotation_ignores_non_matching_labels(tmp_path):
+    """A Square annotation with an unrelated label shouldn't be picked up."""
+    pdf = _annotated_page_pdf(
+        str(tmp_path / "irrelevant.pdf"),
+        "review comment: check this",
+        fitz.Rect(10, 20, 50, 60),
+    )
+    doc = fitz.open(pdf)
+    try:
+        assert find_safe_area_annotation(doc[0]) is None
+    finally:
+        doc.close()
+
+
+def test_find_safe_area_annotation_ignores_non_square_annots(tmp_path):
+    """A text/note annotation labelled 'safe-area' isn't a rectangle — don't treat it as one."""
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    text_annot = page.add_text_annot(fitz.Point(100, 100), "safe-area")
+    text_annot.update()
+    pdf_path = str(tmp_path / "text-note.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    doc = fitz.open(pdf_path)
+    try:
+        assert find_safe_area_annotation(doc[0]) is None
+    finally:
+        doc.close()
+
+
+def test_all_documented_labels_are_actually_matched(tmp_path):
+    """Every SAFE_AREA_LABELS entry should be detected — guards against typos in the tuple."""
+    for label in SAFE_AREA_LABELS:
+        pdf = _annotated_page_pdf(
+            str(tmp_path / f"lbl_{hash(label)}.pdf"),
+            label,
+            fitz.Rect(50, 50, 500, 800),
+        )
+        doc = fitz.open(pdf)
+        try:
+            assert find_safe_area_annotation(doc[0]) is not None, f"label '{label}' not detected"
+        finally:
+            doc.close()
+
+
+# ---------- three-tier resolution ----------------------------------------
+
+
+def test_analyze_page_safe_area_prefers_annotation_over_heuristic(tmp_path):
+    """When both an annotation and content regions exist, annotation wins."""
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    page.insert_text(fitz.Point(72, 60), "HEADER", fontsize=14)
+    page.insert_text(fitz.Point(72, 800), "footer", fontsize=8)
+    annot_rect = fitz.Rect(80, 250, 500, 600)
+    annot = page.add_rect_annot(annot_rect)
+    annot.set_info(content="safe-area")
+    annot.update()
+    pdf_path = str(tmp_path / "both.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    doc = fitz.open(pdf_path)
+    try:
+        info = analyze_page_safe_area(doc[0])
+    finally:
+        doc.close()
+    assert info["source"] == SafeAreaSource.ANNOTATION.value
+    assert abs(info["rect"].x0 - annot_rect.x0) <= 1.5
+    assert abs(info["rect"].y0 - annot_rect.y0) <= 1.5
+
+
+def test_analyze_page_safe_area_uses_heuristic_when_no_annotation(tmp_path):
+    """Content present but no annotation → heuristic path."""
+    pdf = _blank_page_pdf(str(tmp_path / "content.pdf"), with_content=True)
+    doc = fitz.open(pdf)
+    try:
+        info = analyze_page_safe_area(doc[0])
+    finally:
+        doc.close()
+    assert info["source"] == SafeAreaSource.HEURISTIC.value
+
+
+def test_analyze_page_safe_area_falls_back_when_nothing_detected(tmp_path):
+    """Truly blank page → fallback source."""
+    pdf = _blank_page_pdf(str(tmp_path / "blank.pdf"), with_content=False)
+    doc = fitz.open(pdf)
+    try:
+        info = analyze_page_safe_area(doc[0])
+    finally:
+        doc.close()
+    assert info["source"] == SafeAreaSource.FALLBACK.value
+
+
+# ---------- backwards compatibility --------------------------------------
+
+
+def test_analyze_letterhead_still_returns_margin_only_shape(tmp_path):
+    """Existing callers (MCP server, merge) expect {first_page, other_pages} with margin floats."""
+    pdf = _blank_page_pdf(str(tmp_path / "compat.pdf"), page_count=2, with_content=True)
+    result = analyze_letterhead(pdf)
+    assert set(result.keys()) == {"first_page", "other_pages"}
+    for page_type in ("first_page", "other_pages"):
+        assert set(result[page_type].keys()) == {"top", "right", "bottom", "left"}
+        for v in result[page_type].values():
+            assert isinstance(v, (int, float))
+
+
+def test_analyze_letterhead_detailed_surfaces_source_and_rect(tmp_path):
+    """Detailed variant carries source + rect on top of the existing margin shape."""
+    pdf = _blank_page_pdf(str(tmp_path / "detailed.pdf"), page_count=2, with_content=True)
+    result = analyze_letterhead_detailed(pdf)
+    for page_type in ("first_page", "other_pages"):
+        info = result[page_type]
+        assert info["source"] in {s.value for s in SafeAreaSource}
+        assert isinstance(info["rect"], fitz.Rect)
+        assert set(info["margins"].keys()) == {"top", "right", "bottom", "left"}
+
+
+# ---------- preview renderer smoke test ---------------------------------
+
+
+def test_render_safe_area_preview_writes_valid_pdf(tmp_path):
+    """render_safe_area_preview produces a readable PDF at the expected path."""
+    src = _blank_page_pdf(str(tmp_path / "letterhead.pdf"), page_count=2, with_content=True)
+    out = tmp_path / "preview.pdf"
+    result_path = render_safe_area_preview(src, out)
+    assert result_path == out
+    assert out.exists()
+    assert out.stat().st_size > 0
+
+    # Verify it's a valid PDF with the same page count as the source
+    doc = fitz.open(str(out))
+    try:
+        assert doc.page_count == 2
+    finally:
+        doc.close()
+
+
+def test_render_safe_area_preview_defaults_output_path_next_to_source(tmp_path):
+    """No output path given → writes <stem>-preview.pdf beside the source."""
+    src = _blank_page_pdf(str(tmp_path / "corporate.pdf"), with_content=True)
+    result_path = render_safe_area_preview(src, None)
+    expected = tmp_path / "corporate-preview.pdf"
+    assert result_path == expected
+    assert expected.exists()
+
+
+def test_render_safe_area_preview_rejects_missing_source(tmp_path):
+    """Clear error for a source that doesn't exist."""
+    with pytest.raises(FileNotFoundError):
+        render_safe_area_preview(tmp_path / "does-not-exist.pdf", None)

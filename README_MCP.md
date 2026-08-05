@@ -115,7 +115,7 @@ Tool annotations: same profile as `create_letterhead_pdf`.
 
 ### `analyze_letterhead` — Analyze Letterhead Template
 
-Reports the safe printable area (margins, header/footer zones) of a letterhead template.
+Reports the safe printable area (margins, header/footer zones) of a letterhead template. Uses the three-tier resolution described in the [main README's *Preview and mark the safe area* section](README.md#preview-and-mark-the-safe-area): user-drawn Square annotations take priority over the layout heuristic. This means AI clients get exactly the same safe-area result regardless of interface — droplet, CLI, or MCP.
 
 | Mode | Required | Optional |
 |------|----------|----------|
