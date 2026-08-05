@@ -62,8 +62,9 @@ make clean-test-output  # Remove test output files (PDFs, HTMLs)
 **Release (semantic-release via CI):**
 ```bash
 make release-dry-run    # Preview next version without publishing
-make publish            # Run tests then publish (requires TWINE_PASSWORD)
+make publish            # Run tests then invoke semantic-release locally
 ```
+PyPI uploads happen via GitHub Actions using PyPI Trusted Publishing (OIDC) — no `TWINE_PASSWORD` is used in CI. `make publish` above just runs semantic-release; the workflow (`publish.yml`) handles the actual PyPI upload.
 
 ### System Dependencies
 For WeasyPrint functionality (high-quality Markdown to PDF conversion):
@@ -128,7 +129,7 @@ make dev-droplet → test → make clean-droplets
 make test-dev → make test-smoke → make test-all
 
 # Release workflow
-make test-all → make release-publish
+make test-all → make publish
 ```
 
 ## Architecture Overview
@@ -232,7 +233,7 @@ make test-all → make release-publish
 - Documentation: `README_MCP.md`, `sample_mcp_config.json`, `setup_letterheads.sh`
 
 **Configuration**
-- Version management: Single source in `letterhead_pdf/__init__.py`
+- Version management: `letterhead_pdf/__init__.py` is the canonical version, and semantic-release mirrors it into `dxt/manifest.json`, `server.json`, and `uv.lock` on every release (see `.releaserc.json` `@semantic-release/git` `assets`). Never hand-edit any one of those without keeping the rest in lockstep — the mirrors will drift and CI will start attaching the wrong `.mcpb` filename to releases.
 - Build system: `pyproject.toml` with Hatch backend
 - Make targets: Comprehensive Makefile for all operations
 
@@ -245,9 +246,26 @@ make test-all → make release-publish
 - Separate test environments for basic/full/WeasyPrint functionality
 
 **Release Process**
-1. Commit with Conventional Commit messages (`feat:`, `fix:`, `chore:`) to `main`
-2. GitHub Actions runs semantic-release: bumps version, updates CHANGELOG, publishes to PyPI
-3. Local preview: `make release-dry-run`; manual publish: `make publish` (requires TWINE_PASSWORD)
+1. Commit with Conventional Commit messages to `main`. Under this repo's Angular preset (`.releaserc.json`, default `commit-analyzer` rules), **only these types cut a release**:
+   - `fix:` → patch bump (0.18.9 → 0.18.10)
+   - `feat:` → minor bump (0.18.9 → 0.19.0)
+   - `BREAKING CHANGE:` in body → major bump (0.18.9 → 1.0.0)
+   - `perf:` → patch bump
+
+   `chore:`, `docs:`, `style:`, `refactor:`, `test:`, `ci:`, `build:` all land on `main` without publishing. This is easy to forget — a `chore(deps): bump X` commit will *not* trigger 0.18.10.
+2. GitHub Actions runs semantic-release (`publish.yml`): bumps version files, updates CHANGELOG, cuts a GitHub release, uploads to PyPI via Trusted Publishing (OIDC), builds the DXT `.mcpb`, and attaches it to the release.
+3. On successful completion, `publish-mcp-registry.yml` fires via `workflow_run` and publishes `server.json` to the MCP Registry using `mcp-publisher login github-oidc` (no PAT). See "MCP Registry Pipeline" below.
+4. Local preview: `make release-dry-run`. Do not run `make publish` from a workstation for real releases — the workflow handles it end-to-end.
+
+**MCP Registry Pipeline**
+- Triggered by: `publish.yml` completing successfully → `publish-mcp-registry.yml` fires on `workflow_run`.
+- Auth: `mcp-publisher login github-oidc`. The workflow needs `permissions: id-token: write`. No `MCP_PUBLISHER_TOKEN` secret is used — an earlier PAT-based flow depended on the publisher's org membership being public, which is fragile; OIDC binds the token to the repo owner (`easytocloud`) directly.
+- Namespace: `io.github.easytocloud/mac-letterhead`, defined by `server.json` `name`.
+- Constraints on `server.json` that will 422 the publish if violated:
+  - `description` must be **≤ 100 characters** (registry-enforced, not schema-visible).
+  - `packageArguments[].type` is required — `"positional"` for our `mcp` arg.
+  - `_meta` keys other than `io.modelcontextprotocol.registry/publisher-provided` are silently dropped.
+  - Schema URL: `https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json` (2025-09-29 also still accepted but older).
 
 ### macOS Integration Details
 
@@ -264,72 +282,12 @@ make test-all → make release-publish
 
 ## MCP Server Integration
 
-### Configuration Setup
-Mac-letterhead includes an MCP (Model Context Protocol) server that enables AI tools like Claude to create letterheaded PDFs directly through natural language commands.
+Each letterhead is a brand-identity pair: `~/.letterhead/<name>.pdf` (the stationery artwork) plus optional `~/.letterhead/<name>.css` (the typography — fonts, colors, spacing). Together they turn any Markdown file into a fully branded PDF.
 
-**Directory Structure** (Convention-based):
-```bash
-~/.letterhead/
-├── easytocloud.pdf     # Letterhead template
-├── easytocloud.css     # Optional styling
-├── personal.pdf        # Another letterhead
-└── personal.css        # Its styling
-```
+Two configuration modes:
+- **Generic multi-style server** (`uvx mac-letterhead[mcp] mcp`) — one server, `style` is required per tool call.
+- **Style-specific server** (`uvx mac-letterhead[mcp] mcp --style <name>`) — pre-bound to a style; `style` parameter is not accepted by the tools.
 
-### Server Configuration Modes
+Server tools adapt their schemas to the mode (generic requires `style`, style-specific omits it). Set up sample letterheads with `./setup_letterheads.sh`.
 
-**Generic Multi-Style Server** (Recommended for flexibility):
-```json
-{
-  "mcpServers": {
-    "letterhead": {
-      "command": "uvx",
-      "args": ["mac-letterhead[mcp]", "mcp"],
-      "description": "Generic letterhead PDF generator"
-    }
-  }
-}
-```
-- Usage: *"Using letterhead server, create an easytocloud style PDF about..."*
-- Tools require `style` parameter (mandatory)
-- Can handle any style in `~/.letterhead/`
-
-**Style-Specific Servers** (Optimized for dedicated use):
-```json
-{
-  "mcpServers": {
-    "easytocloud": {
-      "command": "uvx", 
-      "args": ["mac-letterhead[mcp]", "mcp", "--style", "easytocloud"],
-      "description": "EasyToCloud letterhead generator"
-    }
-  }
-}
-```
-- Usage: *"Create an easytocloud letterheaded PDF about..."*
-- Server pre-configured with style
-- Tools don't require style parameter
-
-### Available MCP Tools
-
-1. **`create_letterhead_pdf`**: Convert Markdown to letterheaded PDF
-2. **`merge_letterhead_pdf`**: Apply letterhead to existing PDF  
-3. **`analyze_letterhead`**: Analyze letterhead margins and layout
-4. **`list_letterhead_templates`**: List available letterhead files
-
-### Dynamic Tool Behavior
-The MCP server automatically adapts tool schemas based on configuration:
-- **Generic server**: Tools require `style` parameter
-- **Style-specific server**: Tools use pre-configured style, `style` parameter not available
-
-### Setup Commands
-```bash
-# Set up letterhead directory and sample files
-./setup_letterheads.sh
-
-# Test server configuration  
-uvx mac-letterhead mcp --style test-style
-uvx mac-letterhead mcp  # Generic mode
-```
-
-For complete MCP configuration details, see `README_MCP.md`.
+See [README_MCP.md](README_MCP.md) for full configuration examples, and [llms-install.md](llms-install.md) for the LLM-facing install guide. Tools and their responsibilities are already listed above under "Core Components → MCP Server Integration".
