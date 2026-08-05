@@ -11,233 +11,153 @@
 [![MCP Registry](https://img.shields.io/badge/MCP_Registry-listed-6366f1?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTEyIDJMMyA3TDEyIDEyTDIxIDdMMTIgMloiIGZpbGw9IndoaXRlIi8+CjxwYXRoIGQ9Ik0zIDdWMTdMMTIgMjJWMTJMMyA3WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTIxIDdWMTdMMTIgMjJWMTJMMjEgN1oiIGZpbGw9IndoaXRlIi8+Cjwvc3ZnPgo=)](https://registry.modelcontextprotocol.io)
 [![Downloads](https://img.shields.io/pypi/dm/Mac-letterhead?logo=pypi&logoColor=white&color=blueviolet)](https://pypi.org/project/Mac-letterhead/)
 
-<!-- GitHub can't render .icns files directly, so we use HTML to link the icon badge -->
 <a href="https://pypi.org/project/Mac-letterhead/" title="Mac-letterhead on PyPI">
-  <img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/icon.png" width="128" height="128" alt="Mac-letterhead Logo" align="right" />
+  <img src="https://raw.githubusercontent.com/easytocloud/Mac-letterhead/main/letterhead_pdf/resources/icon.png" width="128" height="128" alt="Mac-letterhead" align="right" />
 </a>
 
-A professional macOS utility that applies letterhead templates to PDF and Markdown documents. Mac-letterhead creates drag-and-drop applications that automatically merge your company letterhead with documents while preserving formatting and ensuring professional presentation.
+**Turn any Markdown file into a professionally-branded PDF on your company's letterhead — with no manual formatting.** Mac-letterhead treats your letterhead PDF as *digital stationery*: it prints your Markdown into the safe area of the page (never overlapping your header, footer, or logo) and applies your brand's typography from a small CSS file.
 
-## Three ways to use it
+Runs entirely on your Mac. Same engine as a drag-and-drop droplet, a command-line tool, or a Model Context Protocol server that Claude and other AI clients can call directly.
 
-Same engine, three interfaces — pick whichever fits your workflow.
+![A plain report.md becomes a letterheaded PDF via Mac-letterhead](docs/images/hero.svg)
 
-- **🖱️  Drag-and-drop droplet (Mac-native).** `uvx mac-letterhead install --name "Company"` creates a droplet application on your Desktop. Drop any PDF or `.md` file onto it and get back a letterheaded PDF. This is the intended workflow for humans on a Mac — no terminal required after install.
-- **⌨️  Command line.** `uvx mac-letterhead merge-md letterhead.pdf "Output" ~/Desktop document.md` — same engine, scriptable and headless. Suitable for Makefiles, CI, or ad-hoc shell use.
-- **🤖 MCP server for AI assistants.** `uvx mac-letterhead[mcp] mcp` runs a Model Context Protocol server that Claude Desktop, Claude Code, and other MCP clients can call directly. Published on the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.easytocloud/mac-letterhead`, and browsable on [Glama](https://glama.ai/mcp/servers/easytocloud/mac-letterhead) and [PulseMCP](https://www.pulsemcp.com/servers/easytocloud).
+---
 
-All three read the same `~/.letterhead/<name>.pdf` + `<name>.css` brand-identity pair, so a droplet you build for yourself and an MCP call Claude makes produce identical output.
+- [What it does](#what-it-does)
+- [Install](#install)
+- [Quick start (2 minutes)](#quick-start-2-minutes)
+- [Use it](#use-it) — [droplet](#-drag-and-drop-droplet) · [CLI](#-command-line) · [MCP server](#-mcp-server-for-ai-clients)
+- [Configure & fine-tune](#configure--fine-tune) — [brand CSS](#brand-your-typography-with-css) · [blend strategies](#choose-a-blend-strategy) · [multi-page](#multi-page-letterheads)
+- [Advanced](#advanced) · [Privacy](#privacy) · [License](#license)
 
-## What Mac-letterhead Does
+## What it does
 
-Mac-letterhead transforms your letterhead PDF into a powerful document processing tool:
+You have a company letterhead — a PDF with your logo at the top, contact info at the bottom, maybe a subtle watermark. You have documents to write, and they need to be on that letterhead: proposals, reports, invoices, memos.
 
-### For PDF Documents
-- **Direct Overlay**: Your letterhead is applied as an overlay to existing PDFs without reformatting the original document
-- **Multiple Blend Modes**: Choose from various merging strategies (darken, multiply, overlay, transparency) to suit different letterhead designs
-- **Quality Preservation**: All original formatting, fonts, and layout are maintained during the merge process
+The traditional options are all painful: Word templates that never quite line up, copy-paste-adjust cycles into a designer's InDesign file, or manually placing text over the letterhead in a PDF editor. Or just giving up and sending unbranded.
 
-### For Markdown Documents  
-- **Intelligent Layout**: Analyzes your letterhead PDF to identify headers, footers, logos, and text elements
-- **Smart Margin Detection**: Automatically calculates the optimal printable area within your letterhead design
-- **Professional Rendering**: Converts Markdown to beautifully formatted PDF with proper typography, tables, code blocks, and styling
-- **Adaptive Positioning**: Handles left, right, and center-positioned letterheads with appropriate margin adjustments
+Mac-letterhead does the whole thing automatically. It **analyzes your letterhead PDF to find the safe printable area** (the space around the header, footer, and logo), **renders your Markdown into that area** with your brand's typography (fonts and colors from a tiny CSS file), and hands you a finished PDF. Multi-page letterhead? First-page vs subsequent pages? Handled.
 
-### Multi-Page Letterhead Support
-- **Single Page**: Applied consistently to all document pages
-- **Two Pages**: First page template for page 1, second template for subsequent pages  
-- **Three Pages**: Distinct templates for first page, even pages, and odd pages
+The same tool ships as three interfaces — a Mac drag-and-drop app (for you), a command-line utility (for scripting), and an MCP server (so Claude and other AI clients can produce your branded documents on request).
 
-## Requirements
+## Install
 
-- **macOS**: Required for droplet applications and PDF processing
-- **Python**: 3.10 or higher
-- **uv package manager**: Install with `pip install uv` if needed
+Pick one:
 
-## Installation
-
-Install Mac-letterhead and create your first letterhead application:
-
+**Homebrew (recommended for everyday Mac use):**
 ```bash
-# Quick start - create a letterhead droplet on your desktop
-uvx mac-letterhead install --name "Company"
-
-# For AI integration, install with MCP support
-uvx install "mac-letterhead[mcp]"
+brew tap easytocloud/tap
+brew install mac-letterhead
 ```
 
-### Desktop Extension for Claude for macOS
-
-The easiest way to use Mac-letterhead with Claude is via the Desktop Extension (`.mcpb` file). Download the latest `mac-letterhead-<version>.mcpb` from the [GitHub Releases page](https://github.com/easytocloud/Mac-letterhead/releases) and double-click it to install directly into Claude for macOS — no terminal required.
-
-After installation, Claude's settings UI lets you configure:
-- **Letterhead Style**: The style name to use (resolves `~/.letterhead/<style>.pdf` and `.css`). Leave blank to specify a style per request.
-- **Output Directory**: Where generated PDFs are saved (defaults to `~/Desktop`).
-
-For complete Desktop Extension details, see [README_MCP.md](README_MCP.md).
-
-### MCP Registry
-
-Mac-letterhead is published in the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.easytocloud/mac-letterhead`, making it easily discoverable by AI assistants and MCP clients.
-
-**Find Mac-letterhead in**:
-- **Official MCP Registry**: https://registry.modelcontextprotocol.io
-- **GitHub MCP Registry**: Automatically synced from official registry
-- **Community Directories**: mcp.so and other MCP server catalogs
-
-**Quick Install for MCP Clients**:
+**uvx (no permanent install; uses uv's ephemeral env):**
 ```bash
-uvx mac-letterhead[mcp]
+uvx mac-letterhead --help
 ```
 
-For complete MCP configuration and usage, see [README_MCP.md](README_MCP.md).
+**Claude Desktop (double-click install):**
+Download the latest `mac-letterhead-<version>.mcpb` from the [releases page](https://github.com/easytocloud/Mac-letterhead/releases) and double-click it — Claude for macOS handles the rest.
 
-### Prerequisites
+### System dependencies (optional but recommended)
 
-Mac-letterhead expects your letterhead files to be organized in `~/.letterhead/`:
-
-```bash
-~/.letterhead/
-├── company.pdf        # Your letterhead template
-├── company.css        # Optional custom styling
-└── personal.pdf       # Additional letterhead templates
-```
-
-This creates a macOS application that you can drag documents onto to apply your letterhead. The MCP option adds support for AI tool integration.
-
-### System Dependencies
-
-For optimal Markdown rendering, install the required libraries:
+For the best rendering quality (full CSS support via WeasyPrint), install the WeasyPrint system libraries once:
 
 ```bash
 brew install pango cairo fontconfig freetype harfbuzz
 ```
 
-These libraries enable high-quality PDF generation with advanced typography support.
+Without them, Mac-letterhead falls back to ReportLab automatically — simpler output, no external deps, everything still works.
 
-## Usage
+## Quick start (2 minutes)
 
-### Creating Letterhead Applications
+1. **Put your letterhead somewhere Mac-letterhead can find it.** The default convention is `~/.letterhead/<name>.pdf`:
+   ```bash
+   mkdir -p ~/.letterhead
+   cp /path/to/your-letterhead.pdf ~/.letterhead/company.pdf
+   ```
 
-#### Basic Application Creation
-```bash
-# Create a letterhead droplet using ~/.letterhead/company.pdf
-uvx mac-letterhead install --name "company"
-```
+2. **(Optional, but strongly recommended) Add typography.** Create `~/.letterhead/company.css` with your brand's fonts and colors:
+   ```css
+   body        { font-family: "Inter", "Helvetica Neue", sans-serif; color: #1f2937; }
+   h1, h2, h3  { color: #0b3d91; font-family: "Merriweather", Georgia, serif; }
+   h1          { border-bottom: 2px solid #0b3d91; padding-bottom: 0.25em; }
+   a           { color: #0b3d91; }
+   ```
+   Skip this and Mac-letterhead uses a clean default.
 
-#### Custom Letterhead Override
-```bash
-# Use a different letterhead file but keep the app name
-uvx mac-letterhead install --name "Company Correspondence" --letterhead /path/to/custom-letterhead.pdf
-```
+3. **Create the droplet on your Desktop:**
+   ```bash
+   mac-letterhead install --name "company"
+   ```
+   A `company.app` appears on your Desktop.
 
-#### Advanced Markdown Styling
-```bash
-# Create a letterhead application with custom CSS styling
-uvx mac-letterhead install --name "Technical Reports" --css /path/to/custom-styles.css
-```
+4. **Drop any `.md` or `.pdf` file onto the droplet.** Choose where to save. You get a letterheaded PDF.
 
-The `--css` option allows you to customize the appearance of rendered Markdown documents:
-- **Typography**: Custom fonts, sizes, colors, and spacing
-- **Layout**: Table styling, code block formatting, list appearance
-- **Branding**: Consistent styling that complements your letterhead design
-- **Responsiveness**: Ensures content fits properly within the detected printable area
+That's it. Every subsequent document is one drop.
 
-#### Install Command Reference
+## Use it
 
-The install command follows this pattern:
+Same engine, three interfaces.
 
-```bash
-uvx mac-letterhead install --name "AppName" [--letterhead path] [--css path] [--output-dir dir]
-```
+### 🖱️ Drag-and-drop droplet
 
-**Required:**
-- `--name`: Sets both the application name and the style. Automatically looks for `~/.letterhead/<name>.pdf` and `~/.letterhead/<name>.css`
-
-**Optional:**
-- `--letterhead`: Override the default letterhead PDF path  
-- `--css`: Override the default CSS file path
-- `--output-dir`: Specify where to create the app (default: Desktop)
-- `--dev`: Create a development version using local code
-
-### Using Letterhead Applications
-
-Once created, your letterhead application appears on your desktop:
-
-1. **For PDF Files**: Drag any PDF onto the application icon - the letterhead is applied as an overlay
-2. **For Markdown Files**: Drag .md files onto the application - they're converted to PDF with your letterhead and proper formatting
-3. **Preview Letterhead**: Double-click the application to view information and preview the letterhead template
-
-### Direct Command-Line Usage
-
-#### PDF Merging
-```bash
-# Apply letterhead to a PDF document
-uvx mac-letterhead merge /path/to/letterhead.pdf "Document Title" ~/Desktop /path/to/document.pdf
-
-# Use a specific blending strategy
-uvx mac-letterhead merge /path/to/letterhead.pdf "Report" ~/Desktop /path/to/report.pdf --strategy overlay
-```
-
-#### Markdown Processing  
-```bash
-# Convert Markdown with letterhead
-uvx mac-letterhead merge-md /path/to/letterhead.pdf "Technical Guide" ~/Desktop /path/to/guide.md
-
-# With custom CSS styling
-uvx mac-letterhead merge-md /path/to/letterhead.pdf "Proposal" ~/Desktop /path/to/proposal.md --css /path/to/styles.css
-```
-
-#### AI Integration with MCP Server
-Mac-letterhead includes an MCP (Model Context Protocol) server that enables AI tools like Claude to create letterheaded PDFs through natural language commands:
+Best for human workflows on a Mac. One-time setup, then every future document is a drag onto a Desktop icon.
 
 ```bash
-# Start a generic multi-style server
-uvx mac-letterhead mcp
-
-# Start a dedicated single-style server  
-uvx mac-letterhead mcp --style easytocloud --output-dir ~/Documents/generated-pdfs
+mac-letterhead install --name "company"        # uses ~/.letterhead/company.{pdf,css}
+mac-letterhead install --name "personal"       # a second droplet for personal docs
+mac-letterhead install --name "client-acme"    # one droplet per client / brand
 ```
 
-**Usage Examples with Claude:**
-- *"Using the letterhead server, create an easytocloud style PDF about our new cloud services"*
-- *"Generate a personal letterheaded document for my consulting proposal"*
+Each droplet is a full macOS `.app` bundle you can drag around, put in the Dock, or Automator-chain. Dropping a file on it opens a save dialog for the output location.
 
-The MCP server automatically:
-- Converts Markdown content to professionally formatted PDFs
-- Applies appropriate letterhead templates and CSS styling
-- Manages output directories and file naming
-- Supports both style-specific and generic multi-style configurations
+### ⌨️ Command line
 
-For complete MCP setup and configuration details, see [README_MCP.md](README_MCP.md).
+Best for scripting, CI, or one-shot conversions. No droplet needed.
 
-### Blending Strategies
+```bash
+# Markdown → letterheaded PDF
+mac-letterhead merge-md ~/.letterhead/company.pdf "Q3 Report" ~/Desktop report.md
 
-Choose the optimal strategy for your letterhead design:
+# Existing PDF → letterheaded PDF
+mac-letterhead merge ~/.letterhead/company.pdf "Contract" ~/Desktop contract.pdf
 
-- **`darken`** (Default): Ideal for light letterheads with dark text/logos - provides excellent readability
-- **`multiply`**: Creates watermark-like effects, good for subtle branding
-- **`overlay`**: Balances visibility of both document content and letterhead elements  
-- **`transparency`**: Smooth blending with semi-transparent effects
-- **`reverse`**: Places letterhead elements on top of document content
+# Analyze a letterhead: where's the safe area?
+mac-letterhead analyze ~/.letterhead/company.pdf
+```
 
-## Advanced Features
+Full reference: `mac-letterhead --help`.
 
-### Brand Styling with CSS
+### 🤖 MCP server for AI clients
 
-Mac-letterhead is not just a letterhead applicator — it turns any Markdown file into an on-brand PDF. Your letterhead PDF supplies the artwork (logo, header, footer, watermark), and a companion CSS file drives the *typography*: fonts, colors, spacing, table and code styling, heading treatment. Together they give you a single, reusable brand identity that any Markdown document can be rendered through.
+Best when you want Claude, Claude Code, Cursor, Windsurf, or another AI assistant to produce branded documents on demand.
 
-**Convention.** For a style named `<name>`, Mac-letterhead resolves:
+Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
-- `~/.letterhead/<name>.pdf` — the letterhead artwork
-- `~/.letterhead/<name>.css` — the brand typography and colors (optional)
+```json
+{
+  "mcpServers": {
+    "letterhead": {
+      "command": "uvx",
+      "args": ["mac-letterhead[mcp]", "mcp"]
+    }
+  }
+}
+```
 
-Keeping both under one name means the droplet, the CLI, and the MCP server all pick up the same brand consistently.
+Then in Claude: *"Draft a Q3 investor update on our company letterhead."* Mac-letterhead handles the formatting; the PDF lands in `~/Desktop`.
 
-**Example — corporate brand:**
+Published on the [official MCP Registry](https://registry.modelcontextprotocol.io) as `io.github.easytocloud/mac-letterhead` — visible on [Glama](https://glama.ai/mcp/servers/easytocloud/mac-letterhead) and [PulseMCP](https://www.pulsemcp.com/servers/easytocloud). For full MCP configuration (style-specific servers, multiple brands from one client), see [README_MCP.md](README_MCP.md).
+
+## Configure & fine-tune
+
+### Brand your typography with CSS
+
+The letterhead PDF supplies the visual identity (logo, header, footer). CSS supplies the *typography*: fonts, colors, spacing, table styling, heading treatment. Together they make one reusable brand identity that any Markdown document can be rendered through.
+
+Full example — `~/.letterhead/company.css`:
 
 ```css
-/* ~/.letterhead/company.css */
 body        { font-family: "Inter", "Helvetica Neue", sans-serif; color: #1f2937; }
 h1, h2, h3  { color: #0b3d91; font-family: "Merriweather", Georgia, serif; }
 h1          { border-bottom: 2px solid #0b3d91; padding-bottom: 0.25em; }
@@ -248,181 +168,46 @@ table td    { border-bottom: 1px solid #e5e7eb; }
 blockquote  { border-left: 3px solid #0b3d91; color: #4b5563; }
 ```
 
-Combined with your letterhead PDF (logo, footer, whatever), this produces documents that consistently look like they came from your organization — from a plain `.md` file, in one call.
+CSS is applied inside the safe area, so branded typography stays clear of your header, footer, and logo automatically. (CSS is applied by the WeasyPrint backend; the ReportLab fallback supports a reduced subset.)
 
-**Rendering.** CSS is applied by the WeasyPrint backend and integrated with the smart margin system, so branded typography renders inside the safe area detected on your letterhead — text never runs over the logo. If WeasyPrint isn't available (system libs missing), Mac-letterhead falls back to ReportLab with a reduced CSS subset.
+### Choose a blend strategy
 
-### Markdown Features
+Different letterheads need different overlay modes. Set with `--strategy` in the CLI, or when creating a droplet.
 
-Mac-letterhead provides professional Markdown rendering with:
+| Strategy           | Best for                                    |
+| ------------------ | ------------------------------------------- |
+| `darken` (default) | Dark logo/artwork on light letterhead paper |
+| `multiply`         | Watermark-like effects on subtle designs    |
+| `overlay`          | Better visibility across mixed contrasts    |
+| `transparency`     | Smooth blending with translucent layers     |
+| `reverse`          | Letterhead on top, content beneath          |
 
-- **Typography**: Proper heading hierarchy, paragraph spacing, and font sizing
-- **Tables**: Clean borders, consistent padding, and professional appearance  
-- **Code Blocks**: Syntax highlighting for multiple programming languages
-- **Lists & Quotes**: Proper indentation and formatting for nested content
-- **Images & Links**: Full support for embedded images and hyperlinks
-- **Math**: LaTeX-style mathematical expressions (when supported)
+### Multi-page letterheads
 
-#### GitHub Flavored Markdown Support
+Different letterhead template per page position:
 
-Mac-letterhead includes enhanced support for GitHub Flavored Markdown (GFM) features:
+| Letterhead PDF has… | Applied to                                           |
+| ------------------- | ---------------------------------------------------- |
+| 1 page              | Every document page                                  |
+| 2 pages             | Page 1 → first document page; page 2 → all others    |
+| 3 pages             | Page 1 → first; page 2 → even; page 3 → odd          |
 
-- **Strikethrough**: `~~deleted text~~` renders with proper strikethrough formatting
-- **Task Lists**: Interactive-style checkboxes with `- [x] completed` and `- [ ] pending`
-- **Enhanced Tables**: Improved table rendering with better alignment and styling
-- **Automatic Detection**: GFM features are automatically enabled when the pycmarkgfm library is available
+## Advanced
 
-Task lists are rendered with professional Unicode checkboxes (☑ for completed, ☐ for pending) that are properly sized and aligned, including within table cells.
+- **Rendering backends.** [WeasyPrint](https://weasyprint.org/) (preferred, full CSS support) with a [ReportLab](https://www.reportlab.com/) fallback. Install `brew install pango cairo fontconfig freetype harfbuzz` to opt into WeasyPrint.
+- **GitHub Flavored Markdown.** Tables, task lists, strikethrough, code blocks with syntax highlighting — all supported when `pycmarkgfm` is available (it's a default dependency).
+- **Custom overrides.** `mac-letterhead install --name X --letterhead /some/other.pdf --css /some/other.css` for one-off droplets with non-conventional paths.
+- **Publishing / release pipeline.** Contributor-facing: [`docs/publishing.md`](docs/publishing.md).
+- **Operator guide.** For contributors: [`CLAUDE.md`](CLAUDE.md) documents the architecture, release rules, and MCP registry constraints.
 
-### Dual Rendering Pipeline
+## Privacy
 
-Mac-letterhead features a sophisticated dual-backend rendering system that automatically selects the best available technology while providing manual control when needed.
-
-#### PDF Rendering Backends
-
-**WeasyPrint** (Preferred when available):
-- **Advantages**: Superior CSS support, advanced typography, precise layout control
-- **Features**: Full HTML5/CSS3 support, web fonts, complex layouts, print-specific CSS
-- **Requirements**: System libraries (`brew install pango cairo fontconfig freetype harfbuzz`)
-- **Security**: Custom CSS files must reside within your home directory
-- **Use Case**: High-quality documents requiring advanced styling and typography
-
-**ReportLab** (Reliable fallback):
-- **Advantages**: Pure Python implementation, no system dependencies, consistent rendering
-- **Features**: Professional PDF generation, basic HTML support, reliable cross-platform operation
-- **Requirements**: None (included with Python installation)
-- **Automatic fallback**: If WeasyPrint fails, Mac-letterhead silently retries with ReportLab
-- **Use Case**: Simple documents, environments without system library access
-
-#### Markdown Processing Backends
-
-**GitHub Flavored Markdown (GFM)** (Enhanced when available):
-- **Library**: pycmarkgfm (Python bindings to GitHub's cmark-gfm parser)
-- **Features**: Strikethrough, task lists, enhanced tables, autolinks, GitHub-compatible parsing
-- **Compatibility**: Full compatibility with GitHub markdown rendering
-- **Use Case**: Documents with GFM-specific features, GitHub repository documentation
-
-**Standard Markdown** (Universal fallback):
-- **Library**: Python markdown with extensions
-- **Features**: CommonMark compliance, basic table support, code highlighting
-- **Compatibility**: Works in all Python environments
-- **Use Case**: Simple documents, maximum compatibility requirements
-
-#### Backend Selection and Control
-
-**Automatic Selection** (Default behavior):
-```bash
-# Uses best available backends automatically
-uvx mac-letterhead merge-md letterhead.pdf "Document" ~/Desktop document.md
-```
-
-**Manual Backend Control**:
-```bash
-# Force specific PDF backend
-uvx mac-letterhead merge-md letterhead.pdf "Report" ~/Desktop report.md --pdf-backend reportlab
-
-# Force specific Markdown backend  
-uvx mac-letterhead merge-md letterhead.pdf "Guide" ~/Desktop guide.md --markdown-backend standard
-
-# Combine specific backends
-uvx mac-letterhead merge-md letterhead.pdf "Technical" ~/Desktop tech.md --pdf-backend weasyprint --markdown-backend gfm
-```
-
-**Available Backend Options**:
-- `--pdf-backend`: `weasyprint`, `reportlab`, `auto` (default: `auto`)
-- `--markdown-backend`: `gfm`, `standard`, `auto` (default: `auto`)
-
-#### Backend Capabilities Matrix
-
-| Feature | WeasyPrint + GFM | WeasyPrint + Standard | ReportLab + GFM | ReportLab + Standard |
-|---------|------------------|----------------------|-----------------|---------------------|
-| Basic Markdown | ✅ Excellent | ✅ Excellent | ✅ Good | ✅ Good |
-| Advanced CSS | ✅ Full Support | ✅ Full Support | ⚠️ Limited | ⚠️ Limited |
-| Strikethrough | ✅ Native | ❌ Not Available | ✅ Unicode | ❌ Not Available |
-| Task Lists | ✅ Styled Checkboxes | ❌ Not Available | ✅ Unicode Checkboxes | ❌ Not Available |
-| Complex Tables | ✅ Advanced | ✅ Good | ✅ Basic | ✅ Basic |
-| Typography | ✅ Professional | ✅ Professional | ✅ Standard | ✅ Standard |
-| System Dependencies | ⚠️ Required | ⚠️ Required | ✅ None | ✅ None |
-
-#### Testing and Validation
-
-The project includes comprehensive testing for all backend combinations:
-
-```bash
-# Test all combinations across Python versions
-make test-backend-combinations
-
-# Test specific combinations
-make test-weasyprint-gfm      # WeasyPrint + GitHub Flavored Markdown
-make test-weasyprint-standard # WeasyPrint + Standard Markdown  
-make test-reportlab-gfm       # ReportLab + GitHub Flavored Markdown
-make test-reportlab-standard  # ReportLab + Standard Markdown
-```
-
-Each test combination generates output files with naming patterns like `document-py3.11-weasyprint-gfm.pdf` for easy comparison and quality validation.
-
-## Versioning & Publishing
-
-Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) via GitHub Actions. Use Conventional Commit messages on `main` and the workflow will:
-
-- determine the next semantic version
-- update `letterhead_pdf/__init__.py`, `server.json`, `uv.lock`, and `CHANGELOG.md`
-- build the package and upload it to PyPI
-- create the GitHub release and tag
-
-Commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) format so semantic-release can infer the correct version bump.
-
-### Local tooling (optional)
-
-1. Install once:
-   ```bash
-   npm install
-   ```
-2. Preview the next release without publishing:
-   ```bash
-   make release-dry-run
-   ```
-3. If you need to release from your workstation, provide your PyPI token and run:
-   ```bash
-   export TWINE_USERNAME=__token__
-   export TWINE_PASSWORD=...
-   make publish
-   ```
-
-The GitHub Action uses the same configuration, so merging Conventional Commits into `main` is usually all that’s required.
-
-## Use Cases
-
-- **Corporate Communications**: Apply company branding to business correspondence
-- **Legal Documents**: Add firm letterhead and disclaimers to contracts and legal papers
-- **Financial Documents**: Brand invoices, statements, and financial reports
-- **Technical Documentation**: Convert Markdown documentation to branded PDFs  
-- **Academic Papers**: Add institutional letterhead to research papers and reports
-- **Proposals & Reports**: Create professional client deliverables from Markdown sources
-- **AI-Generated Content**: Use Claude or other AI tools to create branded documents through natural language
-
-## Troubleshooting
-
-### Common Issues
-
-**Library Dependencies**: If you see WeasyPrint warnings, the system automatically falls back to ReportLab - functionality is not affected.
-
-**File Permissions**: If applications request file access, approve the permissions in System Preferences > Security & Privacy > Privacy > Files and Folders.
-
-**Margin Detection**: The system automatically analyzes letterhead positioning. If margins appear incorrect, ensure your letterhead PDF contains clear visual elements (logos, text, graphics) in header/footer areas.
-
-### Log Files
-- Application logs: `~/Library/Logs/Mac-letterhead/letterhead.log`
-- Droplet logs: `~/Library/Logs/Mac-letterhead/droplet.log`
+Mac-letterhead runs entirely on your local machine. No network calls, no telemetry, no analytics, no cloud sync. See [PRIVACY.md](PRIVACY.md).
 
 ## Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing procedures, and pull request guidelines.
-
-## Privacy Policy
-
-Mac-letterhead runs entirely on your local machine. It does not collect, transmit, store, or share any personal data — no network calls, no telemetry, no analytics, no cloud sync. See [PRIVACY.md](PRIVACY.md) for the full statement.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT License
+MIT.

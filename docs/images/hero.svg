@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" role="img" aria-label="A plain report.md becomes a letterheaded PDF via Mac-letterhead">
+  <rect width="1200" height="620" fill="#fafaf9"/>
+
+  <!-- LEFT: raw Markdown file -->
+  <g transform="translate(60,60)">
+    <rect x="4" y="6" width="440" height="500" rx="12" fill="#000000" fill-opacity="0.06"/>
+    <rect x="0" y="0" width="440" height="500" rx="12" fill="#ffffff" stroke="#e5e5e5"/>
+    <path d="M 12 0 h 416 a 12 12 0 0 1 12 12 v 24 h -440 v -24 a 12 12 0 0 1 12 -12" fill="#f2f2f0"/>
+    <circle cx="20" cy="18" r="5.5" fill="#ff5f57"/>
+    <circle cx="38" cy="18" r="5.5" fill="#febc2e"/>
+    <circle cx="56" cy="18" r="5.5" fill="#28c840"/>
+    <text x="220" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#8a8a86">report.md</text>
+
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="15" fill="#1c1c1e">
+      <text x="28" y="80"># Q3 Report</text>
+      <text x="28" y="128">Revenue **up 12%** this quarter.</text>
+      <text x="28" y="180">## Highlights</text>
+      <text x="28" y="216">- New Munich office</text>
+      <text x="28" y="242">- Team grew to 42</text>
+      <text x="28" y="268">- 3 major clients signed</text>
+      <text x="28" y="336">_Prepared for the board_</text>
+    </g>
+  </g>
+
+  <!-- Arrow with label -->
+  <g transform="translate(552, 260)">
+    <rect x="0" y="4" width="96" height="82" rx="14" fill="#ffffff" stroke="#e5e5e5"/>
+    <text x="48" y="30" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" font-weight="600" fill="#0b3d91">Mac-letterhead</text>
+    <path d="M 20 60 L 76 60 M 60 46 L 76 60 L 60 74" stroke="#0b3d91" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </g>
+
+  <!-- RIGHT: letterheaded PDF -->
+  <g transform="translate(700,60)">
+    <rect x="4" y="6" width="440" height="500" rx="12" fill="#000000" fill-opacity="0.06"/>
+    <rect x="0" y="0" width="440" height="500" rx="12" fill="#ffffff" stroke="#e5e5e5"/>
+    <path d="M 12 0 h 416 a 12 12 0 0 1 12 12 v 24 h -440 v -24 a 12 12 0 0 1 12 -12" fill="#f2f2f0"/>
+    <circle cx="20" cy="18" r="5.5" fill="#ff5f57"/>
+    <circle cx="38" cy="18" r="5.5" fill="#febc2e"/>
+    <circle cx="56" cy="18" r="5.5" fill="#28c840"/>
+    <text x="220" y="22" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#8a8a86">Q3-Report.pdf</text>
+
+    <!-- Letterhead header (part of the "stationery") -->
+    <rect x="28" y="56" width="384" height="3" fill="#0b3d91"/>
+    <text x="28" y="82" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="700" fill="#0b3d91" letter-spacing="2">ACME CORP</text>
+    <text x="412" y="82" text-anchor="end" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="10" fill="#8a8a86">acme.example · hello@acme.example</text>
+
+    <!-- Rendered Markdown content -->
+    <text x="28" y="140" font-family="Georgia, ui-serif, serif" font-size="26" font-weight="700" fill="#0b3d91">Q3 Report</text>
+    <line x1="28" y1="150" x2="130" y2="150" stroke="#0b3d91" stroke-width="1.5"/>
+
+    <text x="28" y="188" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#1c1c1e">Revenue <tspan font-weight="700">up 12%</tspan> this quarter.</text>
+
+    <text x="28" y="232" font-family="Georgia, ui-serif, serif" font-size="18" font-weight="700" fill="#0b3d91">Highlights</text>
+
+    <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#1c1c1e">
+      <circle cx="34" cy="260" r="2.5" fill="#0b3d91"/>
+      <text x="46" y="265">New Munich office</text>
+      <circle cx="34" cy="285" r="2.5" fill="#0b3d91"/>
+      <text x="46" y="290">Team grew to 42</text>
+      <circle cx="34" cy="310" r="2.5" fill="#0b3d91"/>
+      <text x="46" y="315">3 major clients signed</text>
+    </g>
+
+    <text x="28" y="370" font-family="Georgia, ui-serif, serif" font-size="13" font-style="italic" fill="#666">Prepared for the board</text>
+
+    <!-- Letterhead footer (the other end of the "stationery") -->
+    <line x1="28" y1="454" x2="412" y2="454" stroke="#e5e5e5"/>
+    <text x="220" y="472" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="9" fill="#8a8a86">Acme Corp · Munich · registered #12345</text>
+  </g>
+</svg>
