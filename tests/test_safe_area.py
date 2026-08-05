@@ -80,8 +80,13 @@ def test_find_safe_area_annotation_detects_labels(label, tmp_path):
     assert abs(found.y1 - target.y1) <= 1.5
 
 
-def test_find_safe_area_annotation_ignores_non_matching_labels(tmp_path):
-    """A Square annotation with an unrelated label shouldn't be picked up."""
+def test_find_safe_area_annotation_non_matching_label_still_treated_as_single_square(tmp_path):
+    """
+    Even when the label doesn't match a SAFE_AREA_LABELS marker, a *lone* Square
+    on the page is still treated as the safe area (rule 2 — Preview.app path).
+    To avoid this treatment for a non-safe-area rectangle, the user needs to
+    add a second Square (or delete the one they have).
+    """
     pdf = _annotated_page_pdf(
         str(tmp_path / "irrelevant.pdf"),
         "review comment: check this",
@@ -89,9 +94,78 @@ def test_find_safe_area_annotation_ignores_non_matching_labels(tmp_path):
     )
     doc = fitz.open(pdf)
     try:
+        found = find_safe_area_annotation(doc[0])
+    finally:
+        doc.close()
+    # Single-square rule kicks in; the rect is returned.
+    assert found is not None
+
+
+def test_find_safe_area_annotation_single_unlabeled_square_is_used(tmp_path):
+    """
+    Preview.app can't write labeled annotations — it only draws Squares. When a
+    page has exactly ONE Square annotation and none matches a safe-area label,
+    treat it as the safe area anyway. This is the primary Preview.app workflow.
+    """
+    target = fitz.Rect(58, 117, 525, 694)  # roughly the ISC-safe.pdf rectangle
+    pdf = _annotated_page_pdf(str(tmp_path / "preview-app.pdf"),
+                              "",  # empty content, like Preview.app does
+                              target)
+    doc = fitz.open(pdf)
+    try:
+        found = find_safe_area_annotation(doc[0])
+    finally:
+        doc.close()
+    assert found is not None
+    assert abs(found.x0 - target.x0) <= 1.5
+    assert abs(found.y1 - target.y1) <= 1.5
+
+
+def test_find_safe_area_annotation_multiple_unlabeled_squares_are_ambiguous(tmp_path):
+    """
+    Two or more Square annotations without matching labels → ambiguous.
+    Don't guess which is the safe area; fall through to the heuristic.
+    """
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    for i in range(2):
+        a = page.add_rect_annot(fitz.Rect(50 + 100 * i, 100, 100 + 100 * i, 200))
+        a.update()
+    pdf_path = str(tmp_path / "ambiguous.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    doc = fitz.open(pdf_path)
+    try:
         assert find_safe_area_annotation(doc[0]) is None
     finally:
         doc.close()
+
+
+def test_find_safe_area_annotation_labeled_wins_over_unlabeled(tmp_path):
+    """When both a labeled and an unlabeled Square exist, the labeled one wins."""
+    labeled = fitz.Rect(100, 200, 400, 500)
+    unlabeled = fitz.Rect(50, 50, 200, 200)
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    a1 = page.add_rect_annot(labeled)
+    a1.set_info(content="safe-area")
+    a1.update()
+    a2 = page.add_rect_annot(unlabeled)
+    a2.update()
+    pdf_path = str(tmp_path / "both.pdf")
+    doc.save(pdf_path)
+    doc.close()
+
+    doc = fitz.open(pdf_path)
+    try:
+        found = find_safe_area_annotation(doc[0])
+    finally:
+        doc.close()
+    assert found is not None
+    # Should be the labeled one, not the smaller unlabeled one
+    assert abs(found.x0 - labeled.x0) <= 1.5
+    assert abs(found.x1 - labeled.x1) <= 1.5
 
 
 def test_find_safe_area_annotation_ignores_non_square_annots(tmp_path):

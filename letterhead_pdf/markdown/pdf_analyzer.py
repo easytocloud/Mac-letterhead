@@ -199,27 +199,44 @@ def _calculate_smart_margins(regions: Dict, page_rect) -> Dict[str, float]:
 
 def find_safe_area_annotation(page) -> Optional[fitz.Rect]:
     """
-    Look for a Square annotation on this page whose label identifies it as the
-    user's explicit safe area. Returns the rect if found, else None.
+    Look for a Square annotation on this page marking the user's safe area.
 
-    A rectangle drawn in Preview.app appears as a Square annotation; the
-    "Description" field ends up in the annotation's `content` (and sometimes
-    `title` or `subject`, depending on the editor). We check all three,
-    case-insensitively, against SAFE_AREA_LABELS.
+    Two rules, in order:
+
+    1. Labeled — any Square annotation whose title/contents/subject contains
+       one of SAFE_AREA_LABELS wins. This is the explicit, unambiguous case.
+    2. Single unlabeled Square — if the page has exactly ONE Square annotation
+       and none matched rule 1, we treat it as the safe area regardless of
+       label. This accommodates macOS Preview.app, which lets users draw a
+       rectangle but only exposes an "annotation author" field (auto-filled
+       with the macOS user name) — there is no way to type an arbitrary label
+       in Preview. Two or more unlabeled squares are ambiguous, so we fall
+       through to the heuristic and log a warning; if the user wants a
+       specific one used they can add a matching label using a proper PDF
+       editor, or delete the others.
+
+    Returns the rect if found, else None.
     """
     try:
         annots = list(page.annots() or [])
     except Exception:
         annots = []
 
+    squares = []
     for annot in annots:
-        # annot.type is a tuple like (4, "Square"); [1] is the human-readable name
         try:
             type_name = annot.type[1] if isinstance(annot.type, tuple) else str(annot.type)
         except Exception:
             continue
         if type_name.lower() != "square":
             continue
+        squares.append(annot)
+
+    if not squares:
+        return None
+
+    # Rule 1: any Square whose label matches SAFE_AREA_LABELS wins.
+    for annot in squares:
         info = annot.info or {}
         label = " ".join(filter(None, [
             info.get("title", ""),
@@ -227,8 +244,25 @@ def find_safe_area_annotation(page) -> Optional[fitz.Rect]:
             info.get("subject", ""),
         ])).lower()
         if any(marker in label for marker in SAFE_AREA_LABELS):
-            logging.info(f"Found explicit safe-area annotation: {annot.rect}")
+            logging.info(f"Found labeled safe-area annotation: {annot.rect}")
             return fitz.Rect(annot.rect)
+
+    # Rule 2: exactly one Square, no matching label → treat as safe area
+    # (Preview.app workflow: no way to type a label there).
+    if len(squares) == 1:
+        logging.info(
+            f"Found single unlabeled Square annotation, treating as safe area "
+            f"(Preview.app convention): {squares[0].rect}"
+        )
+        return fitz.Rect(squares[0].rect)
+
+    # Multiple unlabeled squares — ambiguous, don't guess.
+    logging.warning(
+        f"Found {len(squares)} unlabeled Square annotations on this page; "
+        f"none matched a safe-area label. Ignoring all — add a label containing "
+        f"one of {list(SAFE_AREA_LABELS)}, or leave only one rectangle on the "
+        f"page. Falling back to layout heuristic."
+    )
     return None
 
 

@@ -307,11 +307,24 @@ def merge_md_command(args: argparse.Namespace) -> int:
                 # Front-matter blend-strategy wins when the CLI value was default.
                 effective_strategy = resolved.blend_strategy or args.strategy
 
+                # Front-matter title/author/subject → PDF metadata dict. The CLI
+                # positional `title` arg is used for filename generation (via
+                # save_dialog above); the front-matter `title` populates the PDF's
+                # metadata title. If the caller didn't provide either, the
+                # processor's default (source filename) still applies.
+                pdf_metadata = {
+                    'title':   resolved.title or args.title,
+                    'author':  resolved.author,
+                    'subject': resolved.subject,
+                }
+
                 # Get HTML save path if provided
                 save_html = getattr(args, 'save_html', None)
 
                 # Convert markdown to PDF with proper margins and backend selection
-                md_processor.md_to_pdf(body_path, temp_pdf, args.letterhead_path, effective_css_path, save_html, final_pdf_backend)
+                md_processor.md_to_pdf(body_path, temp_pdf, args.letterhead_path,
+                                       effective_css_path, save_html, final_pdf_backend,
+                                       pdf_metadata=pdf_metadata)
 
                 # Merge the converted PDF with letterhead
                 letterhead.merge_pdfs(temp_pdf, output_path, strategy=effective_strategy)

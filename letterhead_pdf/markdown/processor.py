@@ -147,8 +147,16 @@ class MarkdownProcessor:
 
     def md_to_pdf(self, md_path: str, output_path: str, letterhead_path: str,
                   css_path: str = None, save_html: str = None,
-                  pdf_backend: str = 'auto') -> str:
-        """Convert a Markdown file to PDF with margins derived from the letterhead."""
+                  pdf_backend: str = 'auto', pdf_metadata: dict = None) -> str:
+        """
+        Convert a Markdown file to PDF with margins derived from the letterhead.
+
+        `pdf_metadata` optionally overrides individual PDF-metadata fields
+        (title, author, subject). Any key not supplied falls back to the
+        Mac-letterhead defaults (title = source filename, author = creator =
+        producer = "Mac-letterhead"). Keys that don't map to a PDF property
+        are ignored. Front-matter data flows in here via the CLI/MCP wiring.
+        """
         logging.info(f"Converting markdown to PDF: {md_path} -> {output_path}")
 
         try:
@@ -221,12 +229,21 @@ class MarkdownProcessor:
 
                 pdf = fitz.open(tmp_pdf)
                 try:
-                    pdf.set_metadata({
-                        'title': os.path.basename(md_path),
-                        'author': 'Mac-letterhead',
-                        'creator': 'Mac-letterhead',
+                    # Compose PDF metadata: defaults + caller-supplied overrides.
+                    # `creator`/`producer` stay branded as Mac-letterhead so downstream
+                    # tools can still identify the source; `title`/`author`/`subject`
+                    # accept overrides from front matter (via CLI/MCP wiring).
+                    meta = {
+                        'title':    os.path.basename(md_path),
+                        'author':   'Mac-letterhead',
+                        'creator':  'Mac-letterhead',
                         'producer': 'Mac-letterhead',
-                    })
+                    }
+                    if pdf_metadata:
+                        for key in ('title', 'author', 'subject', 'keywords'):
+                            if pdf_metadata.get(key):
+                                meta[key] = pdf_metadata[key]
+                    pdf.set_metadata(meta)
                     pdf.save(output_path)
                 finally:
                     pdf.close()

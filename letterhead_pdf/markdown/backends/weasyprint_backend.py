@@ -32,6 +32,76 @@ def enhance_gfm_task_lists(html_content: str) -> str:
     return html_content
 
 
+def _strip_page_rules_with_margins(css: str) -> str:
+    """
+    Remove `@page { ... }` blocks that declare a `margin-*` property so the
+    letterhead-derived margins (set later with `!important`) win. `@page`
+    blocks whose body contains only margin-boxes like `@bottom-right { ... }`
+    are preserved — that's how front-matter `page-numbers:` injects counters,
+    and how users can customize headers/footers via their own CSS.
+
+    Handles nested braces correctly (a naive `@page\\s*{[^}]*}` regex breaks
+    on `@page { @bottom-right { ... } }` because `[^}]` stops at the first
+    inner brace).
+    """
+    result = []
+    i = 0
+    n = len(css)
+    while i < n:
+        # Find next @page
+        m = re.search(r'@page\b[^{]*', css[i:], flags=re.IGNORECASE)
+        if not m:
+            result.append(css[i:])
+            break
+        start_idx = i + m.start()
+        result.append(css[i:start_idx])
+        # Find the opening brace
+        brace_start = css.find('{', start_idx)
+        if brace_start == -1:
+            result.append(css[start_idx:])
+            break
+        # Walk the block, respecting nested braces
+        depth = 1
+        j = brace_start + 1
+        while j < n and depth > 0:
+            if css[j] == '{':
+                depth += 1
+            elif css[j] == '}':
+                depth -= 1
+            j += 1
+        # j now points just past the closing brace of the outermost block
+        block = css[start_idx:j]
+        # Only drop the block if its top-level body has a margin-* declaration.
+        # Inspect only the direct children — a margin-* inside an inner
+        # margin-box shouldn't count (that's user-authored, and not conflicting).
+        body = css[brace_start + 1:j - 1]
+        top_level = _strip_nested_braces(body)
+        if re.search(r'\bmargin(?:-top|-right|-bottom|-left)?\s*:', top_level, flags=re.IGNORECASE):
+            # drop the block
+            pass
+        else:
+            result.append(block)
+        i = j
+    return ''.join(result)
+
+
+def _strip_nested_braces(s: str) -> str:
+    """Return `s` with content inside nested {…} pairs removed, so a subsequent
+    regex only sees top-level declarations."""
+    out = []
+    depth = 0
+    for ch in s:
+        if ch == '{':
+            depth += 1
+            continue
+        if ch == '}':
+            depth = max(0, depth - 1)
+            continue
+        if depth == 0:
+            out.append(ch)
+    return ''.join(out)
+
+
 def _load_default_css() -> str:
     """Load defaults.css from the package resources, with multiple fallbacks."""
     try:
@@ -103,11 +173,18 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
         else:
             logging.warning(f"CSS file not found: {css_abs}")
 
-    # Strip any @page rules from custom CSS — our margin block takes precedence
+    # Strip @page rules from custom CSS *only if* they contain margin declarations
+    # (margin-top/right/bottom/left) — those would conflict with the letterhead-
+    # derived margins we set later with `!important`. Leave @page rules that only
+    # contain margin-box boxes (@bottom-right, @top-left, etc.) intact — those
+    # are how front-matter `page-numbers:` injects its counter, and how users
+    # can customize headers/footers via their own CSS. Also handle nested braces
+    # correctly by matching a balanced block via a small state machine, since the
+    # naive `[^}]*` regex breaks on `@page { @bottom-right { ... } }`.
     if custom_css:
-        stripped = re.sub(r'@page\s*{[^}]*}', '', custom_css, flags=re.DOTALL | re.IGNORECASE)
+        stripped = _strip_page_rules_with_margins(custom_css)
         if stripped != custom_css:
-            logging.info("Removed @page rules from custom CSS to preserve letterhead margins")
+            logging.info("Removed @page margin declarations from custom CSS to preserve letterhead margins")
         custom_css = stripped
 
     pygments_css = ""
@@ -132,13 +209,8 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
     margin-right: {fp['right']}pt !important;
     margin-bottom: {fp['bottom']}pt !important;
     margin-left: {fp['left']}pt !important;
-
-    @bottom-center {{
-        content: counter(page);
-        font-family: Helvetica, Arial, sans-serif;
-        font-size: 9pt;
-        color: #666666;
-    }}
+    /* Page numbers deliberately OFF here — opt in via front-matter
+     * `page-numbers:` (see letterhead_pdf.markdown.front_matter). */
 }}
 """
 

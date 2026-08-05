@@ -180,7 +180,10 @@ make test-all → make publish
 ### Key Features
 
 **Safe-Area Detection (three-tier)**
-- **Annotation (highest priority)**: users mark a Square annotation on the letterhead PDF (in Preview.app or any PDF editor) labeled `safe-area`, `printable-area`, `content-area`, or similar (case-insensitive; substring; see `SAFE_AREA_LABELS`). Treated verbatim — no padding applied. Escape hatch for pixel-precise control when the heuristic misjudges.
+- **Annotation (highest priority)**: users mark a Square annotation on the letterhead PDF. Two sub-rules:
+  - *Labeled* — annotation whose title/contents/subject contains one of `SAFE_AREA_LABELS` (`safe-area`, `printable-area`, `content-area`, and variants; case-insensitive, substring). Any number of Squares can coexist; the labeled one wins.
+  - *Single unlabeled* — if the page has *exactly one* Square annotation and none matched a label, that Square is used anyway. This accommodates macOS Preview.app, which draws Squares but doesn't expose an editable label field. Multiple unlabeled Squares are ambiguous and fall through to the heuristic with a warning.
+  Treated verbatim — no padding applied. Escape hatch for pixel-precise control when the heuristic misjudges.
 - **Heuristic**: layout analysis via PyMuPDF — text blocks, drawings, and images classified into header/middle/footer bands (top/bottom third of the page), then the safe rectangle is nudged to avoid detected content. `HEURISTIC_TOP_BOTTOM_PADDING = 40` pt is added on top and bottom for breathing room; without it, continuation-page wordmarks rendered as tiny vector paths can end up right against the safe-area edge.
 - **Fallback**: if the heuristic finds no content at all (blank letterhead), returns generous 1-inch defaults on every side.
 - Same resolution used by every interface — droplet, CLI, MCP — via `analyze_page_safe_area()` and `analyze_letterhead_detailed()`. Backwards-compatible `analyze_letterhead()` still returns margin dicts only.

@@ -14,13 +14,9 @@
 	margin-bottom: 72pt;
 	margin-left: 72pt;
 
-	/* Page footer with page numbers */
-	@bottom-center {
-		content: counter(page);
-		font-family: 'Helvetica Neue', Arial, sans-serif;
-		font-size: 9pt;
-		color: #660000;
-	}
+	/* Page numbers are OFF by default — opt in per document via front matter
+	 * (see the front_matter module). Most letterhead output is short-form
+	 * (letters, memos, single-page proposals) where page numbers are noise. */
 }
 
 /* ==================== BODY AND BASE TYPOGRAPHY ==================== */

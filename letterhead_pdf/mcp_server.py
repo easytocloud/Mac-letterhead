@@ -222,8 +222,8 @@ def _build_tools() -> List[types.Tool]:
                 "  ignored on style-bound servers.\n"
                 "\n"
                 "## Field reference\n"
-                "- `title` (string) — PDF title + filename generation\n"
-                "- `output-dir` (path, supports `~`) — where to write the PDF\n"
+                "- `title` (string) — PDF title metadata + filename generation\n"
+                "- `output-dir` (path, supports `~`) — where to write the PDF; fills in when the caller did not pass `output_path`\n"
                 "- `page-numbers` — one of: `bottom-right`, `bottom-center`, `bottom-left`, "
                 "`alternate`. Omit to disable page numbers entirely (the default).\n"
                 "- `blend-strategy` — one of: `darken`, `multiply`, `overlay`, "
@@ -527,11 +527,15 @@ async def create_letterhead_pdf(
         # that as "not explicitly passed" so front-matter blend-strategy can win.
         strategy_was_default = (strategy == "darken")
         server_bound = SERVER_NAME  # non-None on style-specific servers
+        # `output_path` is a full file path; front-matter `output-dir` is just the
+        # directory. If the caller passed an explicit output_path, that always wins.
+        # Otherwise front-matter output-dir fills in the directory portion below
+        # in generate_output_path.
         resolved = resolve_fm(
             fm_dict,
             explicit={
                 "title":          title,
-                "output-dir":     None,                # not directly exposed as MCP arg; deferred
+                "output-dir":     None,                # never explicit at the MCP layer — output_path handled separately
                 "blend-strategy": None if strategy_was_default else strategy,
                 "style":          style,               # explicit style trumps front matter
                 "author":         None,
@@ -555,14 +559,27 @@ async def create_letterhead_pdf(
         # title falls back to front matter → filename generation
         effective_title = resolved.title or title
 
-        # Generate output path (front-matter output-dir would override the server
-        # default here in a future iteration; deferred for now to keep this change
-        # focused on formatting, not filesystem routing.)
+        # Generate output path. Front-matter output-dir fills in when the caller
+        # didn't pass an explicit output_path — same precedence rule (explicit
+        # tool arg wins).
         letterhead_name = effective_style or letterhead_template or SERVER_NAME
+        if output_path is None and resolved.output_dir:
+            # Expand ~ and use as the directory portion; filename generation
+            # fills in the rest based on title/style/timestamp.
+            output_path = os.path.expanduser(resolved.output_dir)
         output_path = generate_output_path(output_path, output_filename, effective_title, letterhead_name)
 
         # Merge strategy: front-matter blend-strategy overrides the default; explicit tool arg wins.
         effective_strategy = resolved.blend_strategy or strategy
+
+        # PDF metadata dict — title/author/subject flow into the actual PDF
+        # /Info dictionary (visible in Preview.app "Show Inspector", `pdfinfo`,
+        # search indexers, etc.). creator/producer stay branded as Mac-letterhead.
+        pdf_metadata = {
+            'title':   effective_title,
+            'author':  resolved.author,
+            'subject': resolved.subject,
+        }
 
         # TemporaryDirectory covers both the markdown temp file and the converted PDF;
         # cleanup is guaranteed even if an exception is raised during conversion.
@@ -598,7 +615,8 @@ async def create_letterhead_pdf(
                     f.write(injected_css + "\n" + user_css_text)
                 css_path_expanded = effective_css_path
 
-            md_processor.md_to_pdf(md_file_path, temp_pdf, letterhead_path, css_path_expanded)
+            md_processor.md_to_pdf(md_file_path, temp_pdf, letterhead_path,
+                                   css_path_expanded, pdf_metadata=pdf_metadata)
 
             # Merge with letterhead
             letterhead_pdf = LetterheadPDF(letterhead_path)

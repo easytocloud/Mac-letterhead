@@ -157,7 +157,7 @@ Published on the [official MCP Registry](https://registry.modelcontextprotocol.i
 
 Mac-letterhead needs to know where on your letterhead is *safe* to print content — the space between the header, footer, and any logos. It figures this out in three tiers:
 
-1. **You mark it explicitly.** Open your letterhead in Preview.app, use Markup → Rectangle to draw a box over the intended safe area, click the shape → sidebar → Description → type `safe-area` (or `printable-area` — case-insensitive; substring match). Save. Mac-letterhead treats your rectangle as exact intent.
+1. **You mark it explicitly.** Open your letterhead in Preview.app (Tools → Show Markup Toolbar → Rectangle), draw a box over the intended safe area, save. That's it — Preview.app doesn't offer any way to label annotations, so Mac-letterhead treats a **single Square annotation** on a page as the safe area even without a label. If you want to be unambiguous (or you're using a PDF editor that supports labeling), click your rectangle → sidebar → Description → type `safe-area` (or `printable-area` — case-insensitive, substring match). Then multiple rectangles per page work too — only the labeled one is used.
 2. **Auto-detected.** No annotation → Mac-letterhead analyses the letterhead's layout (text, drawings, logos) and derives a safe rectangle that avoids them, with a ~40 pt safety pad.
 3. **Fallback default.** No content detected → 1-inch margins on every side.
 
