@@ -1,3 +1,10 @@
+## [0.18.9](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.8...v0.18.9) (2026-08-05)
+
+
+### Bug Fixes
+
+* **brand:** shorten server.json description to fit the 100-char registry limit ([22d41a9](https://github.com/easytocloud/Mac-letterhead/commit/22d41a988585a828f6d499326d7979106fae30fd))
+
 ## [0.18.8](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.7...v0.18.8) (2026-08-05)
 
 
