@@ -1,3 +1,10 @@
+## [0.18.6](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.5...v0.18.6) (2026-08-05)
+
+
+### Bug Fixes
+
+* **ci:** give gh release list a repo context in publish-mcp-registry ([0751a05](https://github.com/easytocloud/Mac-letterhead/commit/0751a056a076baf3d9fa7b4df790fd9e58a1836e))
+
 ## [0.18.5](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.4...v0.18.5) (2026-08-05)
 
 
