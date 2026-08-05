@@ -1,3 +1,10 @@
+## [0.24.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.0...v0.24.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **mcp,dxt:** handle unresolved ${user_config.*} placeholders and generic-server style routing ([9f0a805](https://github.com/easytocloud/Mac-letterhead/commit/9f0a805559aeaf70de867e0d1b53e3f498c63511))
+
 # [0.24.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.23.0...v0.24.0) (2026-08-05)
 
 
