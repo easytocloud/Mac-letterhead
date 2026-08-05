@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.22.0...v0.23.0) (2026-08-05)
+
+
+### Features
+
+* **front-matter:** per-document overrides via YAML front matter ([364a8a5](https://github.com/easytocloud/Mac-letterhead/commit/364a8a58b3e4a4d1dc689ff5440802288af3abf7))
+
 # [0.22.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.21.0...v0.22.0) (2026-08-05)
 
 
