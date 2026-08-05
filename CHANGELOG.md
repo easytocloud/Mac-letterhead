@@ -1,3 +1,10 @@
+## [0.18.7](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.6...v0.18.7) (2026-08-05)
+
+
+### Bug Fixes
+
+* **ci:** use github-oidc for mcp-publisher login instead of PAT ([1bf16fe](https://github.com/easytocloud/Mac-letterhead/commit/1bf16feab89cc12cb5ac0edbd2ed1fe7a4156717))
+
 ## [0.18.6](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.5...v0.18.6) (2026-08-05)
 
 
