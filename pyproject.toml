@@ -12,6 +12,17 @@ license = "MIT"
 authors = [
     { name = "Erik", email = "" }
 ]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: MacOS",
+    "Environment :: MacOS X :: Cocoa",
+    "Topic :: Office/Business",
+    "Topic :: Text Processing :: Markup :: Markdown",
+    "Intended Audience :: End Users/Desktop",
+]
 dependencies = [
     "pyobjc-framework-Quartz>=11.1,<12",
     "pyobjc-framework-Cocoa>=11.1,<12",
