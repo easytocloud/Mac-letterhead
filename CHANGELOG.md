@@ -1,3 +1,10 @@
+## [0.20.1](https://github.com/easytocloud/Mac-letterhead/compare/v0.20.0...v0.20.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* **packaging:** add missing PyPI classifiers so the Python-versions badge renders ([958df05](https://github.com/easytocloud/Mac-letterhead/commit/958df056e2c8c74cff86495c954075dc179bbfc4))
+
 # [0.20.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.19.0...v0.20.0) (2026-08-05)
 
 
