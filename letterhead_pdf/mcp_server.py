@@ -526,7 +526,11 @@ async def create_letterhead_pdf(
         # `strategy` has a default of "darken" in the MCP tool signature — treat
         # that as "not explicitly passed" so front-matter blend-strategy can win.
         strategy_was_default = (strategy == "darken")
-        server_bound = SERVER_NAME  # non-None on style-specific servers
+        # SERVER_NAME defaults to "mcp-letterhead" (the placeholder used on
+        # generic multi-style servers). Only treat it as a real binding when
+        # the module was actually started with a `--style` — otherwise front-
+        # matter `style:` should be honoured normally on generic servers.
+        server_bound = SERVER_NAME if SERVER_NAME != "mcp-letterhead" else None
         # `output_path` is a full file path; front-matter `output-dir` is just the
         # directory. If the caller passed an explicit output_path, that always wins.
         # Otherwise front-matter output-dir fills in the directory portion below

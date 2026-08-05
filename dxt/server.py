@@ -12,14 +12,54 @@ letterhead resolution, and PDF generation.
 """
 
 import os
+import re
 import sys
+
+
+# Match a bare `${user_config.<name>}` placeholder — nothing else. The `<name>`
+# is the manifest field key. Anything outside this exact shape (embedded
+# placeholders, other `${...}` schemes like `${HOME}`, real strings) passes
+# through unchanged.
+_USER_CONFIG_PLACEHOLDER = re.compile(r'^\$\{user_config\.[^}]+\}$')
+
+
+def _cleaned(val):
+    """
+    Normalise a user_config-derived env var to `None` when the DXT host didn't
+    substitute a resolved value.
+
+    Two cases produce a placeholder value at runtime:
+      1. The user left the field blank and the manifest has no `default` — some
+         DXT hosts pass `""` (falsy), others pass the literal template string
+         `${user_config.<field>}` (truthy!). We need to catch both.
+      2. The DXT host is a version that doesn't expand `${user_config.*}` at
+         all — same literal-string outcome.
+
+    We deliberately only strip `${user_config.*}` — other shell-style
+    placeholders such as `${HOME}/Desktop` (which appears as the manifest
+    default for the output directory) pass through untouched, and the calling
+    code expands them via os.path.expanduser / expandvars.
+    """
+    if not val:
+        return None
+    if _USER_CONFIG_PLACEHOLDER.match(val):
+        return None
+    return val
 
 
 def main() -> int:
     # Read user_config values injected by the DXT host as environment variables.
-    # Empty string from unset user_config fields is treated as "not configured".
-    style = os.environ.get("LETTERHEAD_STYLE") or None
-    output_dir = os.environ.get("LETTERHEAD_OUTPUT_DIR") or None
+    # Both empty strings and unresolved `${user_config.*}` placeholders count as
+    # "not configured" — the latter shows up when the user leaves the field
+    # blank in Claude Desktop and the manifest has no default.
+    style = _cleaned(os.environ.get("LETTERHEAD_STYLE"))
+    output_dir = _cleaned(os.environ.get("LETTERHEAD_OUTPUT_DIR"))
+    # Expand shell-style placeholders (e.g. `${HOME}/Desktop`) that some DXT
+    # hosts leave for downstream expansion. os.path.expandvars is a no-op for
+    # values that don't reference env vars, so this is safe when the value is
+    # already an absolute path.
+    if output_dir:
+        output_dir = os.path.expandvars(os.path.expanduser(output_dir))
 
     server_args: dict = {}
     if style:
