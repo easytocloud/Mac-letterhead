@@ -155,7 +155,8 @@ make test-all → make publish
 **Markdown Pipeline (`letterhead_pdf/markdown/`)**
 - `processor.py`: `MarkdownProcessor` orchestrator — capability flags, backend selection, WeasyPrint→ReportLab fallback
 - `pdf_analyzer.py`: safe-area detection. `analyze_letterhead` (legacy, returns margins only), `analyze_letterhead_detailed` (returns `{source, rect, margins}`), `analyze_page_safe_area` (per-page), `find_safe_area_annotation` (annotation lookup), `SafeAreaSource` enum, `SAFE_AREA_LABELS`.
-- `preview.py`: `render_safe_area_preview(letterhead, output)` — visualization overlay (cut marks + tint + source label), colour-coded by source. Used by the `preview` CLI command; also called from droplet info dialogs.
+- `preview.py`: `render_safe_area_preview(letterhead, output)` — visualization overlay (cut marks + tint + source label), colour-coded by source. Used by the `preview` CLI command and the droplet's "Preview Safe Area" double-click action.
+- `front_matter.py`: YAML front-matter parser + precedence-aware resolver. `parse(md) -> (fm_dict, body)`, `resolve(fm, explicit=..., server_bound_style=...) -> ResolvedConfig`, `page_numbers_css(position) -> str`. Precedence rule: `explicit > front matter > (nothing at this layer)`. Special case: on style-bound MCP servers, front-matter `style:` is ignored — server binding wins. Supported fields listed in the module docstring and mirrored in the README.
 - `html_cleaner.py`: `clean_html_for_reportlab`, `preprocess_markdown_indentation`, list item processing
 - `flowable_builder.py`: `build_styles`, `markdown_to_flowables`, nested list parsing
 - `backends/weasyprint_backend.py`: WeasyPrint renderer with CSS path validation

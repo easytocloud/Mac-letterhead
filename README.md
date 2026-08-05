@@ -178,6 +178,45 @@ Colour code in the preview PDF — glance to see how confident the tool is:
 
 Cut marks at each corner give print-native precision; a very subtle tint fills the region for gestalt. A tiny label at the bottom-left tells you which source drove the result and the safe area's exact dimensions.
 
+### Per-document options via YAML front matter
+
+Any Markdown file can start with a YAML front-matter block declaring per-document overrides — the same convention Jekyll, Hugo, and Obsidian use. Mac-letterhead reads it, applies the options, and renders the body normally.
+
+```markdown
+---
+title: Q3 Investor Update
+output-dir: ~/Documents/investor
+page-numbers: alternate
+blend-strategy: multiply
+author: Erik
+---
+
+# Q3 Investor Update
+
+Executive summary…
+```
+
+Supported fields (all optional, kebab-case, unknown fields are logged and skipped):
+
+| Field | Values | Effect |
+|---|---|---|
+| `title` | string | PDF title metadata + auto-generated filename |
+| `output-dir` | path (supports `~`) | Where the resulting PDF is written |
+| `page-numbers` | `bottom-right` \| `bottom-center` \| `bottom-left` \| `alternate` | See below. Omit to disable page numbers entirely (the default). |
+| `blend-strategy` | `darken` \| `multiply` \| `overlay` \| `transparency` \| `reverse` | Overrides the merge blend mode |
+| `style` | style name | Overrides the letterhead style (ignored on dedicated MCP servers — see [README_MCP.md](README_MCP.md)) |
+| `author`, `subject` | string | PDF metadata |
+
+**`page-numbers: alternate`** is designed for booklet-style multi-page letterheads: page 1 is treated as a title page (no number), subsequent left-hand pages get the number bottom-left, right-hand pages bottom-right. Requires the WeasyPrint backend.
+
+**Precedence** (most-specific wins):
+
+```
+explicit CLI/MCP arg  >  front matter  >  server/droplet defaults  >  hard-coded
+```
+
+So if an MCP tool call passes `output_path=…` explicitly *and* the document says `output-dir: …`, the MCP arg wins. Front matter fills in what the caller left unspecified.
+
 ### Brand your typography with CSS
 
 The letterhead PDF supplies the visual identity (logo, header, footer). CSS supplies the *typography*: fonts, colors, spacing, table styling, heading treatment. Together they make one reusable brand identity that any Markdown document can be rendered through.

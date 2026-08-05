@@ -102,6 +102,13 @@ Renders Markdown content into a letterheaded PDF.
 
 Tool annotations: `read_only=false`, `destructive=false`, `open_world=false`, `idempotent=false` — creates a new file, leaves inputs untouched, fully local.
 
+**Front matter** — `markdown_content` may start with a YAML front-matter block declaring per-document options (`title`, `output-dir`, `page-numbers`, `blend-strategy`, `style`, `author`, `subject`). See the [main README's *Per-document options* section](README.md#per-document-options-via-yaml-front-matter) for the full field list and semantics. Two MCP-specific notes:
+
+- **Explicit tool parameters win over front matter.** So an MCP client passing `title="X"` overrides an in-document `title: Y`. Front matter is the fallback layer.
+- **On dedicated (`--style`-bound) servers, front-matter `style:` is silently ignored** (with a warning in the server log). The server's binding wins so the user's phrasing — not the document contents — still routes the request to the right server.
+
+The tool description advertises the supported field set to connected LLM clients, so Claude and similar assistants will write appropriate front matter when the task calls for it.
+
 ### `merge_letterhead_pdf` — Print PDF onto Letterhead
 
 Applies a letterhead to an existing PDF file.

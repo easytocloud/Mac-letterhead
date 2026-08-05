@@ -181,7 +181,61 @@ def _build_tools() -> List[types.Tool]:
     return [
         types.Tool(
             name="create_letterhead_pdf",
-            description=f"Create a letterheaded PDF from Markdown content{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}",
+            description=(
+                f"Create a letterheaded PDF from Markdown content"
+                f"{' using the configured ' + SERVER_NAME + ' style' if has_server_style else ' with specified style'}."
+                "\n\n"
+                "# Optional: YAML front matter\n"
+                "The `markdown_content` MAY begin with a YAML front-matter block — three "
+                "dashes on their own line, key/value pairs, three dashes again — declaring "
+                "per-document options. Example:\n"
+                "\n"
+                "```\n"
+                "---\n"
+                "title: Q3 Investor Update\n"
+                "page-numbers: alternate\n"
+                "author: Erik\n"
+                "---\n"
+                "\n"
+                "# Q3 Investor Update\n"
+                "\n"
+                "Executive summary...\n"
+                "```\n"
+                "\n"
+                "## When to include front matter\n"
+                "Default to NOT including front matter. Add it only when a specific field "
+                "materially improves the document. Rules of thumb:\n"
+                "- `title` — helpful when the tool call's title parameter is not set, since it "
+                "  drives the PDF metadata and the auto-generated filename.\n"
+                "- `page-numbers` — omit for short documents (1–2 pages, memos, letters). "
+                "  Include only when the document is long enough that a reader will need to "
+                "  reference a page (multi-page reports, printed proposals). Use `alternate` "
+                "  ONLY for booklet-style output where the letterhead has a distinct title / "
+                "  left-hand / right-hand page design.\n"
+                "- `blend-strategy` — omit unless the default `darken` produces poor "
+                "  contrast with the letterhead in question and the user has asked for a "
+                "  different strategy.\n"
+                "- `author`, `subject` — include when the user's request contains a clear "
+                "  author name or subject line worth preserving in the PDF metadata.\n"
+                "- `style` — normally not needed; the tool's `style` parameter is the right "
+                "  place to specify a letterhead style. Front-matter `style:` is silently "
+                "  ignored on style-bound servers.\n"
+                "\n"
+                "## Field reference\n"
+                "- `title` (string) — PDF title + filename generation\n"
+                "- `output-dir` (path, supports `~`) — where to write the PDF\n"
+                "- `page-numbers` — one of: `bottom-right`, `bottom-center`, `bottom-left`, "
+                "`alternate`. Omit to disable page numbers entirely (the default).\n"
+                "- `blend-strategy` — one of: `darken`, `multiply`, `overlay`, "
+                "`transparency`, `reverse`\n"
+                "- `style` (string) — letterhead style; server-bound value wins when the "
+                "server was started with `--style`.\n"
+                "- `author`, `subject` (string) — PDF metadata\n"
+                "\n"
+                "Explicit tool parameters ALWAYS override the corresponding front-matter "
+                "field, so it is safe to include front matter even when the user also "
+                "passes the value as an argument — the argument wins."
+            ),
             inputSchema={
                 "type": "object",
                 "properties": create_pdf_properties,
@@ -462,23 +516,60 @@ async def create_letterhead_pdf(
         )]
     
     try:
-        # Determine which style/letterhead to use
-        style_or_template = style or letterhead_template
-        logger.info(f"Using style/template: {style_or_template} (from style param: {style is not None})")
-        
+        # Parse any YAML front matter at the top of `markdown_content` and resolve
+        # per-document overrides. `explicit` tool arguments always win; anything
+        # not passed by the caller falls through to front matter, then to server
+        # defaults. `style` obeys the dedicated-server-wins rule: if this MCP
+        # server was launched with --style, front-matter `style:` is ignored.
+        from letterhead_pdf.markdown.front_matter import parse as parse_fm, resolve as resolve_fm, page_numbers_css
+        fm_dict, body = parse_fm(markdown_content)
+        # `strategy` has a default of "darken" in the MCP tool signature — treat
+        # that as "not explicitly passed" so front-matter blend-strategy can win.
+        strategy_was_default = (strategy == "darken")
+        server_bound = SERVER_NAME  # non-None on style-specific servers
+        resolved = resolve_fm(
+            fm_dict,
+            explicit={
+                "title":          title,
+                "output-dir":     None,                # not directly exposed as MCP arg; deferred
+                "blend-strategy": None if strategy_was_default else strategy,
+                "style":          style,               # explicit style trumps front matter
+                "author":         None,
+                "subject":        None,
+            },
+            server_bound_style=server_bound,
+        )
+
+        # Determine which style/letterhead to use — front matter can now steer it,
+        # bounded by the server-bound rule above.
+        effective_style = resolved.style if not server_bound else server_bound
+        style_or_template = effective_style or letterhead_template
+        logger.info(
+            f"Using style/template: {style_or_template} "
+            f"(from style param: {style is not None}, from front matter: {'style' in fm_dict})"
+        )
+
         # Resolve letterhead template path
         letterhead_path = resolve_letterhead_path(style_or_template)
-        
-        # Generate output path
-        letterhead_name = style or letterhead_template or SERVER_NAME
-        output_path = generate_output_path(output_path, output_filename, title, letterhead_name)
+
+        # title falls back to front matter → filename generation
+        effective_title = resolved.title or title
+
+        # Generate output path (front-matter output-dir would override the server
+        # default here in a future iteration; deferred for now to keep this change
+        # focused on formatting, not filesystem routing.)
+        letterhead_name = effective_style or letterhead_template or SERVER_NAME
+        output_path = generate_output_path(output_path, output_filename, effective_title, letterhead_name)
+
+        # Merge strategy: front-matter blend-strategy overrides the default; explicit tool arg wins.
+        effective_strategy = resolved.blend_strategy or strategy
 
         # TemporaryDirectory covers both the markdown temp file and the converted PDF;
         # cleanup is guaranteed even if an exception is raised during conversion.
         with tempfile.TemporaryDirectory() as temp_dir:
             md_file_path = os.path.join(temp_dir, "input.md")
             with open(md_file_path, 'w', encoding='utf-8') as md_file:
-                md_file.write(markdown_content)
+                md_file.write(body)   # front-matter-stripped body only
 
             # Convert markdown to PDF
             md_processor = MarkdownProcessor()
@@ -487,34 +578,53 @@ async def create_letterhead_pdf(
             # CSS resolution: explicit > style-specific > server default
             if css_path:
                 css_to_use = css_path
-            elif style and not DEFAULT_CSS:
-                style_css_path = os.path.join(LETTERHEAD_DIR, f"{style}.css")
+            elif effective_style and not DEFAULT_CSS:
+                style_css_path = os.path.join(LETTERHEAD_DIR, f"{effective_style}.css")
                 css_to_use = style_css_path if os.path.exists(style_css_path) else None
             else:
                 css_to_use = DEFAULT_CSS
 
             css_path_expanded = os.path.expanduser(css_to_use) if css_to_use else None
+
+            # Front-matter page-numbers → CSS injection (WeasyPrint only).
+            injected_css = page_numbers_css(resolved.page_numbers)
+            if injected_css:
+                user_css_text = ""
+                if css_path_expanded and os.path.exists(css_path_expanded):
+                    with open(css_path_expanded, 'r', encoding='utf-8') as f:
+                        user_css_text = f.read()
+                effective_css_path = os.path.join(temp_dir, "effective.css")
+                with open(effective_css_path, 'w', encoding='utf-8') as f:
+                    f.write(injected_css + "\n" + user_css_text)
+                css_path_expanded = effective_css_path
+
             md_processor.md_to_pdf(md_file_path, temp_pdf, letterhead_path, css_path_expanded)
 
             # Merge with letterhead
             letterhead_pdf = LetterheadPDF(letterhead_path)
-            letterhead_pdf.merge_pdfs(temp_pdf, output_path, strategy)
+            letterhead_pdf.merge_pdfs(temp_pdf, output_path, effective_strategy)
 
         result_text = f"Successfully created letterheaded PDF: {output_path}"
         if title:
-            result_text += f"\nDocument title: {title}"
-        if style:
-            result_text += f"\nStyle used: {style}"
+            result_text += f"\nDocument title: {effective_title}"
+        if effective_style:
+            result_text += f"\nStyle used: {effective_style}"
         else:
             result_text += f"\nLetterhead template: {letterhead_template or 'default'}"
         if css_to_use:
             result_text += f"\nCSS used: {css_to_use}"
-        result_text += f"\nMerge strategy: {strategy}"
+        result_text += f"\nMerge strategy: {effective_strategy}"
+        if resolved.sources:
+            fm_sourced = [f"{k}={fm_dict[k]}" for k in resolved.sources if resolved.sources[k] == "front-matter"]
+            if fm_sourced:
+                result_text += f"\nFrom front matter: {', '.join(fm_sourced)}"
+        if resolved.page_numbers:
+            result_text += f"\nPage numbers: {resolved.page_numbers}"
 
         logger.info(f"Created letterheaded PDF: {output_path}")
 
         return [types.TextContent(type="text", text=result_text)]
-                
+
     except FileNotFoundError as e:
         return [types.TextContent(type="text", text=f"File not found: {str(e)}")]
     except MarkdownProcessingError as e:

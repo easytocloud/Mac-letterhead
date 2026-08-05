@@ -251,22 +251,70 @@ def merge_md_command(args: argparse.Namespace) -> int:
             # Convert markdown to PDF with selected backends
             use_gfm = (final_markdown_backend == 'gfm')
             use_weasyprint = (final_pdf_backend == 'weasyprint')
-            
+
             md_processor = MarkdownProcessor(use_gfm=use_gfm)
             temp_pdf = os.path.join(temp_dir, "converted.pdf")
-            
+
             try:
-                # Get CSS path if provided
-                css_path = getattr(args, 'css', None)
-                
+                # Read the source Markdown and split off any YAML front matter. If
+                # there's no front matter the parser returns ({}, unchanged content),
+                # so this is a no-op for existing users.
+                from letterhead_pdf.markdown.front_matter import parse as parse_fm, resolve as resolve_fm, page_numbers_css
+                with open(args.input_path, 'r', encoding='utf-8') as f:
+                    md_source = f.read()
+                fm_dict, body = parse_fm(md_source)
+
+                # CLI treats positional args as always-explicit; the only fields
+                # front matter can influence on this codepath are those with no
+                # positional-arg equivalent (page-numbers) and --strategy when the
+                # user did not override the default. Everything else is CLI-wins.
+                cli_strategy_was_default = (args.strategy == 'darken')
+                resolved = resolve_fm(
+                    fm_dict,
+                    explicit={
+                        # None values in `explicit` mean "no override" per the resolver's contract.
+                        "blend-strategy": None if cli_strategy_was_default else args.strategy,
+                    },
+                )
+
+                # Write the front-matter-stripped body to a temp file for the processor.
+                body_path = os.path.join(temp_dir, "body.md")
+                with open(body_path, 'w', encoding='utf-8') as f:
+                    f.write(body)
+
+                # Compose effective CSS: user's CSS content (if any) + injected
+                # page-numbers rules (if any). If neither, pass the original path
+                # through unchanged so no temp file is created.
+                user_css_path = getattr(args, 'css', None)
+                injected_css = page_numbers_css(resolved.page_numbers)
+                if injected_css:
+                    user_css_text = ""
+                    if user_css_path and os.path.exists(user_css_path):
+                        with open(user_css_path, 'r', encoding='utf-8') as f:
+                            user_css_text = f.read()
+                    effective_css_path = os.path.join(temp_dir, "effective.css")
+                    with open(effective_css_path, 'w', encoding='utf-8') as f:
+                        f.write(injected_css + "\n" + user_css_text)
+                    if final_pdf_backend != 'weasyprint':
+                        logging.warning(
+                            "page-numbers front-matter field requires the WeasyPrint backend; "
+                            "ignored on ReportLab. Install WeasyPrint system libs "
+                            "(brew install pango cairo fontconfig freetype harfbuzz) to enable."
+                        )
+                else:
+                    effective_css_path = user_css_path
+
+                # Front-matter blend-strategy wins when the CLI value was default.
+                effective_strategy = resolved.blend_strategy or args.strategy
+
                 # Get HTML save path if provided
                 save_html = getattr(args, 'save_html', None)
-                
+
                 # Convert markdown to PDF with proper margins and backend selection
-                md_processor.md_to_pdf(args.input_path, temp_pdf, args.letterhead_path, css_path, save_html, final_pdf_backend)
-                
+                md_processor.md_to_pdf(body_path, temp_pdf, args.letterhead_path, effective_css_path, save_html, final_pdf_backend)
+
                 # Merge the converted PDF with letterhead
-                letterhead.merge_pdfs(temp_pdf, output_path, strategy=args.strategy)
+                letterhead.merge_pdfs(temp_pdf, output_path, strategy=effective_strategy)
                 
                 logging.info("Merge-md command completed successfully")
                 print(f"Successfully created PDF with letterhead: {output_path}")
