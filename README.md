@@ -209,18 +209,34 @@ Choose the optimal strategy for your letterhead design:
 
 ## Advanced Features
 
-### Custom CSS Styling
+### Brand Styling with CSS
 
-Create sophisticated document styling by providing custom CSS:
+Mac-letterhead is not just a letterhead applicator — it turns any Markdown file into an on-brand PDF. Your letterhead PDF supplies the artwork (logo, header, footer, watermark), and a companion CSS file drives the *typography*: fonts, colors, spacing, table and code styling, heading treatment. Together they give you a single, reusable brand identity that any Markdown document can be rendered through.
+
+**Convention.** For a style named `<name>`, Mac-letterhead resolves:
+
+- `~/.letterhead/<name>.pdf` — the letterhead artwork
+- `~/.letterhead/<name>.css` — the brand typography and colors (optional)
+
+Keeping both under one name means the droplet, the CLI, and the MCP server all pick up the same brand consistently.
+
+**Example — corporate brand:**
 
 ```css
-/* custom-styles.css */
-h1 { color: #2c5aa0; border-bottom: 2px solid #2c5aa0; }
-table { border: 1px solid #ddd; background: #f9f9f9; }
-code { background: #f4f4f4; padding: 2px 4px; }
+/* ~/.letterhead/company.css */
+body        { font-family: "Inter", "Helvetica Neue", sans-serif; color: #1f2937; }
+h1, h2, h3  { color: #0b3d91; font-family: "Merriweather", Georgia, serif; }
+h1          { border-bottom: 2px solid #0b3d91; padding-bottom: 0.25em; }
+a           { color: #0b3d91; text-decoration: underline; }
+code, pre   { font-family: "JetBrains Mono", ui-monospace, monospace; background: #f5f7fa; }
+table th    { background: #0b3d91; color: white; }
+table td    { border-bottom: 1px solid #e5e7eb; }
+blockquote  { border-left: 3px solid #0b3d91; color: #4b5563; }
 ```
 
-The CSS is automatically integrated with Mac-letterhead's smart margin system to ensure content fits properly within your letterhead design.
+Combined with your letterhead PDF (logo, footer, whatever), this produces documents that consistently look like they came from your organization — from a plain `.md` file, in one call.
+
+**Rendering.** CSS is applied by the WeasyPrint backend and integrated with the smart margin system, so branded typography renders inside the safe area detected on your letterhead — text never runs over the logo. If WeasyPrint isn't available (system libs missing), Mac-letterhead falls back to ReportLab with a reduced CSS subset.
 
 ### Markdown Features
 

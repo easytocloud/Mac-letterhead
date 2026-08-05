@@ -31,7 +31,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ inputs.version }}"
           else
-            VERSION=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' | sed 's/^v//')
+            VERSION=$(gh release list --repo "${{ github.repository }}" --limit 1 --json tagName --jq '.[0].tagName' | sed 's/^v//')
             if [ -z "$VERSION" ]; then
               echo "No release found; nothing to publish"
               exit 1
