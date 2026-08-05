@@ -1,3 +1,10 @@
+## [0.18.5](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.4...v0.18.5) (2026-08-05)
+
+
+### Bug Fixes
+
+* **mcp-registry:** restore workflow_run trigger and align server.json with 2025-12-11 schema ([8120aa0](https://github.com/easytocloud/Mac-letterhead/commit/8120aa04878626c4066a95375ac59a0800dfad42))
+
 ## [0.18.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.3...v0.18.4) (2026-08-04)
 
 
