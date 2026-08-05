@@ -186,7 +186,14 @@ def _build_tools() -> List[types.Tool]:
                 "type": "object",
                 "properties": create_pdf_properties,
                 "required": create_pdf_required
-            }
+            },
+            annotations=types.ToolAnnotations(
+                title="Print Markdown onto Letterhead",
+                read_only_hint=False,
+                destructive_hint=False,
+                idempotent_hint=False,
+                open_world_hint=False,
+            ),
         ),
         types.Tool(
             name="merge_letterhead_pdf",
@@ -225,7 +232,14 @@ def _build_tools() -> List[types.Tool]:
                     } if has_server_style else {})
                 },
                 "required": ["input_pdf_path"] + (["style"] if not has_server_style else [])
-            }
+            },
+            annotations=types.ToolAnnotations(
+                title="Print PDF onto Letterhead",
+                read_only_hint=False,
+                destructive_hint=False,
+                idempotent_hint=False,
+                open_world_hint=False,
+            ),
         ),
         types.Tool(
             name="analyze_letterhead",
@@ -244,7 +258,13 @@ def _build_tools() -> List[types.Tool]:
                     }
                 }),
                 "required": ["style"] if not has_server_style else []
-            }
+            },
+            annotations=types.ToolAnnotations(
+                title="Analyze Letterhead Template",
+                read_only_hint=True,
+                idempotent_hint=True,
+                open_world_hint=False,
+            ),
         ),
         types.Tool(
             name="list_letterhead_templates",
@@ -252,7 +272,13 @@ def _build_tools() -> List[types.Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {}
-            }
+            },
+            annotations=types.ToolAnnotations(
+                title="List Letterhead Templates",
+                read_only_hint=True,
+                idempotent_hint=True,
+                open_world_hint=False,
+            ),
         )
     ]
 
