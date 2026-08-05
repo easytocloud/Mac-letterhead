@@ -415,6 +415,10 @@ The GitHub Action uses the same configuration, so merging Conventional Commits i
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing procedures, and pull request guidelines.
 
+## Privacy Policy
+
+Mac-letterhead runs entirely on your local machine. It does not collect, transmit, store, or share any personal data — no network calls, no telemetry, no analytics, no cloud sync. See [PRIVACY.md](PRIVACY.md) for the full statement.
+
 ## License
 
 MIT License

@@ -28,6 +28,9 @@
     "branding",
     "professional-documents"
   ],
+  "privacy_policies": [
+    "https://github.com/easytocloud/Mac-letterhead/blob/main/PRIVACY.md"
+  ],
   "server": {
     "type": "python",
     "entry_point": "server.py",
