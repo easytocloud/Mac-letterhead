@@ -1,3 +1,10 @@
+## [0.18.8](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.7...v0.18.8) (2026-08-05)
+
+
+### Bug Fixes
+
+* **ci:** retry PyPI publish on transient Sigstore/TUF errors ([3bf9493](https://github.com/easytocloud/Mac-letterhead/commit/3bf94939a816fb513f1a5a6eeb80cacbf9aed971)), closes [#1](https://github.com/easytocloud/Mac-letterhead/issues/1)
+
 ## [0.18.7](https://github.com/easytocloud/Mac-letterhead/compare/v0.18.6...v0.18.7) (2026-08-05)
 
 
