@@ -81,9 +81,42 @@ jobs:
         if: steps.semrel.outputs.new_release_published == 'true'
         run: twine check dist/*
 
+      # Sigstore's TUF metadata endpoint occasionally 403s, which kills the
+      # attestation step and aborts the whole publish. Retry up to three times;
+      # the final attempt disables attestations so a sustained Sigstore outage
+      # still gets the package onto PyPI (unattested, but published).
       - name: Publish to PyPI (Trusted Publishing)
+        id: pypi_publish
         if: steps.semrel.outputs.new_release_published == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
+        continue-on-error: true
+
+      - name: Wait before PyPI retry
+        if: ${{ steps.pypi_publish.outcome == 'failure' && steps.semrel.outputs.new_release_published == 'true' }}
+        run: |
+          echo "PyPI publish failed on first attempt (likely transient Sigstore/TUF error); waiting 60s before retry."
+          sleep 60
+
+      - name: Publish to PyPI (retry)
+        id: pypi_publish_retry
+        if: ${{ steps.pypi_publish.outcome == 'failure' && steps.semrel.outputs.new_release_published == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+        continue-on-error: true
+
+      - name: Wait before PyPI fallback publish
+        if: ${{ steps.pypi_publish_retry.outcome == 'failure' && steps.semrel.outputs.new_release_published == 'true' }}
+        run: |
+          echo "PyPI publish still failing after retry; final attempt will disable attestations to bypass Sigstore."
+          sleep 60
+
+      - name: Publish to PyPI (final attempt, attestations disabled)
+        if: ${{ steps.pypi_publish_retry.outcome == 'failure' && steps.semrel.outputs.new_release_published == 'true' }}
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
+          attestations: false
 
       - name: Build Desktop Extension (.mcpb)
         if: steps.semrel.outputs.new_release_published == 'true'
