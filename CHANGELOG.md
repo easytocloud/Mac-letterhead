@@ -1,3 +1,10 @@
+# [0.24.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.23.0...v0.24.0) (2026-08-05)
+
+
+### Features
+
+* Preview.app safe-area path, PDF metadata injection, MCP output-dir, kill default page numbers ([d1a6442](https://github.com/easytocloud/Mac-letterhead/commit/d1a6442ec7ae29d7ccf704f2172a156bd353f2d7))
+
 # [0.23.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.22.0...v0.23.0) (2026-08-05)
 
 
