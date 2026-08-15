@@ -151,14 +151,14 @@ jobs:
       # easytocloud/homebrew-tap.
       - name: Configure 1Password Service Account
         if: steps.semrel.outputs.new_release_published == 'true'
-        uses: 1password/load-secrets-action/configure@v1
+        uses: 1password/load-secrets-action/configure@v5
         with:
           service-account-token: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
 
       - name: Load Homebrew tap GitHub token from 1Password
         id: load-brew-token
         if: steps.semrel.outputs.new_release_published == 'true'
-        uses: 1password/load-secrets-action@v2
+        uses: 1password/load-secrets-action@v5
         with:
           export-env: false
         env:
@@ -170,7 +170,7 @@ jobs:
         # to complete. Manual retry via workflow_dispatch is straightforward.
         continue-on-error: true
         if: steps.semrel.outputs.new_release_published == 'true'
-        uses: Justintime50/homebrew-releaser@v1
+        uses: Justintime50/homebrew-releaser@v3
         with:
           homebrew_owner: easytocloud
           homebrew_tap: homebrew-tap
