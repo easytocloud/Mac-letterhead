@@ -25,8 +25,10 @@ import logging
 from enum import Enum
 from typing import Dict, Optional
 
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 from reportlab.lib.pagesizes import A4, LETTER
+
+logger = logging.getLogger(__name__)
 
 
 class SafeAreaSource(str, Enum):
@@ -58,7 +60,7 @@ def analyze_page_regions(page) -> Dict:
         page_size = LETTER
     else:
         page_size = A4
-        logging.info(f"Non-standard page size ({width}x{height}), defaulting to A4")
+        logger.debug(f"Non-standard page size ({width}x{height}), defaulting to A4")
 
     # Header/footer bands. Widened to top/bottom third (was quarter) so that
     # wordmarks rendered *below* a logo — common on continuation-page
@@ -74,7 +76,7 @@ def analyze_page_regions(page) -> Dict:
             cy = (rect.y0 + rect.y1) / 2
             region = "header" if cy < top_third else ("footer" if cy > bottom_third else "middle")
             content_regions.append((region, rect))
-            logging.info(f"Text {region}: {rect}")
+            logger.debug(f"Text {region}: {rect}")
 
     page_area = width * height
     for drawing in page.get_drawings():
@@ -83,22 +85,22 @@ def analyze_page_regions(page) -> Dict:
             continue
         area_pct = (rect.width * rect.height / page_area) * 100
         if area_pct > 80:
-            logging.info(f"Skipping large background drawing ({area_pct:.1f}%): {rect}")
+            logger.debug(f"Skipping large background drawing ({area_pct:.1f}%): {rect}")
             continue
         if (rect.width / width) * 100 > 90 and (rect.height / height) * 100 > 90:
-            logging.info(f"Skipping full-page drawing: {rect}")
+            logger.debug(f"Skipping full-page drawing: {rect}")
             continue
         cy = (rect.y0 + rect.y1) / 2
         region = "header" if cy < top_third else ("footer" if cy > bottom_third else "middle")
         content_regions.append((region, rect))
-        logging.info(f"Drawing {region}: {rect}")
+        logger.debug(f"Drawing {region}: {rect}")
 
     for img in page.get_images():
         for image_rect in page.get_image_rects(img[0]):
             cy = (image_rect.y0 + image_rect.y1) / 2
             region = "header" if cy < top_third else ("footer" if cy > bottom_third else "middle")
             content_regions.append((region, image_rect))
-            logging.info(f"Image {region}: {image_rect}")
+            logger.debug(f"Image {region}: {image_rect}")
 
     header_rect = footer_rect = middle_rect = None
     for region, rect in content_regions:
@@ -153,7 +155,7 @@ def _adjust_printable_area(printable_rect: fitz.Rect, content_rect: fitz.Rect,
 
     if adjustments:
         best = max(adjustments, key=lambda r: r.width * r.height)
-        logging.info(f"Adjusted printable area: {printable_rect} -> {best}")
+        logger.debug(f"Adjusted printable area: {printable_rect} -> {best}")
         return best
     return printable_rect
 
@@ -168,17 +170,17 @@ def _calculate_smart_margins(regions: Dict, page_rect) -> Dict[str, float]:
 
     printable_rect = fitz.Rect(default_margin, default_margin,
                                 page_width - default_margin, page_height - default_margin)
-    logging.info(f"Initial printable area: {printable_rect}")
+    logger.debug(f"Initial printable area: {printable_rect}")
 
     for region_type, content_rect in content_regions:
         if printable_rect.intersects(content_rect):
-            logging.info(f"Content overlaps printable area: {region_type} at {content_rect}")
+            logger.debug(f"Content overlaps printable area: {region_type} at {content_rect}")
             printable_rect = _adjust_printable_area(printable_rect, content_rect, page_rect)
 
     min_width = page_width * 0.3
     min_height = page_height * 0.3
     if printable_rect.width < min_width or printable_rect.height < min_height:
-        logging.warning(f"Printable area too small ({printable_rect.width:.0f}x{printable_rect.height:.0f}), using centred fallback")
+        logger.warning(f"Printable area too small ({printable_rect.width:.0f}x{printable_rect.height:.0f}), using centred fallback")
         cx, cy = page_width / 2, page_height / 2
         printable_rect = fitz.Rect(cx - min_width / 2, cy - min_height / 2,
                                     cx + min_width / 2, cy + min_height / 2)
@@ -191,8 +193,8 @@ def _calculate_smart_margins(regions: Dict, page_rect) -> Dict[str, float]:
     pw = page_width - left - right
     ph = page_height - top - bottom
     pct = pw * ph / (page_width * page_height) * 100
-    logging.info(f"Final printable area: {pw:.1f}x{ph:.1f}pt ({pct:.1f}%)")
-    logging.info(f"Margins: top={top:.1f}, right={right:.1f}, bottom={bottom:.1f}, left={left:.1f}")
+    logger.debug(f"Final printable area: {pw:.1f}x{ph:.1f}pt ({pct:.1f}%)")
+    logger.debug(f"Margins: top={top:.1f}, right={right:.1f}, bottom={bottom:.1f}, left={left:.1f}")
 
     return {'top': top, 'right': right, 'bottom': bottom, 'left': left}
 
@@ -244,20 +246,20 @@ def find_safe_area_annotation(page) -> Optional[fitz.Rect]:
             info.get("subject", ""),
         ])).lower()
         if any(marker in label for marker in SAFE_AREA_LABELS):
-            logging.info(f"Found labeled safe-area annotation: {annot.rect}")
+            logger.info(f"Found labeled safe-area annotation: {annot.rect}")
             return fitz.Rect(annot.rect)
 
     # Rule 2: exactly one Square, no matching label → treat as safe area
     # (Preview.app workflow: no way to type a label there).
     if len(squares) == 1:
-        logging.info(
+        logger.info(
             f"Found single unlabeled Square annotation, treating as safe area "
             f"(Preview.app convention): {squares[0].rect}"
         )
         return fitz.Rect(squares[0].rect)
 
     # Multiple unlabeled squares — ambiguous, don't guess.
-    logging.warning(
+    logger.warning(
         f"Found {len(squares)} unlabeled Square annotations on this page; "
         f"none matched a safe-area label. Ignoring all — add a label containing "
         f"one of {list(SAFE_AREA_LABELS)}, or leave only one rectangle on the "
@@ -366,7 +368,7 @@ def analyze_letterhead_detailed(letterhead_path: str) -> Dict[str, Dict]:
     'rect' is a fitz.Rect for the safe area on the page.
     'source' is one of SafeAreaSource values: 'annotation' | 'heuristic' | 'fallback'.
     """
-    logging.info(f"Analyzing letterhead safe areas: {letterhead_path}")
+    logger.info(f"Analyzing letterhead safe areas: {letterhead_path}")
     doc = None
     try:
         doc = fitz.open(letterhead_path)
@@ -412,7 +414,7 @@ def analyze_letterhead_detailed(letterhead_path: str) -> Dict[str, Dict]:
         # analyze_page_safe_area already applies HEURISTIC_TOP_BOTTOM_PADDING —
         # no aggregate-level adjustment needed here anymore.
         for page_type, info in result.items():
-            logging.info(f"{page_type}: source={info['source']} rect={info['rect']} margins={info['margins']}")
+            logger.info(f"{page_type}: source={info['source']} rect={info['rect']} margins={info['margins']}")
         return result
 
     except Exception as e:

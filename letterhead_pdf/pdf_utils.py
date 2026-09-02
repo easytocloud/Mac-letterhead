@@ -7,10 +7,12 @@ from Quartz import PDFKit, CoreGraphics, kCGPDFContextUserPassword
 from Foundation import NSURL
 from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, PDFMetadataError
 
+logger = logging.getLogger(__name__)
+
 
 def create_pdf_document(path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
     """Create PDF document from path"""
-    logging.info(f"Creating PDF document from: {path}")
+    logger.info(f"Creating PDF document from: {path}")
     path_bytes = path.encode('utf-8')
     url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
         CoreGraphics.kCFAllocatorDefault,
@@ -20,18 +22,18 @@ def create_pdf_document(path: str) -> Optional[CoreGraphics.CGPDFDocumentRef]:
     )
     if not url:
         error_msg = f"Failed to create URL for path: {path}"
-        logging.error(error_msg)
+        logger.error(error_msg)
         raise PDFCreationError(error_msg)
     doc = CoreGraphics.CGPDFDocumentCreateWithURL(url)
     if not doc:
         error_msg = f"Failed to create PDF document from: {path}"
-        logging.error(error_msg)
+        logger.error(error_msg)
         raise PDFCreationError(error_msg)
     return doc
 
 def create_output_context(path: str, metadata: Dict[str, Any]) -> Optional[CoreGraphics.CGContextRef]:
     """Create PDF context for output"""
-    logging.info(f"Creating output context for: {path}")
+    logger.info(f"Creating output context for: {path}")
     path_bytes = path.encode('utf-8')
     url = CoreGraphics.CFURLCreateFromFileSystemRepresentation(
         CoreGraphics.kCFAllocatorDefault,
@@ -41,23 +43,23 @@ def create_output_context(path: str, metadata: Dict[str, Any]) -> Optional[CoreG
     )
     if not url:
         error_msg = f"Failed to create output URL for path: {path}"
-        logging.error(error_msg)
+        logger.error(error_msg)
         raise PDFCreationError(error_msg)
     context = CoreGraphics.CGPDFContextCreateWithURL(url, None, metadata)
     if not context:
         error_msg = f"Failed to create PDF context for: {path}"
-        logging.error(error_msg)
+        logger.error(error_msg)
         raise PDFCreationError(error_msg)
     return context
 
 def get_doc_info(file_path: str) -> Dict[str, Any]:
     """Get PDF metadata"""
-    logging.info(f"Getting document info from: {file_path}")
+    logger.info(f"Getting document info from: {file_path}")
     pdf_url = NSURL.fileURLWithPath_(file_path)
     pdf_doc = PDFKit.PDFDocument.alloc().initWithURL_(pdf_url)
     if not pdf_doc:
         error_msg = f"Failed to read PDF metadata from: {file_path}"
-        logging.error(error_msg)
+        logger.error(error_msg)
         raise PDFMetadataError(error_msg)
     
     metadata = pdf_doc.documentAttributes()

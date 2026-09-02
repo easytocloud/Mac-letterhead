@@ -8,10 +8,12 @@ from reportlab.platypus import SimpleDocTemplate
 
 from letterhead_pdf.markdown.flowable_builder import build_styles, markdown_to_flowables
 
+logger = logging.getLogger(__name__)
+
 
 def render(html_content: str, output_path: str, margins: dict, page_size) -> None:
     """Render html_content to output_path as PDF using ReportLab."""
-    logging.info("Using ReportLab for PDF generation")
+    logger.info("Using ReportLab for PDF generation")
 
     styles = build_styles()
 
@@ -30,4 +32,4 @@ def render(html_content: str, output_path: str, margins: dict, page_size) -> Non
 
     flowables = markdown_to_flowables(html_content, styles)
     doc.build(flowables)
-    logging.info(f"ReportLab wrote PDF: {output_path}")
+    logger.info(f"ReportLab wrote PDF: {output_path}")

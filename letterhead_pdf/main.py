@@ -23,7 +23,7 @@ if not _IS_MCP_COMMAND:
 try:
     from letterhead_pdf.markdown_processor import MarkdownProcessor, MARKDOWN_AVAILABLE
 except ImportError as e:
-    print(f"Error importing markdown processor: {e}")
+    print(f"Error importing markdown processor: {e}", file=sys.stderr)
     MARKDOWN_AVAILABLE = False
     MarkdownProcessor = None
 
@@ -34,6 +34,8 @@ from letterhead_pdf.exceptions import InstallerError, PDFMergeError, PDFCreation
 
 # Import logging configuration
 from letterhead_pdf.log_config import LOG_DIR, LOG_FILE, configure_logging, get_logger
+
+logger = get_logger(__name__)
 
 if not _IS_MCP_COMMAND:
     class AppDelegate(NSObject):
@@ -163,16 +165,17 @@ class LetterheadPDF:
 def merge_md_command(args: argparse.Namespace) -> int:
     """Handle the merge-md command for Markdown files"""
     try:
-        logging.info(f"Starting merge-md command with args: {args}")
-        
+        logger.info(f"Starting merge-md command with args: {args}")
+
         # Check if Markdown is available
         if not MARKDOWN_AVAILABLE:
             error_msg = (
-                "Markdown module not available. For Markdown processing, please install the required dependencies:\n"
-                f"Install Mac-letterhead with Markdown support: uvx mac-letterhead[markdown]@{__version__}\n\n"
+                "Markdown module not available. This indicates a broken installation — "
+                "Markdown support is a core dependency, not an optional extra.\n"
+                "Try reinstalling: uvx --reinstall mac-letterhead\n\n"
                 "For more information, see the installation instructions in the README."
             )
-            logging.error("Markdown module not available for Markdown processing")
+            logger.error("Markdown module not available for Markdown processing")
             print(error_msg)
             return 1
         
@@ -188,30 +191,29 @@ def merge_md_command(args: argparse.Namespace) -> int:
         # Handle PDF backend selection
         if pdf_backend == 'weasyprint' and not weasyprint_available:
             error_msg = (
-                "WeasyPrint backend requested but not available. Please install the required dependencies:\n"
-                "1. Install system dependencies: brew install pango cairo fontconfig freetype harfbuzz\n"
-                "2. Install Mac-letterhead with full support: uvx mac-letterhead[markdown]@latest"
+                "WeasyPrint backend requested but not available. Please install the required system dependencies:\n"
+                "brew install pango cairo fontconfig freetype harfbuzz"
             )
-            logging.error("WeasyPrint backend requested but not available")
+            logger.error("WeasyPrint backend requested but not available")
             print(error_msg)
             return 1
-        
-        # Handle Markdown backend selection  
+
+        # Handle Markdown backend selection
         if markdown_backend == 'gfm' and not pycmarkgfm_available:
             error_msg = (
-                "GitHub Flavored Markdown backend requested but not available. Please install:\n"
-                "uvx mac-letterhead[gfm]@latest"
+                "GitHub Flavored Markdown backend requested but not available. This indicates a broken "
+                "installation — pycmarkgfm is a core dependency. Try reinstalling: uvx --reinstall mac-letterhead"
             )
-            logging.error("GFM backend requested but not available")
+            logger.error("GFM backend requested but not available")
             print(error_msg)
             return 1
-        
+
         # Log backend selections
         final_pdf_backend = 'weasyprint' if (pdf_backend == 'weasyprint' or (pdf_backend == 'auto' and weasyprint_available)) else 'reportlab'
         final_markdown_backend = 'gfm' if (markdown_backend == 'gfm' or (markdown_backend == 'auto' and pycmarkgfm_available)) else 'standard'
-        
-        logging.info(f"Using PDF backend: {final_pdf_backend}")
-        logging.info(f"Using Markdown backend: {final_markdown_backend}")
+
+        logger.info(f"Using PDF backend: {final_pdf_backend}")
+        logger.info(f"Using Markdown backend: {final_markdown_backend}")
         
         if pdf_backend != 'auto':
             print(f"PDF Backend: {final_pdf_backend}")
@@ -229,23 +231,23 @@ def merge_md_command(args: argparse.Namespace) -> int:
         if hasattr(args, 'output') and args.output:
             # Use specified output path directly
             output_path = os.path.expanduser(args.output)
-            logging.info(f"Using specified output path: {output_path}")
+            logger.info(f"Using specified output path: {output_path}")
         else:
             # Use save dialog to get output location
             short_name = os.path.splitext(args.title)[0]
             output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
-            
+
             if not output_path:
-                logging.warning("Save dialog cancelled")
+                logger.warning("Save dialog cancelled")
                 print("Save dialog cancelled.")
                 return 1
-            
+
         if not os.path.exists(args.input_path):
             error_msg = f"Input file not found: {args.input_path}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             print(error_msg)
             return 1
-        
+
         # Create a temporary directory for intermediate files
         with tempfile.TemporaryDirectory() as temp_dir:
             # Convert markdown to PDF with selected backends
@@ -296,7 +298,7 @@ def merge_md_command(args: argparse.Namespace) -> int:
                     with open(effective_css_path, 'w', encoding='utf-8') as f:
                         f.write(injected_css + "\n" + user_css_text)
                     if final_pdf_backend != 'weasyprint':
-                        logging.warning(
+                        logger.warning(
                             "page-numbers front-matter field requires the WeasyPrint backend; "
                             "ignored on ReportLab. Install WeasyPrint system libs "
                             "(brew install pango cairo fontconfig freetype harfbuzz) to enable."
@@ -329,97 +331,91 @@ def merge_md_command(args: argparse.Namespace) -> int:
                 # Merge the converted PDF with letterhead
                 letterhead.merge_pdfs(temp_pdf, output_path, strategy=effective_strategy)
                 
-                logging.info("Merge-md command completed successfully")
+                logger.info("Merge-md command completed successfully")
                 print(f"Successfully created PDF with letterhead: {output_path}")
                 return 0
-                
+
             except Exception as e:
                 error_msg = f"Error processing markdown: {str(e)}"
-                logging.error(error_msg)
+                logger.error(error_msg, exc_info=True)
                 print(error_msg)
                 return 1
-                
+
     except Exception as e:
-        logging.error(f"Error in merge-md command: {str(e)}", exc_info=True)
+        logger.error(f"Error in merge-md command: {str(e)}", exc_info=True)
         print(f"Error: {str(e)}")
         return 1
 
 def print_command(args: argparse.Namespace) -> int:
     """Handle the print command"""
     try:
-        logging.info(f"Starting print command with args: {args}")
-        
+        logger.info(f"Starting print command with args: {args}")
+
         # Initialize with custom suffix if provided
         suffix = f" {args.output_postfix}.pdf" if hasattr(args, 'output_postfix') and args.output_postfix else " lh.pdf"
-        
+
         # Create LetterheadPDF instance with custom suffix and destination
         destination = args.save_dir if hasattr(args, 'save_dir') and args.save_dir else "~/Desktop"
         letterhead = LetterheadPDF(letterhead_path=args.letterhead_path, destination=destination, suffix=suffix)
-        
+
         # Determine output path
         if hasattr(args, 'output') and args.output:
             # Use specified output path directly
             output_path = os.path.expanduser(args.output)
-            logging.info(f"Using specified output path: {output_path}")
+            logger.info(f"Using specified output path: {output_path}")
         else:
             # Use save dialog to get output location
             short_name = os.path.splitext(args.title)[0]
             output_path = letterhead.save_dialog(letterhead.destination, short_name + letterhead.suffix)
-            
+
             if not output_path:
-                logging.warning("Save dialog cancelled")
+                logger.warning("Save dialog cancelled")
                 print("Save dialog cancelled.")
                 return 1
-            
+
         if not os.path.exists(args.input_path):
             error_msg = f"Input file not found: {args.input_path}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             print(error_msg)
             return 1
-            
+
         letterhead.merge_pdfs(args.input_path, output_path, strategy=args.strategy)
-        logging.info("Print command completed successfully")
+        logger.info("Print command completed successfully")
         return 0
-        
+
     except PDFMergeError as e:
-        logging.error(f"PDF merge error: {str(e)}")
+        logger.error(f"PDF merge error: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except PDFCreationError as e:
-        logging.error(f"PDF creation error: {str(e)}")
+        logger.error(f"PDF creation error: {str(e)}")
         print(f"Error creating PDF: {str(e)}")
         return 1
     except PDFMetadataError as e:
-        logging.error(f"PDF metadata error: {str(e)}")
+        logger.error(f"PDF metadata error: {str(e)}")
         print(f"Error reading PDF metadata: {str(e)}")
         return 1
-    except Exception as ui_e:
-        # Handle any UI-related errors that might occur
-        if "UI" in str(ui_e) or "interface" in str(ui_e):
-            logging.error(f"UI error: {str(ui_e)}")
-            print(f"User interface error: {str(ui_e)}")
-            return 1
     except FileNotFoundError as e:
-        logging.error(f"File not found: {str(e)}")
+        logger.error(f"File not found: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except PermissionError as e:
-        logging.error(f"Permission error: {str(e)}")
+        logger.error(f"Permission error: {str(e)}")
         print(f"Error: Insufficient permissions: {str(e)}")
         return 1
     except ValueError as e:
-        logging.error(f"Invalid value: {str(e)}")
+        logger.error(f"Invalid value: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except Exception as e:
-        logging.error(f"Unexpected error: {str(e)}", exc_info=True)
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
         print(f"Unexpected error: {str(e)}")
         return 1
 
 def install_command(args: argparse.Namespace) -> int:
     """Handle the install command"""
     try:
-        logging.info(f"Starting install command with args: {args}")
+        logger.info(f"Starting install command with args: {args}")
         
         # Define letterhead directory
         letterhead_dir = os.path.expanduser("~/.letterhead")
@@ -446,7 +442,7 @@ def install_command(args: argparse.Namespace) -> int:
                         f"\nResolved from --name '{args.name}'. Create this file,"
                         f" or pass --letterhead to point at a file elsewhere."
                     )
-            logging.error(error_msg)
+            logger.error(error_msg)
             print(error_msg)
             return 1
         
@@ -457,7 +453,7 @@ def install_command(args: argparse.Namespace) -> int:
             css_path = os.path.expanduser(args.css)
             if not os.path.exists(css_path):
                 error_msg = f"CSS file not found: {css_path}"
-                logging.error(error_msg)
+                logger.error(error_msg)
                 print(error_msg)
                 return 1
         else:
@@ -465,9 +461,9 @@ def install_command(args: argparse.Namespace) -> int:
             default_css_path = os.path.join(letterhead_dir, f"{args.name}.css")
             if os.path.exists(default_css_path):
                 css_path = default_css_path
-                logging.info(f"Found CSS file: {css_path}")
+                logger.info(f"Found CSS file: {css_path}")
             else:
-                logging.info(f"No CSS file found at {default_css_path} (optional)")
+                logger.info(f"No CSS file found at {default_css_path} (optional)")
         
         # Set app name based on provided name
         app_name = args.name
@@ -479,9 +475,9 @@ def install_command(args: argparse.Namespace) -> int:
 
         if is_dev:
             app_name += " (Dev)"
-            logging.info("Creating development droplet")
+            logger.info("Creating development droplet")
         if unpinned:
-            logging.info("Creating unpinned droplet (auto-updates via uvx cache)")
+            logger.info("Creating unpinned droplet (auto-updates via uvx cache)")
 
         # Create the droplet builder and build the droplet
         builder = DropletBuilder(
@@ -498,53 +494,55 @@ def install_command(args: argparse.Namespace) -> int:
             name=args.name,
         )
         
-        logging.info(f"Install command completed successfully: {app_path}")
+        logger.info(f"Install command completed successfully: {app_path}")
         return 0
         
     except FileNotFoundError as e:
-        logging.error(f"File not found: {str(e)}")
+        logger.error(f"File not found: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except PermissionError as e:
-        logging.error(f"Permission error: {str(e)}")
+        logger.error(f"Permission error: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except InstallerError as e:
-        logging.error(f"Installation error: {str(e)}")
+        logger.error(f"Installation error: {str(e)}")
         print(f"Error: {str(e)}")
         return 1
     except Exception as e:
-        logging.error(f"Error creating letterhead app: {str(e)}", exc_info=True)
+        logger.error(f"Error creating letterhead app: {str(e)}", exc_info=True)
         print(f"Unexpected error: {str(e)}")
         return 1
 
 def mcp_command(args: argparse.Namespace) -> int:
     """Handle the MCP server command"""
     try:
-        # Suppress logging before starting MCP server to avoid stdout interference with JSON-RPC protocol
-        # MCP server will configure its own logging
+        # Suppress logging before starting MCP server: stdout must carry only the JSON-RPC
+        # protocol, and some native library imports (e.g. WeasyPrint's C-library probe) print
+        # to stdout on their own, so we silence everything until the server configures its
+        # own logging (which routes exclusively to stderr/file).
         logging.getLogger().setLevel(logging.CRITICAL + 1)
 
         # Import and run the MCP server
         from letterhead_pdf.mcp_server import run_mcp_server
-        
+
         # Pass arguments to the MCP server
         server_args = {
             'style': args.style,
             'output_dir': args.output_dir,
             'output_prefix': args.output_prefix
         }
-        
+
         # Run the MCP server (this will block)
         return run_mcp_server(server_args)
-        
+
     except ImportError as e:
-        logging.error(f"MCP server dependencies not available: {str(e)}")
+        logger.error(f"MCP server dependencies not available: {str(e)}")
         print("Error: MCP server requires additional dependencies.")
-        print("Install with: pip install 'mac-letterhead[mcp]'")
+        print('Install with: uvx "mac-letterhead[mcp]"')
         return 1
     except Exception as e:
-        logging.error(f"Error starting MCP server: {str(e)}", exc_info=True)
+        logger.error(f"Error starting MCP server: {str(e)}", exc_info=True)
         print(f"Error starting MCP server: {str(e)}")
         return 1
 
@@ -580,7 +578,7 @@ def preview_command(args: argparse.Namespace) -> int:
         print(f"Error: {e}", file=sys.stderr)
         return 1
     except Exception as e:
-        logging.error(f"Error rendering safe-area preview: {e}", exc_info=True)
+        logger.error(f"Error rendering safe-area preview: {e}", exc_info=True)
         print(f"Error rendering safe-area preview: {e}", file=sys.stderr)
         return 1
 

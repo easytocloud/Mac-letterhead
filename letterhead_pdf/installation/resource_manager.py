@@ -1,5 +1,5 @@
 """
-ResourceManager - Handles stationery files and resource bundling.
+ResourceManager - Handles letterhead files and resource bundling.
 
 This class manages all file operations related to droplet resources:
 - Validating and copying letterhead files
@@ -61,7 +61,7 @@ class ResourceManager:
             
         except Exception as e:
             error_msg = f"Failed to setup app resources: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=True)
             raise InstallerError(error_msg) from e
     
     def _copy_letterhead(self, resources_dir: str, letterhead_path: str) -> None:

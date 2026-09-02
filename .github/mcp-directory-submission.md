@@ -12,16 +12,16 @@ Use this template when submitting Mac-letterhead to community MCP directories li
 
 **Installation Command**:
 ```bash
-uvx mac-letterhead[mcp]
+uvx "mac-letterhead[mcp]"
 ```
 
 **Basic Usage**:
 ```bash
 # Generic multi-style server
-uvx mac-letterhead mcp
+uvx "mac-letterhead[mcp]" mcp
 
 # Style-specific server
-uvx mac-letterhead mcp --style easytocloud
+uvx "mac-letterhead[mcp]" mcp --style easytocloud
 ```
 
 ## Description
@@ -130,7 +130,7 @@ With output directory and prefix:
 
 1. **Install Mac-letterhead with MCP support**:
    ```bash
-   uvx install "mac-letterhead[mcp]"
+   uv tool install "mac-letterhead[mcp]"
    ```
 
 2. **Create letterhead directory**:
@@ -195,7 +195,7 @@ Document Generation / PDF Tools / Productivity
 ## Submission Checklist
 
 - [ ] Server name: Mac-letterhead
-- [ ] Installation command: `uvx mac-letterhead[mcp]`
+- [ ] Installation command: `uvx "mac-letterhead[mcp]"`
 - [ ] Platform: macOS (Python ≥3.10)
 - [ ] MCP extra package: `mac-letterhead[mcp]`
 - [ ] Documentation links provided

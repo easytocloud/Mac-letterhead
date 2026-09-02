@@ -13,6 +13,7 @@ from typing import Optional
 
 from letterhead_pdf import __version__
 from letterhead_pdf.exceptions import InstallerError
+from letterhead_pdf.log_config import LOG_FILE
 from .resource_manager import ResourceManager
 from .applescript_generator import AppleScriptGenerator
 from .macos_integration import MacOSIntegration
@@ -121,7 +122,7 @@ class DropletBuilder:
             
         except Exception as e:
             error_msg = f"Failed to create droplet: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=True)
             raise InstallerError(error_msg) from e
     
     def _validate_inputs(self, letterhead_path: str, app_name: str, output_dir: str, css_path: str = None) -> None:
@@ -201,4 +202,4 @@ class DropletBuilder:
         if not self.development_mode:
             print("\n🔍 Troubleshooting:")
             print("• Check System Preferences > Security & Privacy > Privacy > Files and Folders")
-            print(f"• Look for logs in ~/Library/Logs/Mac-letterhead/droplet.log")
+            print(f"• Look for logs in {LOG_FILE}")

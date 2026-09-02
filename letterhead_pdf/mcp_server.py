@@ -392,28 +392,28 @@ def generate_output_path(output_path: Optional[str] = None, output_filename: Opt
                         title: Optional[str] = None, letterhead_name: Optional[str] = None) -> str:
     """Generate output path based on provided parameters and defaults"""
     
-    logger.info(f"generate_output_path called with: output_path={output_path}, output_filename={output_filename}, title={title}, letterhead_name={letterhead_name}")
-    logger.info(f"DEFAULT_OUTPUT_DIR={DEFAULT_OUTPUT_DIR}")
-    
+    logger.debug(f"generate_output_path called with: output_path={output_path}, output_filename={output_filename}, title={title}, letterhead_name={letterhead_name}")
+    logger.debug(f"DEFAULT_OUTPUT_DIR={DEFAULT_OUTPUT_DIR}")
+
     # If full path provided, use it directly
     if output_path and os.path.isabs(output_path):
-        logger.info(f"Using absolute output path: {output_path}")
+        logger.debug(f"Using absolute output path: {output_path}")
         return os.path.expanduser(output_path)
-    
+
     # Determine output directory
     if output_path:
         # output_path is treated as directory if not absolute
         output_dir = os.path.expanduser(output_path)
-        logger.info(f"Using provided output directory: {output_dir}")
+        logger.debug(f"Using provided output directory: {output_dir}")
     else:
         # Use default output directory
         output_dir = DEFAULT_OUTPUT_DIR
-        logger.info(f"Using default output directory: {output_dir}")
-        
+        logger.debug(f"Using default output directory: {output_dir}")
+
     # Ensure output directory exists
     try:
         os.makedirs(output_dir, exist_ok=True)
-        logger.info(f"Output directory created/verified: {output_dir}")
+        logger.debug(f"Output directory created/verified: {output_dir}")
     except Exception as e:
         logger.error(f"Failed to create output directory {output_dir}: {e}")
         raise
@@ -447,7 +447,7 @@ def generate_output_path(output_path: Optional[str] = None, output_filename: Opt
         filename = "_".join(components) + ".pdf"
     
     final_path = os.path.join(output_dir, filename)
-    logger.info(f"Generated final output path: {final_path}")
+    logger.debug(f"Generated final output path: {final_path}")
     return final_path
 
 def resolve_letterhead_path(letterhead_input: Optional[str] = None) -> str:
@@ -653,6 +653,8 @@ async def create_letterhead_pdf(
         return [types.TextContent(type="text", text=f"Markdown processing error: {str(e)}")]
     except PDFMergeError as e:
         return [types.TextContent(type="text", text=f"PDF merge error: {str(e)}")]
+    except ValueError as e:
+        return [types.TextContent(type="text", text=f"Invalid input: {str(e)}")]
     except Exception as e:
         logger.error(f"Unexpected error in create_letterhead_pdf: {str(e)}", exc_info=True)
         return [types.TextContent(type="text", text=f"Unexpected error: {str(e)}")]
@@ -708,6 +710,8 @@ async def merge_letterhead_pdf(
         return [types.TextContent(type="text", text=f"File not found: {str(e)}")]
     except PDFMergeError as e:
         return [types.TextContent(type="text", text=f"PDF merge error: {str(e)}")]
+    except ValueError as e:
+        return [types.TextContent(type="text", text=f"Invalid input: {str(e)}")]
     except Exception as e:
         logger.error(f"Unexpected error in merge_letterhead_pdf: {str(e)}", exc_info=True)
         return [types.TextContent(type="text", text=f"Unexpected error: {str(e)}")]
@@ -760,6 +764,8 @@ async def analyze_letterhead(letterhead_template: Optional[str] = None, style: O
         
     except FileNotFoundError as e:
         return [types.TextContent(type="text", text=f"File not found: {str(e)}")]
+    except ValueError as e:
+        return [types.TextContent(type="text", text=f"Invalid input: {str(e)}")]
     except Exception as e:
         logger.error(f"Error analyzing letterhead: {str(e)}", exc_info=True)
         return [types.TextContent(type="text", text=f"Analysis error: {str(e)}")]

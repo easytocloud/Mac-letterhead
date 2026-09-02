@@ -85,10 +85,10 @@ uvx mac-letterhead merge-md letterhead.pdf "Output" ~/Desktop document.md
 uvx mac-letterhead preview ~/.letterhead/company.pdf
 uvx mac-letterhead preview company              # style-name form (resolves ~/.letterhead/company.pdf)
 
-# MCP server for AI integration
-uvx mac-letterhead mcp --style easytocloud        # Style-specific server
-uvx mac-letterhead mcp                             # Generic server, style specified per tool call
-uvx mac-letterhead mcp --style personal --output-dir ~/Documents/personal-docs
+# MCP server for AI integration (requires the [mcp] extra; quote it so the shell doesn't glob "[mcp]")
+uvx "mac-letterhead[mcp]" mcp --style easytocloud        # Style-specific server
+uvx "mac-letterhead[mcp]" mcp                             # Generic server, style specified per tool call
+uvx "mac-letterhead[mcp]" mcp --style personal --output-dir ~/Documents/personal-docs
 ```
 
 ### Install Command Behavior
@@ -213,16 +213,15 @@ make test-all → make publish
 
 ### Dependencies and Compatibility
 
-**Core Dependencies**
+**Core Dependencies** (all unconditional in `pyproject.toml`)
 - PyObjC frameworks (Cocoa, Quartz) for macOS integration
 - PyMuPDF for PDF analysis and margin detection
 - ReportLab for fallback PDF generation
-- WeasyPrint for high-quality Markdown rendering (optional)
+- WeasyPrint for high-quality Markdown rendering, with Markdown/pycmarkgfm, HTML5lib, and Pygments for parsing/highlighting
 
 **Optional Dependencies**
-- Markdown + Pygments for syntax highlighting
-- HTML5lib for HTML parsing
-- MCP (Model Context Protocol) for AI tool integration
+- MCP (Model Context Protocol) for AI tool integration — the `[mcp]` extra
+- WeasyPrint's system C libraries (pango, cairo, fontconfig, freetype, harfbuzz) are a separate `brew install`, not a Python extra — without them WeasyPrint falls back to ReportLab at runtime
 
 **Python Support**
 - Requires Python ≥3.10
@@ -294,8 +293,8 @@ make test-all → make publish
 Each letterhead is a brand-identity pair: `~/.letterhead/<name>.pdf` (the stationery artwork) plus optional `~/.letterhead/<name>.css` (the typography — fonts, colors, spacing). Together they turn any Markdown file into a fully branded PDF.
 
 Two configuration modes:
-- **Generic multi-style server** (`uvx mac-letterhead[mcp] mcp`) — one server, `style` is required per tool call.
-- **Style-specific server** (`uvx mac-letterhead[mcp] mcp --style <name>`) — pre-bound to a style; `style` parameter is not accepted by the tools.
+- **Generic multi-style server** (`uvx "mac-letterhead[mcp]" mcp`) — one server, `style` is required per tool call.
+- **Style-specific server** (`uvx "mac-letterhead[mcp]" mcp --style <name>`) — pre-bound to a style; `style` parameter is not accepted by the tools.
 
 Server tools adapt their schemas to the mode (generic requires `style`, style-specific omits it). Set up sample letterheads with `./setup_letterheads.sh`.
 

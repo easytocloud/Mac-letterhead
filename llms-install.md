@@ -54,7 +54,7 @@ mkdir -p ~/.letterhead
 └── technical.pdf      # Technical documentation letterhead
 ```
 
-The CSS is optional — without it, sensible defaults apply. With it, you get a full brand identity from a plain Markdown file. See the [Brand Styling with CSS](README.md#brand-styling-with-css) section of the README for a worked example.
+The CSS is optional — without it, sensible defaults apply. With it, you get a full brand identity from a plain Markdown file. See the [Brand your typography with CSS](README.md#brand-your-typography-with-css) section of the README for a worked example.
 
 ### Quick Setup Script
 Use the provided setup script to create sample letterhead files:
@@ -162,13 +162,13 @@ The MCP server supports various configuration options:
 
 ```bash
 # Basic style-specific server
-uvx mac-letterhead mcp --style company
+uvx "mac-letterhead[mcp]" mcp --style company
 
 # Server with custom output directory
-uvx mac-letterhead mcp --style company --output-dir ~/Documents/generated-pdfs
+uvx "mac-letterhead[mcp]" mcp --style company --output-dir ~/Documents/generated-pdfs
 
 # Server with custom filename prefix
-uvx mac-letterhead mcp --style company --output-prefix "CompanyDocs"
+uvx "mac-letterhead[mcp]" mcp --style company --output-prefix "CompanyDocs"
 ```
 
 ### Multiple Servers for Different Use Cases
@@ -281,14 +281,14 @@ Once configured, your LLM will have access to these tools:
 ### Common Issues
 
 **Server Not Found**
-- Verify Mac-letterhead is installed: `uvx list | grep mac-letterhead`
+- Verify Mac-letterhead is installed: `uv tool list | grep mac-letterhead`
 - Check MCP configuration syntax in your client's settings file
 - Restart your LLM client after configuration changes
 
 **Missing Letterhead Templates**
 - Ensure PDF files exist in `~/.letterhead/`
 - Check file permissions and paths
-- Use `uvx mac-letterhead mcp --style <name>` to test server manually
+- Use `uvx "mac-letterhead[mcp]" mcp --style <name>` to test server manually
 
 **Permission Errors**
 - Verify write permissions for output directories
@@ -308,18 +308,18 @@ Monitor server activity:
 tail -f ~/Library/Logs/Mac-letterhead/letterhead.log
 
 # Test server manually
-uvx mac-letterhead mcp --style company
+uvx "mac-letterhead[mcp]" mcp --style company
 ```
 
 ### Validation
 
 Test your configuration:
 ```bash
-# Test basic functionality
-uvx mac-letterhead create_letterhead_pdf "# Test Document\nThis is a test." company ~/Desktop
+# Test the CLI directly (creates a letterheaded PDF from Markdown)
+uvx mac-letterhead merge-md ~/.letterhead/company.pdf "Test Document" ~/Desktop test.md
 
 # Test MCP server directly
-uvx mac-letterhead mcp --style company --output-dir ~/Desktop
+uvx "mac-letterhead[mcp]" mcp --style company --output-dir ~/Desktop
 ```
 
 ## Best Practices

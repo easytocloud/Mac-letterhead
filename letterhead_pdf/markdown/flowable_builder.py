@@ -17,6 +17,8 @@ from reportlab.platypus import (
 
 from letterhead_pdf.markdown.html_cleaner import clean_html_for_reportlab, process_list_items
 
+logger = logging.getLogger(__name__)
+
 
 def build_styles():
     """Return a StyleSheet with the custom styles used for letterhead documents."""
@@ -120,7 +122,7 @@ def markdown_to_flowables(html_content: str, styles) -> List:
             flowables.append(img)
             flowables.append(Spacer(1, 6))
         except Exception as e:
-            logging.warning(f"Failed to load image {src}: {e}")
+            logger.warning(f"Failed to load image {src}: {e}")
 
     lines = html_content.split('\n')
     i = 0
@@ -252,5 +254,5 @@ def markdown_to_flowables(html_content: str, styles) -> List:
     if not flowables:
         flowables.append(Paragraph("", styles['Normal']))
 
-    logging.info(f"Generated {len(flowables)} flowables")
+    logger.info(f"Generated {len(flowables)} flowables")
     return flowables

@@ -51,7 +51,7 @@ class DropletValidator:
             return True
             
         except Exception as e:
-            self.logger.error(f"Droplet validation failed: {e}")
+            self.logger.error(f"Droplet validation failed: {e}", exc_info=True)
             return False
     
     def _validate_app_structure(self, app_path: str) -> bool:

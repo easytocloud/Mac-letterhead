@@ -54,7 +54,7 @@ class MacOSIntegration:
             raise InstallerError("osacompile not found - macOS developer tools required")
         except Exception as e:
             error_msg = f"Failed to compile AppleScript: {str(e)}"
-            self.logger.error(error_msg)
+            self.logger.error(error_msg, exc_info=True)
             raise InstallerError(error_msg) from e
     
     def configure_app_bundle(self, app_path: str) -> None:

@@ -84,7 +84,7 @@ Tools in dedicated mode don't accept `style` (it's already configured); they opt
 
 Example:
 ```bash
-uvx mac-letterhead[mcp] mcp --style company --output-dir ~/Documents/company-docs --output-prefix "CompanyReport-"
+uvx "mac-letterhead[mcp]" mcp --style company --output-dir ~/Documents/company-docs --output-prefix "CompanyReport-"
 ```
 
 ## Tools

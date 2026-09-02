@@ -1,5 +1,14 @@
 # HTML Parsing Optimization Report
 
+> **Historical / superseded.** This investigation targeted `markdown_processor.py`'s
+> old monolithic HTML parsing (`markdown_to_flowables`, lines 590-745 at the time).
+> That code has since been split into the `letterhead_pdf/markdown/` package
+> (`html_cleaner.py`, `flowable_builder.py`, `backends/`), and `markdown_processor.py`
+> is now a thin backwards-compatibility shim. The backup/recovery files this report
+> refers to (`markdown_processor_original.py`, `recovery_test.py`,
+> `test_parser_comparison.py` in `letterhead_pdf/`) no longer exist — do not follow
+> the "Recovery Commands" below. Kept for historical context only.
+
 ## Executive Summary
 
 I successfully implemented HTML parsing optimization for the Mac-letterhead project with **robust fallback mechanisms** and **guaranteed recovery**. The optimization targets the performance bottleneck identified in the code analysis while maintaining 100% compatibility with the existing system.

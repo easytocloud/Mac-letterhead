@@ -19,9 +19,11 @@ import logging
 from pathlib import Path
 from typing import Tuple
 
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 
 from .pdf_analyzer import analyze_page_safe_area, SafeAreaSource
+
+logger = logging.getLogger(__name__)
 
 # RGB in 0-1 space; PyMuPDF conventions.
 RGB = Tuple[float, float, float]
@@ -110,7 +112,7 @@ def render_safe_area_preview(letterhead_path: str | Path,
     else:
         output_path = Path(output_path).expanduser().resolve()
 
-    logging.info(f"Rendering safe-area preview: {letterhead_path} -> {output_path}")
+    logger.info(f"Rendering safe-area preview: {letterhead_path} -> {output_path}")
 
     doc = fitz.open(letterhead_path)
     try:
@@ -132,7 +134,7 @@ def render_safe_area_preview(letterhead_path: str | Path,
             label = f"SAFE AREA · {style['label']}  ({rect.width:.0f} × {rect.height:.0f} pt)"
             _draw_label(page, rect, label, style['stroke'])
 
-            logging.info(f"  page {page_index + 1}: {source} rect={rect}")
+            logger.info(f"  page {page_index + 1}: {source} rect={rect}")
 
         doc.save(str(output_path))
     finally:

@@ -8,6 +8,8 @@ from Quartz import CoreGraphics
 from letterhead_pdf.pdf_utils import create_pdf_document, create_output_context, get_doc_info
 from letterhead_pdf.exceptions import PDFMergeError, PDFCreationError, PDFMetadataError
 
+logger = logging.getLogger(__name__)
+
 class PDFMerger:
     """Handles merging of letterhead and content PDFs"""
     
@@ -19,7 +21,7 @@ class PDFMerger:
             letterhead_path: Path to the letterhead PDF template
         """
         self.letterhead_path = os.path.expanduser(letterhead_path)
-        logging.info(f"Initializing PDFMerger with template: {self.letterhead_path}")
+        logger.info(f"Initializing PDFMerger with template: {self.letterhead_path}")
 
     def merge(self, input_path: str, output_path: str, strategy: str = "darken") -> None:
         """
@@ -41,7 +43,7 @@ class PDFMerger:
         valid_strategies = ["multiply", "transparency", "reverse", "overlay", "darken"]
         if strategy not in valid_strategies:
             error_msg = f"Invalid strategy: {strategy}. Must be one of: {', '.join(valid_strategies)}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             raise ValueError(error_msg)
         
         # Expand paths
@@ -51,18 +53,18 @@ class PDFMerger:
         # Validate input file
         if not os.path.isfile(input_path):
             error_msg = f"Input file not found: {input_path}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             raise FileNotFoundError(error_msg)
             
         # Validate letterhead
         if not os.path.isfile(self.letterhead_path):
             error_msg = f"Letterhead template not found: {self.letterhead_path}"
-            logging.error(error_msg)
+            logger.error(error_msg)
             raise FileNotFoundError(error_msg)
         
         try:
-            logging.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
-            logging.info(f"Using letterhead: {self.letterhead_path}")
+            logger.info(f"Starting PDF merge with strategy '{strategy}': {input_path} -> {output_path}")
+            logger.info(f"Using letterhead: {self.letterhead_path}")
             
             metadata = get_doc_info(input_path)
             write_context = create_output_context(output_path, metadata)
@@ -71,18 +73,18 @@ class PDFMerger:
 
             if not all([write_context, read_pdf, letterhead_pdf]):
                 error_msg = "Failed to create PDF context or load PDFs"
-                logging.error(error_msg)
+                logger.error(error_msg)
                 raise PDFMergeError(error_msg)
 
             # Get page counts for both PDFs
             num_pages = CoreGraphics.CGPDFDocumentGetNumberOfPages(read_pdf)
             num_letterhead_pages = CoreGraphics.CGPDFDocumentGetNumberOfPages(letterhead_pdf)
             
-            logging.info(f"Processing {num_pages} content pages with {num_letterhead_pages} letterhead pages")
+            logger.info(f"Processing {num_pages} content pages with {num_letterhead_pages} letterhead pages")
             
             # Process each page of the content document
             for page_num in range(1, num_pages + 1):
-                logging.info(f"Processing page {page_num}")
+                logger.info(f"Processing page {page_num}")
                 page = CoreGraphics.CGPDFDocumentGetPage(read_pdf, page_num)
                 
                 # Select the appropriate letterhead page based on the number of letterhead pages
@@ -112,7 +114,7 @@ class PDFMerger:
                 
                 if not page or not letterhead_page:
                     error_msg = f"Failed to get page {page_num} with letterhead page {letterhead_page_num}"
-                    logging.error(error_msg)
+                    logger.error(error_msg)
                     raise PDFMergeError(error_msg)
                 
                 media_box = CoreGraphics.CGPDFPageGetBoxRect(page, CoreGraphics.kCGPDFMediaBox)
@@ -139,22 +141,22 @@ class PDFMerger:
                 CoreGraphics.CGContextEndPage(write_context)
             
             CoreGraphics.CGPDFContextClose(write_context)
-            logging.info("PDF merge completed successfully")
+            logger.info("PDF merge completed successfully")
 
         except PDFCreationError as e:
             # Specific handling for PDF creation errors
             error_msg = f"Failed to create PDF components: {str(e)}"
-            logging.error(error_msg, exc_info=True)
+            logger.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg) from e
         except (FileNotFoundError, PermissionError) as e:
             # Handle file access errors
             error_msg = f"File access error: {str(e)}"
-            logging.error(error_msg, exc_info=True)
+            logger.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg) from e
         except Exception as e:
             # Fallback for unexpected errors
             error_msg = f"Unexpected error merging PDFs: {str(e)}"
-            logging.error(error_msg, exc_info=True)
+            logger.error(error_msg, exc_info=True)
             raise PDFMergeError(error_msg) from e
 
     def _strategy_multiply(self, context, content_page, letterhead_page):

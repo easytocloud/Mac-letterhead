@@ -6,6 +6,8 @@ import logging
 import os
 import re
 
+logger = logging.getLogger(__name__)
+
 
 def enhance_gfm_task_lists(html_content: str) -> str:
     """Replace raw checkbox inputs with Unicode symbols and add CSS classes."""
@@ -159,20 +161,10 @@ def _load_default_css() -> str:
     try:
         try:
             from importlib import resources
-            with resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
-                css = f.read()
-            logging.info("Loaded default CSS via importlib.resources")
+            css = resources.files('letterhead_pdf.resources').joinpath('defaults.css').read_text(encoding='utf-8')
+            logger.info("Loaded default CSS via importlib.resources")
             return css
-        except (ImportError, AttributeError):
-            pass
-
-        try:
-            import importlib_resources
-            with importlib_resources.open_text('letterhead_pdf.resources', 'defaults.css') as f:
-                css = f.read()
-            logging.info("Loaded default CSS via importlib_resources")
-            return css
-        except ImportError:
+        except (ImportError, AttributeError, FileNotFoundError):
             pass
 
         # Final fallback: file path relative to this file's package root
@@ -180,11 +172,11 @@ def _load_default_css() -> str:
         path = os.path.join(pkg_root, 'resources', 'defaults.css')
         with open(path, 'r', encoding='utf-8') as f:
             css = f.read()
-        logging.info("Loaded default CSS via file path")
+        logger.info("Loaded default CSS via file path")
         return css
 
     except Exception as e:
-        logging.warning(f"Could not load default CSS: {e}")
+        logger.warning(f"Could not load default CSS: {e}")
         return ""
 
 
@@ -219,11 +211,11 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
             try:
                 with open(css_abs, 'r', encoding='utf-8') as f:
                     custom_css = f.read()
-                logging.info(f"CSS loaded: {css_abs} ({len(custom_css)} chars)")
+                logger.info(f"CSS loaded: {css_abs} ({len(custom_css)} chars)")
             except Exception as e:
-                logging.warning(f"CSS load failed for {css_abs!r}: {e}")
+                logger.warning(f"CSS load failed for {css_abs!r}: {e}")
         else:
-            logging.warning(f"CSS file not found: {css_abs}")
+            logger.warning(f"CSS file not found: {css_abs}")
 
     # Strip @page rules from custom CSS *only if* they contain margin declarations
     # (margin-top/right/bottom/left) — those would conflict with the letterhead-
@@ -236,7 +228,7 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
     if custom_css:
         stripped = _strip_page_rules_with_margins(custom_css)
         if stripped != custom_css:
-            logging.info("Removed @page margin declarations from custom CSS to preserve letterhead margins")
+            logger.info("Removed @page margin declarations from custom CSS to preserve letterhead margins")
         custom_css = stripped
 
     pygments_css = ""
@@ -272,4 +264,4 @@ def render(html_content: str, output_path: str, margins: dict, page_size, css_pa
 
     font_config = FontConfiguration()
     HTML(string=html_template).write_pdf(output_path, font_config=font_config)
-    logging.info(f"WeasyPrint wrote PDF: {output_path}")
+    logger.info(f"WeasyPrint wrote PDF: {output_path}")

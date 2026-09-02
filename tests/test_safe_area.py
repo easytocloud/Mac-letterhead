@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-import fitz
+import pymupdf as fitz
 import pytest
 
 from letterhead_pdf.markdown.pdf_analyzer import (

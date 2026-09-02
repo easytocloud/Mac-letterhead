@@ -3,9 +3,11 @@
   "apiKeyHelper": "op read 'op://Generic/openrouter.ai/credential'",
   "env": {
     "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
-    "ANTHROPIC_DEFAULT_SONNET_MODEL": "anthropic/claude-sonnet-4.6",
-    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "anthropic/claude-haiku-4.5",
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "anthropic/claude-opus-4.7"
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "anthropic/claude-sonnet-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "~anthropic/claude-haiku-latest",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "anthropic/claude-opus-5",
+    "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0"
   },
   "permissions": {
     "allow": [
@@ -24,7 +26,9 @@
       "Bash(gh api repos/easytocloud/Mac-letterhead/actions/runs --jq '.workflow_runs[] | {id, name, status, conclusion, event, head_branch, created_at}')",
       "Bash(python3 -c ' *)",
       "Bash(npm audit *)",
-      "Bash(xargs cat *)"
+      "Bash(xargs cat *)",
+      "Bash(/Users/erik/.local/bin/uvx --quiet mac-letterhead --version)",
+      "Bash(uvx mac-letterhead@0.16.0 --version)"
     ]
   }
 }

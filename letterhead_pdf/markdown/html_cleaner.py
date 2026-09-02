@@ -5,6 +5,8 @@ HTML cleaning and Markdown indentation preprocessing for ReportLab compatibility
 import logging
 import re
 
+logger = logging.getLogger(__name__)
+
 
 def clean_html_for_reportlab(html_content: str) -> str:
     """Strip WeasyPrint/Pygments markup and translate tags to ReportLab equivalents."""
@@ -119,14 +121,14 @@ def preprocess_markdown_indentation(md_content: str) -> str:
 
             if (processed and colon_line_pattern.match(processed[-1]) and current_indent == 0):
                 processed.append('')
-                logging.debug(f"Inserted blank line before top-level list: {line.strip()}")
+                logger.debug(f"Inserted blank line before top-level list: {line.strip()}")
 
             normalized = _calculate_normalized_indent(current_indent, indent_stack)
             processed_line = f"{' ' * normalized}{marker} {content}"
             processed.append(processed_line)
 
             if current_indent != normalized:
-                logging.debug(f"Indent normalised {current_indent}->{normalized}: {line.strip()}")
+                logger.debug(f"Indent normalised {current_indent}->{normalized}: {line.strip()}")
         else:
             if line.strip() == '':
                 pass

@@ -27,7 +27,9 @@ Mac-letterhead/
 │   ├── markdown_processor.py # Backwards-compat shim → re-exports from markdown/
 │   ├── markdown/           # Markdown-to-PDF pipeline (modular)
 │   │   ├── processor.py    # MarkdownProcessor orchestrator, capability flags
-│   │   ├── pdf_analyzer.py # Letterhead margin analysis
+│   │   ├── pdf_analyzer.py # Letterhead margin/safe-area analysis
+│   │   ├── preview.py      # Safe-area visualization overlay (used by `preview` CLI command)
+│   │   ├── front_matter.py # YAML front-matter parsing + precedence-aware config resolution
 │   │   ├── html_cleaner.py # HTML preprocessing for ReportLab
 │   │   ├── flowable_builder.py # ReportLab flowable construction
 │   │   └── backends/       # PDF rendering backends
@@ -117,7 +119,9 @@ These are required for WeasyPrint functionality and high-quality PDF generation.
 - **`letterhead_pdf/main.py`**: CLI interface, argument parsing, command routing
 - **`letterhead_pdf/pdf_merger.py`**: Core PDF blending and merging logic
 - **`letterhead_pdf/markdown/processor.py`**: `MarkdownProcessor` orchestrator — backend selection, WeasyPrint→ReportLab fallback, capability flags
-- **`letterhead_pdf/markdown/pdf_analyzer.py`**: Letterhead margin analysis (`analyze_letterhead`, `analyze_page_regions`)
+- **`letterhead_pdf/markdown/pdf_analyzer.py`**: Letterhead safe-area analysis (`analyze_letterhead`, `analyze_letterhead_detailed`, `analyze_page_safe_area`)
+- **`letterhead_pdf/markdown/preview.py`**: Safe-area visualization overlay, used by the `preview` CLI command
+- **`letterhead_pdf/markdown/front_matter.py`**: YAML front-matter parsing and precedence-aware config resolution
 - **`letterhead_pdf/markdown/html_cleaner.py`**: HTML preprocessing for ReportLab
 - **`letterhead_pdf/markdown/flowable_builder.py`**: ReportLab flowable construction and list parsing
 - **`letterhead_pdf/markdown/backends/`**: WeasyPrint and ReportLab rendering backends
@@ -169,11 +173,11 @@ mkdir -p ~/.letterhead
 cp test-input/sample.pdf ~/.letterhead/test.pdf
 
 # Test generic MCP server (style specified per tool call)
-uvx mac-letterhead mcp &
+uvx "mac-letterhead[mcp]" mcp &
 # Server runs in background - use Claude or MCP client to test
 
 # Test style-specific MCP server  
-uvx mac-letterhead mcp --style test --output-dir ~/Desktop/mcp-test &
+uvx "mac-letterhead[mcp]" mcp --style test --output-dir ~/Desktop/mcp-test &
 
 # Kill server when done testing
 pkill -f "mac-letterhead mcp"
