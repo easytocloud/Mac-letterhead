@@ -1,3 +1,10 @@
+## [0.24.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.2...v0.24.3) (2026-09-02)
+
+
+### Bug Fixes
+
+* correct MCP install docs and tighten core-dependency error messages ([45f7138](https://github.com/easytocloud/Mac-letterhead/commit/45f7138e00928c0671db71a6383f2aaaaec79c98))
+
 ## [0.24.2](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.1...v0.24.2) (2026-08-05)
 
 
