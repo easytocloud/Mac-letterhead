@@ -1,3 +1,10 @@
+## [0.24.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.3...v0.24.4) (2026-10-05)
+
+
+### Bug Fixes
+
+* **deps:** resolve Dependabot advisories for PyJWT, httpx2, WeasyPrint and npm tooling ([#39](https://github.com/easytocloud/Mac-letterhead/issues/39)) ([908c50e](https://github.com/easytocloud/Mac-letterhead/commit/908c50e34e0308c5a6ca390f8dde78da9bbda60e))
+
 ## [0.24.3](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.2...v0.24.3) (2026-09-02)
 
 
