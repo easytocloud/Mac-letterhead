@@ -27,7 +27,7 @@ make build-dxt          # Build the Desktop Extension (.mcpb) for Claude for mac
 ```bash
 make test-unit          # Run unit tests with default Python version
 make test-unit-py3.11   # Run unit tests with specific Python version
-make test-all-unit      # Run unit tests across all Python versions (3.10, 3.11, 3.12)
+make test-all-unit      # Run unit tests across all Python versions (3.11, 3.12)
 ```
 
 **Rendering Tests (document generation validation):**
@@ -224,8 +224,8 @@ make test-all → make publish
 - WeasyPrint's system C libraries (pango, cairo, fontconfig, freetype, harfbuzz) are a separate `brew install`, not a Python extra — without them WeasyPrint falls back to ReportLab at runtime
 
 **Python Support**
-- Requires Python ≥3.10
-- Currently tested with Python 3.10, 3.11, 3.12
+- Requires Python ≥3.11
+- Currently tested with Python 3.11, 3.12
 
 ### File Structure Patterns
 

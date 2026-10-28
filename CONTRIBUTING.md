@@ -58,7 +58,7 @@ Mac-letterhead includes comprehensive testing across multiple Python versions. A
 make test-all
 ```
 
-This runs tests for Python 3.10, 3.11, and 3.12 with different configurations:
+This runs tests for Python 3.11 and 3.12 with different configurations:
 - **Basic tests**: Core PDF merging functionality
 - **Full tests**: Markdown processing with ReportLab
 - **WeasyPrint tests**: Advanced Markdown rendering (requires system dependencies)
@@ -69,7 +69,7 @@ This runs tests for Python 3.10, 3.11, and 3.12 with different configurations:
 # Unit tests
 make test-unit              # Unit tests with default Python version
 make test-unit-py3.11       # Unit tests with specific Python version
-make test-all-unit          # Unit tests across Python 3.10, 3.11, 3.12
+make test-all-unit          # Unit tests across Python 3.11, 3.12
 
 # Rendering tests (document generation validation)
 make rendering-reportlab-basic      # Basic ReportLab rendering
@@ -88,7 +88,7 @@ Place test documents in the `test-input/` directory:
 - `*.md` files for Markdown testing
 - `*.pdf` files for PDF merging tests
 
-Test outputs are automatically generated in `test-output/` with version-specific filenames like `document-py3.10-basic.pdf`.
+Test outputs are automatically generated in `test-output/` with version-specific filenames like `document-py3.11-basic.pdf`.
 
 ## Development Mode Testing
 

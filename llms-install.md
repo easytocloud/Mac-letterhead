@@ -15,7 +15,7 @@ Mac-letterhead's MCP server works with any AI assistant that supports the Model 
 
 ### System Requirements
 - **macOS**: Required for PDF processing and droplet applications
-- **Python**: 3.10 or higher
+- **Python**: 3.11 or higher
 - **uv package manager**: Install with `pip install uv` if not available
 
 ### Install Mac-letterhead with MCP Support

@@ -76,7 +76,7 @@
       },
       "platform": {
         "os": ["macos"],
-        "pythonVersion": ">=3.10",
+        "pythonVersion": ">=3.11",
         "systemDependencies": [
           {
             "name": "pango, cairo, fontconfig, freetype, harfbuzz",
