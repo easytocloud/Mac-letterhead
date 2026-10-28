@@ -1,3 +1,10 @@
+# [0.25.0](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.4...v0.25.0) (2026-10-28)
+
+
+### Features
+
+* require Python 3.11+ and resolve Dependabot advisories (Pillow 13, Brotli, MCP, OTel, npm) ([#44](https://github.com/easytocloud/Mac-letterhead/issues/44)) ([31ff316](https://github.com/easytocloud/Mac-letterhead/commit/31ff316651c170b7d57629c4bef83054312e8826))
+
 ## [0.24.4](https://github.com/easytocloud/Mac-letterhead/compare/v0.24.3...v0.24.4) (2026-10-05)
 
 
