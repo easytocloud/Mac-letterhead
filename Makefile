@@ -30,7 +30,7 @@ TEST_LETTERHEAD := $(TEST_OUTPUT_DIR)/test-letterhead.pdf
 INPUT_MD_FILES := $(wildcard $(TEST_INPUT_DIR)/*.md)
 
 # Python versions to test
-PYTHON_VERSIONS := 3.10 3.11 3.12
+PYTHON_VERSIONS := 3.11 3.12
 
 # Environment setup
 PROJECT_ROOT := $(shell pwd)
@@ -387,7 +387,7 @@ help:
 	@echo "  Release: merge conventional commits to main (semantic-release handles publishing)"
 	@echo ""
 	@echo "📋 SYSTEM REQUIREMENTS:"
-	@echo "  Basic tests: Python ≥3.10, uv package manager"
+	@echo "  Basic tests: Python ≥3.11, uv package manager"
 	@echo "  WeasyPrint: brew install pango cairo fontconfig freetype harfbuzz"
 	@echo ""
 	@echo "📁 FILE STRUCTURE:"

@@ -2,7 +2,7 @@
 name = "mac-letterhead-dxt"
 version = "0.15.10"
 description = "Desktop Extension entry point for Mac-letterhead MCP server"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
     "mac-letterhead[mcp]>=0.24.2",
 ]

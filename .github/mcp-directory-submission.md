@@ -196,7 +196,7 @@ Document Generation / PDF Tools / Productivity
 
 - [ ] Server name: Mac-letterhead
 - [ ] Installation command: `uvx "mac-letterhead[mcp]"`
-- [ ] Platform: macOS (Python ≥3.10)
+- [ ] Platform: macOS (Python ≥3.11)
 - [ ] MCP extra package: `mac-letterhead[mcp]`
 - [ ] Documentation links provided
 - [ ] Configuration examples included
