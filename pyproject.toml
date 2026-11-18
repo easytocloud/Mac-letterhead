@@ -25,9 +25,9 @@ classifiers = [
 dependencies = [
     "pyobjc-framework-Quartz>=11.1,<12",
     "pyobjc-framework-Cocoa>=11.1,<12",
-    "pyobjc-core>=11.1,<13",
+    "pyobjc-core>=11.1,<14",
     "importlib-resources; python_version < '3.9'",
-    "pymupdf>=1.25.4,<2",
+    "pymupdf>=1.25.4,<3",
     "reportlab>=3.6.0",
     "markdown>=3.7",
     "pycmarkgfm>=1.2.0",
